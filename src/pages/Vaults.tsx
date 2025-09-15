@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Copy, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import vaultIcon from "../assets/vault-icon.png";
 import Arb from "../assets/arb.png";
 import Btc from "../assets/btc.png";
@@ -9,58 +12,51 @@ import DewChart from "../components/sample/DewChart";
 import DewChart2 from "../components/sample/DewChart2";
 import TransactionTable from "../components/sample/TransactionTable";
 import AllocationDonut from "../components/sample/AllocationDonut";
-import LightRays from "../components/utils/LightRays";
 
-export default function vaults() {
+export default function Vaults() {
 
     const [leftTab, setLeftTab] = useState("deposit");
+    const [hoverAddress, setHoverAddress] = useState<string | null>(null);
     const [rightTab, setRightTab] = useState("overview");
+    const roles = [
+        {
+            title: "Access Manager",
+            addresses: ["0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5"]
+        },
+        {
+            title: "Withdraw Manager",
+            addresses: ["0x12C34EfA4CBD9bE1A5447BC69f6a451C7F7EAa123"]
+        },
+        {
+            title: "Price Oracle",
+            addresses: ["0xAB28EFa4CBD9bE1A5447BC69f6a451C7F7EAa456"]
+        },
+        {
+            title: "Owner",
+            addresses: ["0x40e609De1B52511B0B1aCccDB0B565803b0605E3"]
+        },
+        {
+            title: "Atomist",
+            addresses: [
+                "0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5",
+                "0x40e609De1B52511B0B1aCccDB0B565803b0605E3"
+            ]
+        },
+        {
+            title: "Alpha",
+            addresses: ["0x9A28EFa4CBD9bE1A5447BC69f6a451C7F7EAa789"]
+        }
+    ];
+
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row gap-6 mt-[50px]">
-
-            {/* Background Animation */}
-            <div
-                className="fixed top-0 left-0 w-full h-full overflow-hidden "
-                style={{ zIndex: "-2" }}
-            >
-                <LightRays
-                    raysColor="#8693D9"
-                    raysOrigin="top-right"
-                    raysSpeed={0.3}
-                    lightSpread={1.5}
-                    rayLength={2}
-                    followMouse={true}
-                    mouseInfluence={0.1}
-                    noiseAmount={0.2}
-                    distortion={0.05}
-                    className="opacity-[0.6]"
-                />
-            </div>
-            <div
-                className="fixed bottom-0 left-0 w-full h-full overflow-hidden "
-                style={{ zIndex: "-2" }}
-            >
-                <LightRays
-                    raysColor="#455AC5"
-                    raysOrigin="bottom-left"
-                    raysSpeed={0.4}
-                    lightSpread={1.5}
-                    rayLength={4}
-                    followMouse={false}
-                    mouseInfluence={0.1}
-                    noiseAmount={0.2}
-                    distortion={0.05}
-                    className="opacity-[0.5]"
-                />
-            </div>
-
 
             {/* Left Panel */}
             <div className="w-full h-full md:w-1/3 sticky top-5">
 
                 {/* Input Section */}
-                <div className="w-full bg-[linear-gradient(139deg,#0F1316,#0D0D0D)]  border border-border-color rounded-lg shadow-lg">
+                <div className="w-full bg-[linear-gradient(139deg,#1a1c27,#0D0D0D,#0D0D0D)]  border border-border-color rounded-lg shadow-lg">
 
                     {/* Vault Heading */}
                     <div className="flex items-center gap-4 p-6">
@@ -306,7 +302,7 @@ export default function vaults() {
                             {/* Overview Content  */}
                             <div className="space-y-6">
                                 <div>
-                                    <p className="text-sm text-white mb-2">
+                                    <p className="text-base text-white mb-2">
                                         Description
                                     </p>
                                     <p className="text-sm text-gray">
@@ -320,7 +316,7 @@ export default function vaults() {
 
                                 <div className="grid grid-cols-2 md:grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <p className="text-sm text-white mb-2">
+                                        <p className="text-base text-white mb-2">
                                             Benchmark Assets
                                         </p>
                                         <div className='flex gap-1.5 items-center '>
@@ -328,7 +324,7 @@ export default function vaults() {
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-white mb-2">
+                                        <p className="text-base text-white mb-2">
                                             Rewards
                                         </p>
                                         <div className='flex gap-1.5 items-center '>
@@ -343,7 +339,7 @@ export default function vaults() {
                                 <hr className='border-t border-border-color mt-9 mb-9' />
 
                                 {/* TVL Graph  */}
-                                <p className="text-sm text-white mb-4">
+                                <p className="text-base text-white mb-4">
                                     Total Value Locked Overview
                                 </p>
                                 <div className="relative w-full h-full rounded-lg overflow-hidden">
@@ -389,7 +385,7 @@ export default function vaults() {
                                 <hr className='border-t border-border-color mt-9 mb-9' />
 
                                 {/* Allocation Graph  */}
-                                <p className="text-sm text-white mb-4">
+                                <p className="text-base text-white mb-4">
                                     Allocation Overview
                                 </p>
                                 <div className="relative w-full h-full rounded-lg overflow-hidden">
@@ -435,7 +431,7 @@ export default function vaults() {
                                 <hr className='border-t border-border-color mt-9 mb-9' />
 
                                 {/* APY History Graph  */}
-                                <p className="text-sm text-white mb-4">
+                                <p className="text-base text-white mb-4">
                                     APY History Overview
                                 </p>
                                 <div className="relative w-full h-full rounded-lg overflow-hidden">
@@ -491,6 +487,149 @@ export default function vaults() {
                         >
                             <div className="space-y-6">
 
+                                {/* Vault Fees Content  */}
+                                <div className="flex justify-between items-center mb-2">
+                                    <p className="text-base text-white ">
+                                        Vault Fee
+                                    </p>
+                                    <p className="text-sm text-gray">
+                                        Total Fee : 1.05%
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 mt-3">
+                                    <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-4 py-5 rounded-md border border-dark-border-color">
+                                        <p className="text-sm text-gray">Management fee</p>
+                                        <p className="text-2xl font-semibold">0.05%</p>
+                                    </div>
+
+                                    <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-4 py-5 rounded-md border border-dark-border-color">
+                                        <p className="text-sm text-gray">Performance fee</p>
+                                        <p className="text-2xl font-semibold">1%</p>
+                                    </div>
+
+                                    <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-4 py-5 rounded-md border border-dark-border-color ">
+                                        <p className="text-sm text-gray">Entry/Exit Fee</p>
+                                        <p className="text-2xl font-semibold">0.8%</p>
+                                    </div>
+
+
+                                    <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-4 py-5 rounded-md border border-dark-border-color">
+                                        <p className="text-sm text-gray">Protocol revenue share</p>
+                                        <p className="text-2xl font-semibold">0.1%</p>
+                                    </div>
+                                </div>
+
+                                <hr className='border-t border-border-color mt-9 mb-9' />
+
+                                {/* Roles Content  */}
+                                <div className="flex justify-between items-center mb-2">
+                                    <p className="text-base text-white ">
+                                        Roles
+                                    </p>
+                                    <p className="text-sm text-gray">
+                                        Total 6 Roles
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    {roles.map((role, i) => {
+                                        const isFirst = i === 0;
+                                        const isLast = i === roles.length - 1;
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`flex justify-between p-4 border border-dark-border-color
+                                                    bg-[#0b0b0d]  mb-0
+                                                    ${isFirst ? "rounded-t-md" : ""} ${isLast ? "rounded-b-md border-b-0" : ""}`
+                                                }
+                                            >
+                                                <div>
+                                                    <p className="text-sm font-medium">{role.title}</p>
+                                                </div>
+                                                <div className="text-right space-y-1">
+                                                    {role.addresses.map((addr, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className={`flex items-center justify-end space-x-2 cursor-pointer p-1 px-2 transition-colors duration-200 ${hoverAddress === addr ? "bg-input-focus rounded " : ""
+                                                                }`}
+                                                            onMouseEnter={() => setHoverAddress(addr)}
+                                                            onMouseLeave={() => setHoverAddress(null)}
+                                                        >
+                                                            <a
+                                                                href={`https://etherscan.io/address/${addr}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-sm text-gray truncate max-w-[250px] underline"
+                                                            >
+                                                                {addr}
+                                                            </a>
+                                                            <Copy
+                                                                className="cursor-pointer"
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText("0xa1...near");
+                                                                    toast.success("Wallet Address copied!");
+                                                                }}
+                                                                size={14}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <hr className='border-t border-border-color mt-9 mb-9' />
+
+                                {/* Policy Content  */}
+                                <div className="flex justify-between items-center mb-2">
+                                    <p className="text-base text-white ">
+                                        Policy
+                                    </p>
+                                    <p className="text-sm text-gray">
+                                        Total 381 Policies
+                                    </p>
+                                </div>
+                                <Link to="/policy">
+                                    <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
+                                        <div>
+                                            <p className="text-base font-semibold">transfer_sepolia_usdc</p>
+                                            <p className="text-sm  text-gray">Policy for transferring usdc</p>
+                                        </div>
+                                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
+                                            Active
+                                        </span>
+                                    </div>
+
+                                </Link>
+                                <Link to="/policy">
+                                    <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
+                                        <div>
+                                            <p className="text-base font-semibold">transfer_sepolia_usdc</p>
+                                            <p className="text-sm  text-gray">Policy for transferring usdc</p>
+                                        </div>
+                                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
+                                            Active
+                                        </span>
+                                    </div>
+                                </Link>
+                                <Link to="/policy">
+                                    <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
+                                        <div>
+                                            <p className="text-base font-semibold">transfer_sepolia_usdc</p>
+                                            <p className="text-sm  text-gray">Policy for transferring usdc</p>
+                                        </div>
+                                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
+                                            Active
+                                        </span>
+                                    </div>
+                                </Link>
+                                <Link to="/policy">
+                                    <div className=' flex justify-end items-center gap-2 mt-4'>
+
+                                        <button className="text-sm text-primary">View All Policies  </button><ArrowRight className='text-primary' size='16' />
+                                    </div>
+                                </Link>
+
                             </div>
                         </motion.div>
                     )}
@@ -505,7 +644,8 @@ export default function vaults() {
                         >
                             <div className="space-y-6">
                                 <div className="relative w-full h-full rounded-lg overflow-hidden">
-                                    {/* Apply blur to the children directly */}
+
+                                    {/* All Activity - Coming soon */}
                                     <div className="blur-sm">
                                         <TransactionTable />
                                     </div>
@@ -514,6 +654,7 @@ export default function vaults() {
                                             Coming Soon
                                         </span>
                                     </div>
+
                                 </div>
                             </div>
                         </motion.div>
