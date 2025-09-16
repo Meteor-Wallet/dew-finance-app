@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Copy, ArrowRight, ArrowLeftRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { useAtom } from "jotai";
+import { simulateModalAtom } from "../components/modal/simulateModalAtom";
 import vaultIcon from "../assets/vault-icon.png";
 import Arb from "../assets/arb.png";
 import Btc from "../assets/btc.png";
@@ -28,6 +30,9 @@ export default function Vaults() {
     const [leftTab, setLeftTab] = useState("deposit");
     const [hoverAddress, setHoverAddress] = useState<string | null>(null);
     const [rightTab, setRightTab] = useState("overview");
+    const [simulateModal, setSimulateModal] = useAtom(
+        simulateModalAtom
+    );
     const roles = [
         {
             title: "Access Manager",
@@ -182,7 +187,9 @@ export default function Vaults() {
                                             <button className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative">
                                                 Confirm
                                             </button>
-                                            <button className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base">
+                                            <button className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base" onClick={() => {
+                                                setSimulateModal({ open: true });
+                                            }}>
                                                 Simulate
                                             </button>
                                         </div>
@@ -248,7 +255,9 @@ export default function Vaults() {
                                             <button className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative">
                                                 Confirm
                                             </button>
-                                            <button className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base">
+                                            <button className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base" onClick={() => {
+                                                setSimulateModal({ open: true });
+                                            }}>
                                                 Simulate
                                             </button>
                                         </div>

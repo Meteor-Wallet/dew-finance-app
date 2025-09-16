@@ -11,6 +11,7 @@ import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
 import NetworkModal from "./components/modal/NetworkModal";
 import ConnectWalletModal from "./components/modal/ConnectWalletModal";
+import SimulateModal from "./components/modal/SimulateModal";
 import DotGrid from "./components/utils/DotGrid";
 import LightRays from "./components/utils/LightRays";
 import ScrollToTop from "./components/utils/ScrollToTop";
@@ -27,6 +28,7 @@ export default function App() {
         <Navbar />
         <OnboardingModal />
         <NetworkModal />
+        <SimulateModal />
         <ConnectWalletModal />
         <Routes>
           <Route path="/" element={<Vaults />} />

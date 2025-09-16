@@ -231,7 +231,14 @@ nav {
   opacity: 0;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
 
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE, Edge */
+  scrollbar-width: none;     /* Firefox */
+}
 
 
 
@@ -317,12 +324,13 @@ nav {
   width: 20px;
 }
 
-
-
-
-
-/****************** DETAILS PAGE STYLES *********************/
-
+.dot-grid {
+  background-color: #0d0d12; /* base/background color */
+  /* radial-gradient(circle, DOT_COLOR DOT_RADIUS, transparent DOT_RADIUS) */
+  background-image: radial-gradient(circle, #202124 1.5px, transparent 1.5px);
+  background-size: 28px 28px; /* gap x gap */
+  background-position: 0 0;
+}
 
 
 
