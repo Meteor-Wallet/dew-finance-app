@@ -392,7 +392,7 @@ export default function Vaults() {
                                             </p>
                                             <div className="relative w-full h-full rounded-lg overflow-hidden">
                                                 <div className=" p-4 rounded-lg">
-                                                    <div className='blur-sm'>
+                                                    <div className=''>
                                                         <div className="flex justify-between items-center mb-2">
                                                             <div className="flex gap-3 items-center">
                                                                 <img src={Near} alt={'NEAR'} className="w-12 h-12" />
@@ -422,11 +422,7 @@ export default function Vaults() {
                                                             <DewChart />
                                                         </div>
                                                     </div>
-                                                    <div className="absolute inset-0 bg-black/20  flex items-center justify-center">
-                                                        <span className="text-gray text-xl font-semibold">
-                                                            Coming Soon
-                                                        </span>
-                                                    </div>
+                                                    
                                                 </div>
                                             </div>
 
@@ -438,7 +434,7 @@ export default function Vaults() {
                                             </p>
                                             <div className="relative w-full h-full rounded-lg overflow-hidden">
                                                 <div className=" p-4 rounded-lg">
-                                                    <div className='blur-sm'>
+                                                    <div className=''>
                                                         <div className="flex justify-between items-center mb-2">
                                                             <div className="flex gap-3 items-center">
                                                                 <img src={Near} alt={'NEAR'} className="w-12 h-12" />
@@ -468,11 +464,7 @@ export default function Vaults() {
                                                             <AllocationDonut />
                                                         </div>
                                                     </div>
-                                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                                        <span className="text-gray text-xl font-semibold">
-                                                            Coming Soon
-                                                        </span>
-                                                    </div>
+                                                    
                                                 </div>
                                             </div>
 
@@ -484,7 +476,7 @@ export default function Vaults() {
                                             </p>
                                             <div className="relative w-full h-full rounded-lg overflow-hidden">
                                                 <div className=" p-4 rounded-lg">
-                                                    <div className='blur-sm'>
+                                                    <div className=''>
                                                         <div className="flex justify-between items-center mb-2">
                                                             <div className="flex gap-3 items-center">
                                                                 <img src={Near} alt={'NEAR'} className="w-12 h-12" />
@@ -514,11 +506,7 @@ export default function Vaults() {
                                                             <DewChart2 />
                                                         </div>
                                                     </div>
-                                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                                                        <span className="text-gray text-xl font-semibold">
-                                                            Coming Soon
-                                                        </span>
-                                                    </div>
+                                                   
                                                 </div>
                                             </div>
                                         </div>
