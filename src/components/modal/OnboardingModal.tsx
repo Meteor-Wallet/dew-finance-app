@@ -4,9 +4,16 @@ import { useEffect } from "react";
 import { connectWalletModalAtom } from "./connectWalletModalAtom";
 import { onboardingModalAtom } from "./onboardingModalAtom";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRive } from "@rive-app/react-canvas";
+import DotGrid from "../utils/DotGrid";
 
 export default function OnboardingModal() {
   const [onboardingModal, setOnboardingModal] = useAtom(onboardingModalAtom);
+  const { RiveComponent } = useRive({
+    src: "/rive/dew_hand.riv",
+    autoplay: true,
+    stateMachines: "State Machine 1",
+  });
 
   useEffect(() => {
     if (!onboardingModal.open) {
@@ -29,38 +36,47 @@ export default function OnboardingModal() {
     >
       <AnimatePresence mode="wait">
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -40 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -40 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
         >
-          <div className="w-full flex justify-center bg-[linear-gradient(139deg,#13141A,#191b23)] h-[50vh] md:h-[300px] rounded-xl mb-6 items-center">
-            <div className="h-[180px] md:h-[250px] w-full">
-                <img src={''}/>
+          <div className="w-full flex justify-end bg-[linear-gradient(139deg,#13141A,#191b23)] h-[50vh] md:h-[300px] rounded-xl mb-6 items-end relatve">
+            <div className="h-[250px] md:h-[280px] w-full relative overflow-hidden">
+              <DotGrid
+                dotSize={3}
+                gap={30}
+                baseColor="#2c333da7"
+                proximity={0}
+              />
+              <div className='absolute top-0 left-0 w-full h-full z-3'>
+                <RiveComponent />
+              </div>
+              <div className="absolute bottom-[-100px] left-0 right-0 mx-auto w-[250px] h-[250px] bg-[linear-gradient(139deg,#3DA9EA,#abdfff)] rounded-full opacity-70 blur-[60px] z-0"></div>
             </div>
           </div>
 
           <div className=" mb-8 ">
-            <h2 className="text-2xl font-bold text-white">
-              Title
+            <h2 className="text-xl font-bold text-white mb-1">
+              Welcome to Dew Finance
             </h2>
-            <p className="text-text-gray text-sm md:text-sm leading-relaxed">
-              Descripion
+            <p className="text-gray text-base md:text-sm leading-relaxed">
+              Manage your digital assets with secure vaults, flexible policies, and seamless cross-chain access.Easily grow, protect, and control your crypto—all in one place.Connect your wallet, explore vaults, and take control of your decentralized finance experience.
             </p>
           </div>
         </motion.div>
       </AnimatePresence>
-       <div className="flex justify-between items-center w-full mt-4">
+      <div className="flex justify-end items-center w-full mt-4">
         <div className="flex  gap-4">
-           <button
+          <button
             onClick={handleClose}
-            className="text-white/60 hover:text-white text-sm"
+            className="text-gray hover:text-white text-base"
           >
             Cancel
           </button>
           <button
-            className="text-base bg-[#DAFF00] ml-2 text-black px-5 py-2 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200"
-            onClick={()=>{setConnectWalletModal({open:false, connected:true}); handleClose();}}
+            className="text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200"
+            onClick={() => { setConnectWalletModal({ open: false, connected: true }); handleClose(); }}
           >
             Authorize Wallet
           </button>

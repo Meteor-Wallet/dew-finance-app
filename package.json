@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.8",
+    "@rive-app/react-canvas": "^4.23.3",
     "@tailwindcss/vite": "^4.1.13",
     "framer-motion": "^12.23.12",
+    "gsap": "^3.13.0",
     "jotai": "^2.14.0",
     "lucide-react": "^0.544.0",
     "ogl": "^1.0.11",

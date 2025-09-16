@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, Copy, LogOut, X, Menu } from "lucide-react";
 import Motion from "../utils/Motion";
+import Near from "../../assets/near.png";
 import Eth from "../../assets/eth-full.svg";
-import Logo from "../../assets/logo.svg";
+import { networkModalAtom } from "../modal/networkModalAtom";
 import { connectWalletModalAtom } from "../modal/connectWalletModalAtom";
 import { toast } from "sonner";
 import { useAtom } from "jotai";
+import { useRive } from "@rive-app/react-canvas";
 
 export default function Navbar() {
 
@@ -15,9 +17,10 @@ export default function Navbar() {
     const [menuDrawerClosing, setMenuDrawerClosing] = useState(false);
     const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const [connectWalletModal, setConnectWalletModal] = useAtom(
-    connectWalletModalAtom
-  );
+    const [connectWalletModal, setConnectWalletModal] = useAtom(
+        connectWalletModalAtom
+    );
+    const [networkModal, setNetworkModal] = useAtom(networkModalAtom);
 
     const closeWalletDrawer = () => {
         setWalletDrawerClosing(true);
@@ -50,20 +53,27 @@ export default function Navbar() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const { RiveComponent } = useRive({
+        src: "/rive/dew_loader2.riv",
+        autoplay: true,
+    });
+
     return (
         <>
             <nav className="transition-transform duration-300  py-3 pt-5 flex justify-between items-center flex-wrap relative z-10">
-                <Motion direction="left" duration={0.6} delay={0.6}>
+                <Motion direction="left" duration={0.6}>
                     <div className="text-white flex gap-3 text-[1.4rem] items-center">
                         <div className="relative">
-                            <img className="w-[40px]" src={Logo} alt="logo" />
+                            <div className="w-[40px] h-[40px]">
+                                <RiveComponent />
+                            </div>
                         </div>
-                        <span className="font-light hidden md:inline">Dew Finance</span>
+                        <span className="font-medium hidden md:inline">Dew Finance</span>
                     </div>
                 </Motion>
 
                 <div className="flex gap-4 items-center justify-end relative">
-                    <Motion direction="right" duration={1} delay={0.9} zIndex={1}>
+                    <Motion direction="right" duration={1} delay={0.6} zIndex={1}>
                         {!connectWalletModal.connected ? (
                             <button
                                 onClick={() => {
@@ -74,11 +84,24 @@ export default function Navbar() {
                                 Connect Wallet
                             </button>
                         ) : (
-                            <>
+                            <div className='flex items-center gap-3'>
+                                <button
+                                    onClick={() => {
+                                        setNetworkModal({ open: true });
+                                    }}
+                                    className="flex items-center gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
+                                >
+                                    <img
+                                        className="w-[30px]"
+                                        src={Near}
+                                        alt="near-logo"
+                                    />
+                                    NEAR
+                                </button>
                                 <div className="relative md:block" ref={dropdownRef}>
                                     <button
                                         onClick={() => setShowDropdown(!showDropdown)}
-                                        className="bg-card-background border border-card-border flex items-center gap-2 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base"
+                                        className="bg-card-background border border-card-border flex items-center gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-98 hover:opacity-80"
                                     >
                                         <div className="near-logo w-[22px] md:w-[25px] lg:w-[27px] h-[22px] md:h-[25px] lg:h-[27px] rounded-full flex items-center justify-center">
                                             <img
@@ -96,16 +119,16 @@ export default function Navbar() {
                                     </button>
 
                                     <div
-                                        className={`absolute hidden md:block right-0 top-14 z-10000 w-[240px] bg-modal-background border border-card-border rounded-md shadow-md transform transition-all duration-200 ${showDropdown
+                                        className={`absolute hidden md:block right-0 top-14 z-10000 w-[240px] bg-modal-background border border-card-border rounded-md shadow-md transform transition-all duration-200 z-1000 ${showDropdown
                                             ? "scale-100 opacity-100 visible"
                                             : "scale-95 opacity-0 invisible"
                                             }`}
                                         style={{ boxShadow: "5px 15px 25px #020202" }}
                                     >
-                                        <WalletDropdownContent  onClose={() => setShowDropdown(false)} setConnectWalletModal={setConnectWalletModal} />
+                                        <WalletDropdownContent onClose={() => setShowDropdown(false)} setConnectWalletModal={setConnectWalletModal} />
                                     </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </Motion>
                     <button
@@ -166,7 +189,7 @@ export default function Navbar() {
                                 <X className="w-[20px]" />
                             </button>
                         </div>
-                        <WalletDropdownContent  onClose={closeWalletDrawer} setConnectWalletModal={setConnectWalletModal}/>
+                        <WalletDropdownContent onClose={closeWalletDrawer} setConnectWalletModal={setConnectWalletModal} />
                     </div>
                     <div
                         className={`
@@ -193,13 +216,13 @@ function WalletDropdownContent({
 }) {
     return (
         <div className="text-white">
-            <div className="bg-[linear-gradient(200deg,#252525,#121215)] pb-12 p-16 md:p-5 flex justify-center items-center flex-col">
+            <div className="bg-[linear-gradient(139deg,#1a1c27,#121215,#0D0D0D)] pb-12 p-16 md:p-5 flex justify-center items-center flex-col">
                 <Motion direction="top" duration={1}>
                     <div className="flex justify-center items-center flex-col">
                         <div className="near-logo w-[80px] h-[80px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center md:mb-1 mb-2">
                             <img className="w-full" src={Eth} alt="near-logo" />
                         </div>
-                        <p className="text-xl md:text-sm text-center font-semibold flex gap-1 items-center">
+                        <p className="text-xl md:text-base text-center font-semibold flex gap-1 items-center">
                             0xa1...near
                             <Copy
                                 className="cursor-pointer"
@@ -210,7 +233,7 @@ function WalletDropdownContent({
                                 size={12}
                             />
                         </p>
-                        <p className="text-base md:text-xs text-center text-text-gray md:mt-0 mt-[-5px]">
+                        <p className="text-base md:text-xs text-center text-gray md:mt-0 mt-[-5px]">
                             Meteor Wallet
                         </p>
                     </div>

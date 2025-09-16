@@ -47,7 +47,7 @@ const ConnectWalletModal = () => {
     >
       <div className="w-full md:w-[380px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
         <h2 className="text-2xl font-semibold mb-0 mt-4">Connect Wallet</h2>
-        <p className="text-sm text-text-gray font-regular mb-4">
+        <p className="text-sm text-gray font-regular mb-4">
           Please select network and wallet to connect.
         </p>
         <ul className="mb-8">
