@@ -31,7 +31,7 @@ export default function AllocationDonut() {
           paddingAngle={3}
           dataKey="value"
         >
-          {data.map((entry, index) => (
+          {data.map((_, index) => (
             <Cell
               key={`cell-${index}`}
               fill={COLORS[index % COLORS.length]}

@@ -1,5 +1,5 @@
 export default function TransactionTable() {
-  const data = Array.from({ length: 15 }, (_, i) => ({
+  const data = Array.from({ length: 15 }, (_) => ({
     address: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random()
       .toString(16)
       .substring(2, 10)}`,
