@@ -5,6 +5,7 @@ import {
   Navigate,
 } from "react-router-dom";
 
+import Homepage from "./pages/Homepage";
 import Policy from "./pages/Policy";
 import Vaults from "./pages/Vaults";
 import Navbar from "./components/layout/Navbar";
@@ -33,6 +34,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Vaults />} />
           <Route path="/policy" element={<Policy />} />
+          <Route path="/home" element={<Homepage />} />
           <Route path="*" element={<Navigate replace to="/vaults" />} />
         </Routes>
 
