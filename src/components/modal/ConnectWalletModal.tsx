@@ -3,7 +3,7 @@ import nearLogo from "../../assets/near.svg";
 import ethLogo from "../../assets/eth.svg";
 import solanaLogo from "../../assets/solana.svg";
 import Modal from "react-modal";
-import Motion from "../utils/Motion";
+import MotionCSS from "../utils/MotionCSS"; // <-- updated import
 import { memo } from "react";
 import { walletStore } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
@@ -45,7 +45,7 @@ const ConnectWalletModal = () => {
           Please select network and wallet to connect.
         </p>
         <ul className="mb-8">
-          <Motion direction="left" duration={0.4} delay={0.1}>
+          <MotionCSS direction="left" duration={400} delay={0.1}>
             <li
               className="connect-wallet-list-items"
               onClick={() => {
@@ -53,26 +53,26 @@ const ConnectWalletModal = () => {
               }}
             >
               <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
+                <img src={nearLogo} alt="NEAR" />
               </div>
               NEAR
             </li>
-          </Motion>
-          <Motion direction="left" duration={0.4} delay={0.3}>
+          </MotionCSS>
+          <MotionCSS direction="left" duration={400} delay={0.3}>
             <li
               className="connect-wallet-list-items"
               onClick={async () => {
                 walletStore.store.trigger.closeConnectWalletModal();
-                signIn("evm")
+                signIn("evm");
               }}
             >
               <div className="list-logo eth-logo">
-                <img src={ethLogo} />{" "}
+                <img src={ethLogo} alt="Ethereum" />
               </div>
-              EVM{" "}
+              EVM
             </li>
-          </Motion>
-          <Motion direction="left" duration={0.4} delay={0.5}>
+          </MotionCSS>
+          <MotionCSS direction="left" duration={400} delay={0.5}>
             <li
               className="connect-wallet-list-items"
               onClick={() => {
@@ -80,11 +80,11 @@ const ConnectWalletModal = () => {
               }}
             >
               <div className="list-logo solana-logo">
-                <img src={solanaLogo} />{" "}
+                <img src={solanaLogo} alt="Solana" />
               </div>
               Solana
             </li>
-          </Motion>
+          </MotionCSS>
         </ul>
         <button
           onClick={handleClose}
