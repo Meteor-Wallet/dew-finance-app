@@ -124,10 +124,10 @@ export default function Homepage() {
                                 {/* Networks */}
                                 <td className="px-6 py-4">
                                     <div className='flex gap-1.5 items-center '>
-                                        <img src={Near} alt={'NEAR'} className="w-6 h-6" />
-                                        <img src={Dai} alt={'Dai'} className="w-6 h-6 ml-[-10px]" />
-                                        <img src={Arb} alt={'Arb'} className="w-6 h-6 ml-[-10px]" />
-                                        <img src={Btc} alt={'Btc'} className="w-6 h-6 ml-[-10px]" />
+                                        <img src={Near} alt={'NEAR'} className="w-[25px] h-[25px]" />
+                                        <img src={Dai} alt={'Dai'} className="w-[25px] h-[25px] ml-[-10px]" />
+                                        <img src={Arb} alt={'Arb'} className="w-[25px] h-[25px] ml-[-10px]" />
+                                        <img src={Btc} alt={'Btc'} className="w-[25px] h-[25px] ml-[-10px]" />
                                         <span className='text-sm text-gray'> +13 </span>
                                     </div>
                                 </td>
