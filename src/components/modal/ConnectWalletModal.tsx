@@ -50,7 +50,6 @@ const ConnectWalletModal = () => {
               className="connect-wallet-list-items"
               onClick={() => {
                 walletStore.store.trigger.closeConnectWalletModal();
-                walletStore.store.trigger.openOnboardModal();
               }}
             >
               <div className="list-logo near-logo">
@@ -64,8 +63,7 @@ const ConnectWalletModal = () => {
               className="connect-wallet-list-items"
               onClick={async () => {
                 walletStore.store.trigger.closeConnectWalletModal();
-                await signIn("evm")
-                walletStore.store.trigger.openOnboardModal();
+                signIn("evm")
               }}
             >
               <div className="list-logo eth-logo">
@@ -79,7 +77,6 @@ const ConnectWalletModal = () => {
               className="connect-wallet-list-items"
               onClick={() => {
                 walletStore.store.trigger.closeConnectWalletModal();
-                walletStore.store.trigger.openOnboardModal();
               }}
             >
               <div className="list-logo solana-logo">

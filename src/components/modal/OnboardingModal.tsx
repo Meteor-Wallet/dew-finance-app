@@ -3,6 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRive } from "@rive-app/react-canvas";
 import DotGrid from "../utils/DotGrid";
 import { walletStore } from "../../stores/wallet_store";
+import _ from "lodash";
+import { useWalletSelector } from "../../walletSelector";
+import { dewFactoryMutations } from "../../mutations/dewFactory";
 
 export default function OnboardingModal() {
   const { RiveComponent } = useRive({
@@ -11,17 +14,17 @@ export default function OnboardingModal() {
     stateMachines: "State Machine 1",
   });
 
-  const isOnboardModalOpen = walletStore.selectors.useIsOnboardModalOpen()
+  const isOnboardModalOpen = walletStore.selectors.useIsOnboardModalOpen();
 
-  const handleClose = () => {
-    walletStore.store.trigger.closeOnboardModal()
-  };
+  const { signOut } = useWalletSelector();
+
+  const authorizeWalletMutation =
+    dewFactoryMutations.useAuthorizeWalletMutation();
 
   return (
     <Modal
       isOpen={isOnboardModalOpen}
-      onRequestClose={handleClose}
-      shouldCloseOnOverlayClick
+      shouldCloseOnOverlayClick={false}
       closeTimeoutMS={600}
       className="absolute w-screen md:h-auto h-screen md:w-[90vw] max-w-3xl shadow-xl bg-[linear-gradient(139deg,#000000,#0C0C0C)] text-white md:border md:border-modal-border md:rounded-2xl p-4 md:p-8 transition-all duration-600 flex flex-col md:justify-center justify-between outline-none"
       overlayClassName="fixed inset-0 z-20 bg-black/50 backdrop-blur-md flex justify-center items-center"
@@ -64,17 +67,22 @@ export default function OnboardingModal() {
       <div className="flex justify-end items-center w-full mt-4">
         <div className="flex  gap-4">
           <button
-            onClick={handleClose}
+            onClick={() => {
+              signOut();
+              walletStore.store.trigger.closeOnboardModal();
+            }}
             className="text-gray hover:text-white text-base"
           >
             Cancel
           </button>
           <button
             className="text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200"
-            onClick={() => {
-              walletStore.store.trigger.closeConnectWalletModal()
-              handleClose();
+            onClick={async () => {
+              if (!authorizeWalletMutation.isPending) {
+                authorizeWalletMutation.mutate();
+              }
             }}
+            disabled={authorizeWalletMutation.isPending}
           >
             Authorize Wallet
           </button>

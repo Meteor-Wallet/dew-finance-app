@@ -61,6 +61,9 @@ const store = createStore({
       }
     ) =>
       produce(context, (draft) => {
+        if (context.connectedWallets.find((e) => e.address === event.address)) {
+          return;
+        }
         draft.connectedWallets.push({
           address: event.address,
           supportedChains: event.supportedChains,
@@ -109,13 +112,9 @@ const useConnectedWalletAddress = () => {
     ({ context }) => context.connectedWallets
   );
 
-  if (selectedChain) {
-    return connectedWallets.find((e) =>
-      e.supportedChains.includes(selectedChain)
-    );
-  }
-
-  return undefined;
+  return connectedWallets.find((e) =>
+    e.supportedChains.includes(selectedChain)
+  );
 };
 
 const useIsConnectWalletModalOpen = () => {
