@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Copy, ArrowRight, ArrowLeftRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { useAtom } from "jotai";
-import { simulateModalAtom } from "../components/modal/simulateModalAtom";
 import vaultIcon from "../assets/vault-icon.png";
 import Arb from "../assets/arb.png";
 import Btc from "../assets/btc.png";
@@ -24,15 +22,14 @@ import FeeIcon1 from "../assets/fee_icon1.svg";
 import FeeIcon2 from "../assets/fee_icon2.svg";
 import FeeIcon3 from "../assets/fee_icon3.svg";
 import FeeIcon4 from "../assets/fee_icon4.svg";
+import { vaultActionStore } from "../stores/vault_action_store";
 
 export default function Vaults() {
 
     const [leftTab, setLeftTab] = useState("deposit");
     const [hoverAddress, setHoverAddress] = useState<string | null>(null);
     const [rightTab, setRightTab] = useState("overview");
-    const [simulateModal, setSimulateModal] = useAtom(
-        simulateModalAtom
-    );
+    
     const roles = [
         {
             title: "Access Manager",
@@ -188,7 +185,7 @@ export default function Vaults() {
                                                 Confirm
                                             </button>
                                             <button className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base" onClick={() => {
-                                                setSimulateModal({ open: true });
+                                                vaultActionStore.store.trigger.openSimulateModal()
                                             }}>
                                                 Simulate
                                             </button>
@@ -256,7 +253,7 @@ export default function Vaults() {
                                                 Confirm
                                             </button>
                                             <button className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base" onClick={() => {
-                                                setSimulateModal({ open: true });
+                                                vaultActionStore.store.trigger.openSimulateModal()
                                             }}>
                                                 Simulate
                                             </button>

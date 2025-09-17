@@ -1,33 +1,25 @@
 import Modal from "react-modal";
-import { useAtom, useSetAtom } from "jotai";
-import { useEffect } from "react";
-import { connectWalletModalAtom } from "./connectWalletModalAtom";
-import { onboardingModalAtom } from "./onboardingModalAtom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRive } from "@rive-app/react-canvas";
 import DotGrid from "../utils/DotGrid";
+import { walletStore } from "../../stores/wallet_store";
 
 export default function OnboardingModal() {
-  const [onboardingModal, setOnboardingModal] = useAtom(onboardingModalAtom);
   const { RiveComponent } = useRive({
     src: "/rive/dew_hand.riv",
     autoplay: true,
     stateMachines: "State Machine 1",
   });
 
-  useEffect(() => {
-    if (!onboardingModal.open) {
-    }
-  }, [onboardingModal.open]);
+  const isOnboardModalOpen = walletStore.selectors.useIsOnboardModalOpen()
 
-  const setConnectWalletModal = useSetAtom(connectWalletModalAtom);
   const handleClose = () => {
-    setOnboardingModal({ open: false });
+    walletStore.store.trigger.closeOnboardModal()
   };
 
   return (
     <Modal
-      isOpen={onboardingModal.open}
+      isOpen={isOnboardModalOpen}
       onRequestClose={handleClose}
       shouldCloseOnOverlayClick
       closeTimeoutMS={600}
@@ -49,7 +41,7 @@ export default function OnboardingModal() {
                 baseColor="#2c333da7"
                 proximity={0}
               />
-              <div className='absolute top-0 left-0 w-full h-full z-3'>
+              <div className="absolute top-0 left-0 w-full h-full z-3">
                 <RiveComponent />
               </div>
               <div className="absolute bottom-[-100px] left-0 right-0 mx-auto w-[250px] h-[250px] bg-[linear-gradient(139deg,#3DA9EA,#abdfff)] rounded-full opacity-70 blur-[60px] z-0"></div>
@@ -61,7 +53,10 @@ export default function OnboardingModal() {
               Welcome to Dew Finance
             </h2>
             <p className="text-gray text-base md:text-sm leading-relaxed">
-              Manage your digital assets with secure vaults, flexible policies, and seamless cross-chain access.Easily grow, protect, and control your crypto—all in one place.Connect your wallet, explore vaults, and take control of your decentralized finance experience.
+              Manage your digital assets with secure vaults, flexible policies,
+              and seamless cross-chain access.Easily grow, protect, and control
+              your crypto—all in one place.Connect your wallet, explore vaults,
+              and take control of your decentralized finance experience.
             </p>
           </div>
         </motion.div>
@@ -76,7 +71,10 @@ export default function OnboardingModal() {
           </button>
           <button
             className="text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200"
-            onClick={() => { setConnectWalletModal({ open: false, connected: true }); handleClose(); }}
+            onClick={() => {
+              walletStore.store.trigger.closeConnectWalletModal()
+              handleClose();
+            }}
           >
             Authorize Wallet
           </button>

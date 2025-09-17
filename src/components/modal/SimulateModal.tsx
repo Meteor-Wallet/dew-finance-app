@@ -1,24 +1,24 @@
 import closeIcon from "../../assets/close.svg";
 import nearLogo from "../../assets/near.png";
-import { simulateModalAtom } from "./simulateModalAtom";
-import { useAtom } from "jotai";
 import Modal from "react-modal";
 import { memo, useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
+import { vaultActionStore } from "../../stores/vault_action_store";
 
 const SimulateModal = () => {
-  const [simulateModal, setsimulateModal] = useAtom(simulateModalAtom);
   const [currentStep, setCurrentStep] = useState(0);
   const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const handleClose = () => {
-    setsimulateModal({ open: false });
+    vaultActionStore.store.trigger.closeSimulateModal()
     setCurrentStep(0);
   };
 
+  const isSimulateModalOpen = vaultActionStore.selectors.useIsSimulateModalOpen()
+
   useEffect(() => {
-    if (simulateModal.open) {
+    if (isSimulateModalOpen) {
        setCurrentStep(1);
       let step = 1;
       const interval = setInterval(() => {
@@ -28,7 +28,7 @@ const SimulateModal = () => {
       }, 2000);
       return () => clearInterval(interval);
     }
-  }, [simulateModal.open]);
+  }, [isSimulateModalOpen]);
 
   useEffect(() => {
     const ref = boxRefs.current[currentStep - 1];
@@ -49,7 +49,7 @@ const SimulateModal = () => {
 
   return (
     <Modal
-      isOpen={simulateModal.open}
+      isOpen={isSimulateModalOpen}
       onRequestClose={handleClose}
       shouldCloseOnOverlayClick
       closeTimeoutMS={300}

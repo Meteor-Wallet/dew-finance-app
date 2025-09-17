@@ -1,23 +1,20 @@
 import closeIcon from "../../assets/close.svg";
 import nearLogo from "../../assets/near.svg";
-import { networkModalAtom } from "./networkModalAtom";
-import { useAtom } from "jotai";
 import Modal from "react-modal";
 import { memo } from "react";
+import { walletStore } from "../../stores/wallet_store";
 
 const NetworkModal = () => {
+  const isSwitchNetworkModalOpen =
+    walletStore.selectors.useIsSwitchNetworkModalOpen();
 
-  const [networkModal, setNetworkModal] = useAtom(networkModalAtom);
- 
   const handleClose = () => {
-    setNetworkModal({
-      open: false,
-    });
+    walletStore.store.trigger.closeSwitchNetworkModal();
   };
 
   return (
     <Modal
-      isOpen={networkModal.open}
+      isOpen={isSwitchNetworkModalOpen}
       onRequestClose={handleClose}
       shouldCloseOnOverlayClick
       closeTimeoutMS={300}
@@ -40,75 +37,43 @@ const NetworkModal = () => {
       <div className="w-full md:w-[420px] p-6  bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
         <h2 className="text-2xl font-semibold mb-0 mt-4">Switch Networks</h2>
         <p className="text-sm text-gray font-regular mb-4">
-          Switch to a supported blockchain network to access and manage your vault
+          Switch to a supported blockchain network to access and manage your
+          vault
         </p>
         <ul className="max-h-[70vh] overflow-y-auto space-y-4 pb-4">
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-            <li className="connect-wallet-list-items" onClick={()=>{setNetworkModal({open:false});}}>
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
+          <li
+            className="connect-wallet-list-items"
+            onClick={() => {
+              walletStore.store.trigger.closeSwitchNetworkModal();
+            }}
+          >
+            <div className="list-logo near-logo">
+              <img src={nearLogo} />{" "}
+            </div>
+            NEAR
+          </li>
+          <li
+            className="connect-wallet-list-items"
+            onClick={() => {
+              walletStore.store.trigger.closeSwitchNetworkModal();
+            }}
+          >
+            <div className="list-logo near-logo">
+              <img src={nearLogo} />{" "}
+            </div>
+            NEAR
+          </li>
+          <li
+            className="connect-wallet-list-items"
+            onClick={() => {
+              walletStore.store.trigger.closeSwitchNetworkModal();
+            }}
+          >
+            <div className="list-logo near-logo">
+              <img src={nearLogo} />{" "}
+            </div>
+            NEAR
+          </li>
         </ul>
         <button
           onClick={handleClose}
