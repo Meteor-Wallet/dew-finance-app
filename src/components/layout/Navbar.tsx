@@ -3,11 +3,9 @@ import { ChevronDown, Copy, LogOut, X, Menu } from "lucide-react";
 import Motion from "../utils/Motion";
 import Near from "../../assets/near.png";
 import Eth from "../../assets/eth-full.svg";
-import { networkModalAtom } from "../modal/networkModalAtom";
-import { connectWalletModalAtom } from "../modal/connectWalletModalAtom";
 import { toast } from "sonner";
-import { useAtom } from "jotai";
 import { useRive } from "@rive-app/react-canvas";
+import { walletStore } from "../../stores/wallet_store";
 
 export default function Navbar() {
 
@@ -17,10 +15,8 @@ export default function Navbar() {
     const [menuDrawerClosing, setMenuDrawerClosing] = useState(false);
     const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-    const [connectWalletModal, setConnectWalletModal] = useAtom(
-        connectWalletModalAtom
-    );
-    const [networkModal, setNetworkModal] = useAtom(networkModalAtom);
+    const isWalletConnected = walletStore.selectors.useIsWalletConnected()
+
 
     const closeWalletDrawer = () => {
         setWalletDrawerClosing(true);
@@ -74,10 +70,10 @@ export default function Navbar() {
 
                 <div className="flex gap-4 items-center justify-end relative">
                     <Motion direction="right" duration={1} delay={0.6} zIndex={1}>
-                        {!connectWalletModal.connected ? (
+                        {!isWalletConnected ? (
                             <button
                                 onClick={() => {
-                                    setConnectWalletModal({ open: true });
+                                    walletStore.store.trigger.openConnectWalletModal()
                                 }}
                                 className="bg-primary text-black px-6 py-3 rounded-md font-bold primary-button-shadow text-base"
                             >
@@ -87,7 +83,7 @@ export default function Navbar() {
                             <div className='flex items-center gap-3'>
                                 <button
                                     onClick={() => {
-                                        setNetworkModal({ open: true });
+                                        walletStore.store.trigger.openSwitchNetworkModal()
                                     }}
                                     className="flex items-center gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
                                 >
@@ -125,7 +121,7 @@ export default function Navbar() {
                                             }`}
                                         style={{ boxShadow: "5px 15px 25px #020202" }}
                                     >
-                                        <WalletDropdownContent onClose={() => setShowDropdown(false)} setConnectWalletModal={setConnectWalletModal} />
+                                        <WalletDropdownContent onClose={() => setShowDropdown(false)} />
                                     </div>
                                 </div>
                             </div>
@@ -189,7 +185,7 @@ export default function Navbar() {
                                 <X className="w-[20px]" />
                             </button>
                         </div>
-                        <WalletDropdownContent onClose={closeWalletDrawer} setConnectWalletModal={setConnectWalletModal} />
+                        <WalletDropdownContent onClose={closeWalletDrawer}  />
                     </div>
                     <div
                         className={`
@@ -209,10 +205,8 @@ export default function Navbar() {
 
 function WalletDropdownContent({
     onClose,
-    setConnectWalletModal
 }: {
     onClose: () => void;
-    setConnectWalletModal: (state: any) => void;
 }) {
     return (
         <div className="text-white">
@@ -253,7 +247,7 @@ function WalletDropdownContent({
             <button
                 onClick={() => {
                     onClose();
-                    setConnectWalletModal({ open: false, connected: false });
+                    walletStore.store.trigger.closeConnectWalletModal()
                 }}
                 className="flex items-center gap-2 w-full text-left px-4 py-4 md:py-3 hover:bg-card-border text-sm"
             >

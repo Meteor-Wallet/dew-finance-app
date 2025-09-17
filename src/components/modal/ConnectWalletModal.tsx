@@ -2,30 +2,22 @@ import closeIcon from "../../assets/close.svg";
 import nearLogo from "../../assets/near.svg";
 import ethLogo from "../../assets/eth.svg";
 import solanaLogo from "../../assets/solana.svg";
-import { connectWalletModalAtom } from "./connectWalletModalAtom";
-import { onboardingModalAtom } from "./onboardingModalAtom";
-import { useAtom, useSetAtom } from "jotai";
 import Modal from "react-modal";
 import Motion from "../utils/Motion";
 import { memo } from "react";
+import { walletStore } from "../../stores/wallet_store";
 
 const ConnectWalletModal = () => {
-
-  const setOnboardingModal = useSetAtom(onboardingModalAtom);
-  const [connectWalletModal, setConnectWalletModal] = useAtom(
-    connectWalletModalAtom
-  );
+  const isConnectWalletModalOpen =
+    walletStore.selectors.useIsConnectWalletModalOpen();
 
   const handleClose = () => {
-    setConnectWalletModal({
-      open: false,
-    });
+    walletStore.store.trigger.closeConnectWalletModal();
   };
-
 
   return (
     <Modal
-      isOpen={connectWalletModal.open}
+      isOpen={isConnectWalletModalOpen}
       onRequestClose={handleClose}
       shouldCloseOnOverlayClick
       closeTimeoutMS={300}
@@ -51,8 +43,14 @@ const ConnectWalletModal = () => {
           Please select network and wallet to connect.
         </p>
         <ul className="mb-8">
-          <Motion direction="left"duration={0.4} delay={0.1}>
-            <li className="connect-wallet-list-items" onClick={()=>{setConnectWalletModal({open:false});  setOnboardingModal({open: true});}}>
+          <Motion direction="left" duration={0.4} delay={0.1}>
+            <li
+              className="connect-wallet-list-items"
+              onClick={() => {
+                walletStore.store.trigger.closeConnectWalletModal()
+                walletStore.store.trigger.openOnboardModal()
+              }}
+            >
               <div className="list-logo near-logo">
                 <img src={nearLogo} />{" "}
               </div>
@@ -60,7 +58,13 @@ const ConnectWalletModal = () => {
             </li>
           </Motion>
           <Motion direction="left" duration={0.4} delay={0.3}>
-            <li className="connect-wallet-list-items"  onClick={()=>{setConnectWalletModal({open:false});  setOnboardingModal({open: true});}}>
+            <li
+              className="connect-wallet-list-items"
+              onClick={() => {
+                walletStore.store.trigger.closeConnectWalletModal()
+                walletStore.store.trigger.openOnboardModal()
+              }}
+            >
               <div className="list-logo eth-logo">
                 <img src={ethLogo} />{" "}
               </div>
@@ -68,7 +72,13 @@ const ConnectWalletModal = () => {
             </li>
           </Motion>
           <Motion direction="left" duration={0.4} delay={0.5}>
-            <li className="connect-wallet-list-items"  onClick={()=>{setConnectWalletModal({open:false});  setOnboardingModal({open: true});}}>
+            <li
+              className="connect-wallet-list-items"
+              onClick={() => {
+                walletStore.store.trigger.closeConnectWalletModal()
+                walletStore.store.trigger.openOnboardModal()
+              }}
+            >
               <div className="list-logo solana-logo">
                 <img src={solanaLogo} />{" "}
               </div>
