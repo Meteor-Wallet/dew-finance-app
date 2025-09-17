@@ -6,8 +6,10 @@ import Modal from "react-modal";
 import Motion from "../utils/Motion";
 import { memo } from "react";
 import { walletStore } from "../../stores/wallet_store";
+import { useWalletSelector } from "../../walletSelector";
 
 const ConnectWalletModal = () => {
+  const { signIn } = useWalletSelector();
   const isConnectWalletModalOpen =
     walletStore.selectors.useIsConnectWalletModalOpen();
 
@@ -47,8 +49,8 @@ const ConnectWalletModal = () => {
             <li
               className="connect-wallet-list-items"
               onClick={() => {
-                walletStore.store.trigger.closeConnectWalletModal()
-                walletStore.store.trigger.openOnboardModal()
+                walletStore.store.trigger.closeConnectWalletModal();
+                walletStore.store.trigger.openOnboardModal();
               }}
             >
               <div className="list-logo near-logo">
@@ -60,9 +62,10 @@ const ConnectWalletModal = () => {
           <Motion direction="left" duration={0.4} delay={0.3}>
             <li
               className="connect-wallet-list-items"
-              onClick={() => {
-                walletStore.store.trigger.closeConnectWalletModal()
-                walletStore.store.trigger.openOnboardModal()
+              onClick={async () => {
+                walletStore.store.trigger.closeConnectWalletModal();
+                await signIn("evm")
+                walletStore.store.trigger.openOnboardModal();
               }}
             >
               <div className="list-logo eth-logo">
@@ -75,8 +78,8 @@ const ConnectWalletModal = () => {
             <li
               className="connect-wallet-list-items"
               onClick={() => {
-                walletStore.store.trigger.closeConnectWalletModal()
-                walletStore.store.trigger.openOnboardModal()
+                walletStore.store.trigger.closeConnectWalletModal();
+                walletStore.store.trigger.openOnboardModal();
               }}
             >
               <div className="list-logo solana-logo">

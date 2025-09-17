@@ -1,5 +1,8 @@
 import closeIcon from "../../assets/close.svg";
 import nearLogo from "../../assets/near.svg";
+import ethLogo from "../../assets/eth.svg";
+import arbLogo from "../../assets/arb.png";
+import solanaLogo from "../../assets/solana.svg";
 import Modal from "react-modal";
 import { memo } from "react";
 import { walletStore } from "../../stores/wallet_store";
@@ -44,35 +47,41 @@ const NetworkModal = () => {
           <li
             className="connect-wallet-list-items"
             onClick={() => {
-              walletStore.store.trigger.closeSwitchNetworkModal();
+              walletStore.store.trigger.switchChain({
+                chain: "eth",
+              });
             }}
           >
             <div className="list-logo near-logo">
-              <img src={nearLogo} />{" "}
+              <img src={ethLogo} />{" "}
             </div>
-            NEAR
+            Ethereum
           </li>
           <li
             className="connect-wallet-list-items"
             onClick={() => {
-              walletStore.store.trigger.closeSwitchNetworkModal();
+              walletStore.store.trigger.switchChain({
+                chain: "arbitrum",
+              });
             }}
           >
             <div className="list-logo near-logo">
-              <img src={nearLogo} />{" "}
+              <img src={arbLogo} />{" "}
             </div>
-            NEAR
+            Arbitrum
           </li>
           <li
             className="connect-wallet-list-items"
             onClick={() => {
-              walletStore.store.trigger.closeSwitchNetworkModal();
+              walletStore.store.trigger.switchChain({
+                chain: "solana",
+              });
             }}
           >
             <div className="list-logo near-logo">
-              <img src={nearLogo} />{" "}
+              <img src={solanaLogo} />{" "}
             </div>
-            NEAR
+            Solana
           </li>
         </ul>
         <button
