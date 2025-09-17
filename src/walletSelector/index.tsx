@@ -10,8 +10,9 @@ export const useWalletSelector = () => {
       const selectedChain = walletStore.store.get().context.selectedChain;
       if (selectedChain === "arbitrum" || selectedChain === "eth") {
         return wagmiSelector.signMessage(message);
+      } else {
+        throw new Error("Unsupported selected chain");
       }
-      throw new Error("Unsupported selected chain");
     },
     [wagmiSelector]
   );
@@ -30,8 +31,9 @@ export const useWalletSelector = () => {
           amount: args.amount,
           intents_token_id: args.intents_token_id,
         });
+      } else {
+        throw new Error("Unsupported selected chain");
       }
-      throw new Error("Unsupported selected chain");
     },
     [wagmiSelector]
   );
@@ -40,8 +42,9 @@ export const useWalletSelector = () => {
     async (adapterType: "evm" | "sol") => {
       if (adapterType === "evm") {
         await wagmiSelector.signIn();
+      } else {
+        throw new Error("Adapter not found");
       }
-      throw new Error("Adapter not found");
     },
     [wagmiSelector]
   );
@@ -50,11 +53,11 @@ export const useWalletSelector = () => {
     const selectedChain = walletStore.store.get().context.selectedChain;
     if (selectedChain === "arbitrum" || selectedChain === "eth") {
       await wagmiSelector.signOut();
+    } else {
+      throw new Error("Adapter not found");
     }
 
     walletStore.store.trigger.disconnectSelectedChainWallet();
-
-    throw new Error("Adapter not found");
   }, [wagmiSelector]);
 
   const getBalance = useCallback(
@@ -66,8 +69,9 @@ export const useWalletSelector = () => {
           intents_token_id: args.intents_token_id,
           chain_name: selectedChain,
         });
+      } else {
+        throw new Error("Adapter not found");
       }
-      throw new Error("Adapter not found");
     },
     [wagmiSelector]
   );
