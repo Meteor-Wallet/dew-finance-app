@@ -55,7 +55,11 @@ const zVaultConfig = z.object({
   exchange_rate_decimals: z.number(),
 });
 
-const getVaultConfigQueryOptions = ({ vaultContractId }: { vaultContractId: string }) => {
+const getVaultConfigQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
   return queryOptions({
     queryKey: ["vault", "vaultConfigs", vaultContractId],
     queryFn: async () => {
@@ -103,7 +107,11 @@ const getCheckIsStorageDepositedQueryOptions = ({
   nearAddress: string;
 }) => {
   return queryOptions({
-    queryKey: ["vault", "vaultFtMetadata", vaultContractId],
+    queryKey: [
+      "vault",
+      "vaultIsStorageDeposited",
+      { vaultContractId, nearAddress },
+    ],
     queryFn: async () => {
       const storageBalanceOf = (await nearUtils.provider.callFunction(
         vaultContractId,
@@ -122,10 +130,34 @@ const getCheckIsStorageDepositedQueryOptions = ({
   });
 };
 
+const getMyPositionQueryOptions = ({
+  vaultContractId,
+  nearAddress,
+}: {
+  vaultContractId: string;
+  nearAddress: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "myPosition", { vaultContractId, nearAddress }],
+    queryFn: async () => {
+      const ftBalanceOf = (await nearUtils.provider.callFunction(
+        vaultContractId,
+        "ft_balance_of",
+        {
+          account_id: nearAddress,
+        }
+      )) as string;
+
+      return ftBalanceOf;
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
   getVaultConfigQueryOptions,
   getVaultShareMetadataQueryOptions,
   getCheckIsStorageDepositedQueryOptions,
+  getMyPositionQueryOptions,
 };
