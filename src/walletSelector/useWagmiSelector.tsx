@@ -15,6 +15,7 @@ import { walletStore, type EvmChainName } from "../stores/wallet_store";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { FLAT_LIST_TOKENS } from "../intents/constants/tokens";
 import type { SupportedChainName } from "../intents/types/base";
+import type { TAsset } from "../queries/vault";
 
 const CHAIN_NAME_TO_CHAIN: {
   [network in SupportedChainName]?: Chain;
@@ -180,11 +181,11 @@ export const useWagmiSelector = () => {
 
   const getBalance = useCallback(
     async ({
-      intents_token_id,
+      asset,
       address,
       chain_name,
     }: {
-      intents_token_id: string;
+      asset: TAsset;
       address: string;
       chain_name: EvmChainName;
     }): Promise<{
@@ -192,6 +193,12 @@ export const useWagmiSelector = () => {
       value: bigint;
       formatted: string;
     }> => {
+      if ("FungibleToken" in asset) {
+        throw new Error("FungibleToken is not supported in EVM");
+      }
+
+      const intents_token_id = asset.MultiToken.token_id;
+
       const token_info = FLAT_LIST_TOKENS.find(
         (e) =>
           e.defuseAssetId === intents_token_id && e.chainName === chain_name

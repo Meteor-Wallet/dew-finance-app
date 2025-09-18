@@ -1483,6 +1483,7 @@ export const FLAT_LIST_TOKENS = LIST_TOKENS.flatMap((token) =>
 ).map((token) => ({
   ...token,
   symbol: `${token.symbol} (${token.chainName})`,
+  symbolWithoutChain: token.symbol,
 }));
 
 export const DEPRECATED_TOKENS: Record<string, boolean> = {

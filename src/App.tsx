@@ -7,7 +7,7 @@ import {
 
 import Homepage from "./pages/Homepage";
 import Policy from "./pages/Policy";
-import Vaults from "./pages/Vaults";
+import Vaults from "./pages/Vaults/index";
 import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
 import NetworkModal from "./components/modal/NetworkModal";

@@ -1,6 +1,7 @@
 import { useWagmiSelector } from "./useWagmiSelector";
 import { useCallback } from "react";
 import { walletStore } from "../stores/wallet_store";
+import type { TAsset } from "../queries/vault";
 
 export const useWalletSelector = () => {
   const wagmiSelector = useWagmiSelector();
@@ -61,12 +62,12 @@ export const useWalletSelector = () => {
   }, [wagmiSelector]);
 
   const getBalance = useCallback(
-    async (args: { intents_token_id: string; address: string }) => {
+    async (args: { asset: TAsset; address: string }) => {
       const selectedChain = walletStore.store.get().context.selectedChain;
       if (selectedChain === "arbitrum" || selectedChain === "eth") {
         return wagmiSelector.getBalance({
           address: args.address,
-          intents_token_id: args.intents_token_id,
+          asset: args.asset,
           chain_name: selectedChain,
         });
       } else {
