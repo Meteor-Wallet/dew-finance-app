@@ -191,7 +191,7 @@ export default function LeftPanel() {
   // 1 share = X asset
   const exchangeRateForSelectedToken = useMemo(() => {
     if (vaultConfigQuery.data && exchangeRatesQuery.data) {
-      const selectedExchangeRate = exchangeRatesQuery.data?.find((e) => {
+      const selectedExchangeRateRaw = exchangeRatesQuery.data?.find((e) => {
         const [asset] = e;
         if (_.isEqual(asset, selectedAsset)) {
           return true;
@@ -200,10 +200,16 @@ export default function LeftPanel() {
 
       const rateDecimals = vaultConfigQuery.data.exchange_rate_decimals;
 
-      if (selectedExchangeRate) {
-        return Big(1)
-          .div(Big(selectedExchangeRate[1]).div(Big(10).pow(rateDecimals)))
-          .toFixed();
+      if (selectedExchangeRateRaw) {
+        const shareToAsset = Big(selectedExchangeRateRaw[1]).div(
+          Big(10).pow(rateDecimals)
+        );
+        const assetToShare = Big(1).div(shareToAsset);
+
+        return {
+          assetToShare: assetToShare.toString(),
+          shareToAsset: shareToAsset.toString(),
+        };
       }
     }
   }, [exchangeRatesQuery.data, selectedAsset, vaultConfigQuery.data]);
@@ -346,7 +352,7 @@ export default function LeftPanel() {
                         />
                         <ArrowLeftRight className="text-gray" size={12} />
                         <span>
-                          {exchangeRateForSelectedToken}{" "}
+                          {exchangeRateForSelectedToken?.assetToShare}{" "}
                           {vaultShareMetadataQuery.data?.symbol}
                         </span>{" "}
                         <img
@@ -384,7 +390,8 @@ export default function LeftPanel() {
                               intentsDepositAddress:
                                 intentsAddressQuery.data.address,
                               amount: storeContext.amount,
-                              exchangeRate: exchangeRateForSelectedToken,
+                              exchangeRate:
+                                exchangeRateForSelectedToken.assetToShare,
                               sharesDecimals:
                                 vaultShareMetadataQuery.data?.decimals,
                               vaultContractId: vaultContractId,
