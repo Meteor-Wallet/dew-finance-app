@@ -95,9 +95,37 @@ const getVaultShareMetadata = ({
   });
 };
 
+const getCheckIsStorageDepositedQueryOptions = ({
+  vaultContractId,
+  nearAddress,
+}: {
+  vaultContractId: string;
+  nearAddress: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "vaultFtMetadata", vaultContractId],
+    queryFn: async () => {
+      const storageBalanceOf = (await nearUtils.provider.callFunction(
+        vaultContractId,
+        "storage_balance_of",
+        {
+          account_id: nearAddress,
+        }
+      )) as null | { total: string; available: string };
+
+      if (storageBalanceOf?.available && storageBalanceOf.total) {
+        return true;
+      }
+
+      return false;
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
   getVaultConfig,
-  getVaultShareMetadata
+  getVaultShareMetadata,
+  getCheckIsStorageDepositedQueryOptions,
 };
