@@ -133,6 +133,7 @@ const Token = ({ selectedAsset }: { selectedAsset: TAsset | null }) => {
 const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
   let assetSymbol = "";
   let assetIcon = "";
+  let assetDecimals: null | number = null;
 
   if (asset) {
     if ("MultiToken" in asset) {
@@ -143,6 +144,7 @@ const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
       if (tokenInfo) {
         assetSymbol = tokenInfo.symbolWithoutChain;
         assetIcon = tokenInfo.icon;
+        assetDecimals = tokenInfo.decimals;
       }
     }
   }
@@ -152,6 +154,7 @@ const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
   return {
     assetSymbol,
     assetIcon,
+    assetDecimals,
   };
 };
 
@@ -450,6 +453,16 @@ const WithdrawalTab = () => {
     enabled: vaultContractId !== null,
   });
 
+  const connectedWalletAddress =
+    walletStore.selectors.useConnectedWalletAddress();
+
+  const withdrawFromVaultMutation =
+    vaultMutations.useWithdrawFromVaultMutation();
+
+  const { assetDecimals } = useAssetSymbolAndIcon({
+    asset: selectedWithdrawAsset,
+  });
+
   const availableTokens = useMemo(() => {
     return (
       allAcceptedTokensQuery.data?.filter((e) => {
@@ -538,7 +551,37 @@ const WithdrawalTab = () => {
 
       {/* Buttons */}
       <div className="flex gap-3 pt-5">
-        <button className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative">
+        <button
+          onClick={() => {
+            if (!withdrawFromVaultMutation.isPending) {
+              if (
+                nearAddress &&
+                selectedWithdrawAsset &&
+                exchangeRateForAsset &&
+                vaultShareMetadataQuery.data &&
+                vaultContractId &&
+                connectedWalletAddress &&
+                assetDecimals !== null
+              ) {
+                const storeContext = vaultActionStore.store.get().context;
+                withdrawFromVaultMutation.mutate({
+                  nearAddress: nearAddress,
+                  asset: selectedWithdrawAsset,
+                  share: expectedShareToBeBurnt,
+                  exchangeRate: exchangeRateForAsset.shareToAsset,
+                  shareDecimals: vaultShareMetadataQuery.data?.decimals,
+                  vaultContractId: vaultContractId,
+                  slippagePercent: storeContext.withdrawSlippagePercent,
+                  chain: selectedChain,
+                  blockchainAddress: connectedWalletAddress.address,
+                  assetDecimals,
+                  withdrawToAddress: connectedWalletAddress.address,
+                });
+              }
+            }
+          }}
+          className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative"
+        >
           Confirm
         </button>
         <button

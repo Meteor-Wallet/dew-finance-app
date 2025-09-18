@@ -276,7 +276,7 @@ const useWithdrawFromVaultMutation = () => {
                 args: {
                   memo: `WITHDRAW_TO:${withdrawToAddress}`,
                   amount: balance,
-                  token_id: tokenId,
+                  token: tokenId,
                   receiver_id: tokenId,
                 },
                 gas: "30000000000000",
