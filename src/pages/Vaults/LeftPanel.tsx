@@ -1,7 +1,6 @@
 import Motion from "../../components/utils/Motion";
 import vaultIcon from "../../assets/vault-icon.png";
 import Near from "../../assets/near.png";
-import Btc from "../../assets/btc.png";
 import { vaultActionStore, type TMode } from "../../stores/vault_action_store";
 import { motion, AnimatePresence } from "framer-motion";
 import { accountQueries } from "../../queries/account";
@@ -11,8 +10,8 @@ import CountUp from "../../components/utils/CountUp";
 import { useSearchParams } from "react-router-dom";
 import { walletStore } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
-import { vaultQueries } from "../../queries/vault";
-import { memo, useEffect, useMemo } from "react";
+import { vaultQueries, type TAsset } from "../../queries/vault";
+import { useEffect, useMemo } from "react";
 import _ from "lodash";
 import { intentsQueries } from "../../queries/intents";
 import { vaultMutations } from "../../mutations/vault";
@@ -78,7 +77,7 @@ const DepositInput = () => {
       className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
       value={depositAmount}
       onChange={(e) =>
-        vaultActionStore.store.trigger.updateAmount({
+        vaultActionStore.store.trigger.updateDepositAmount({
           amount: e.target.value,
         })
       }
@@ -86,17 +85,31 @@ const DepositInput = () => {
   );
 };
 
-const DepositToken = () => {
-  const selectedDepositAsset =
-    vaultActionStore.selectors.useSelectedDepositAsset();
+const WithdrawInput = () => {
+  const depositAmount = vaultActionStore.selectors.useWithdrawAmount();
+  return (
+    <input
+      type="text"
+      placeholder="0.0"
+      className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
+      value={depositAmount}
+      onChange={(e) =>
+        vaultActionStore.store.trigger.updateWithdrawAmount({
+          amount: e.target.value,
+        })
+      }
+    />
+  );
+};
 
+const Token = ({ selectedAsset }: { selectedAsset: TAsset | null }) => {
   let assetSymbol = "";
   let assetIcon = "";
 
-  if (selectedDepositAsset) {
-    if ("MultiToken" in selectedDepositAsset) {
+  if (selectedAsset) {
+    if ("MultiToken" in selectedAsset) {
       const tokenInfo = FLAT_LIST_TOKENS.find(
-        (e) => e.defuseAssetId === selectedDepositAsset.MultiToken.token_id
+        (e) => e.defuseAssetId === selectedAsset.MultiToken.token_id
       );
 
       if (tokenInfo) {
@@ -116,6 +129,81 @@ const DepositToken = () => {
   );
 };
 
+// put as hook here as FungibleToken is very likely to use useQuery
+const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
+  let assetSymbol = "";
+  let assetIcon = "";
+
+  if (asset) {
+    if ("MultiToken" in asset) {
+      const tokenInfo = FLAT_LIST_TOKENS.find(
+        (e) => e.defuseAssetId === asset.MultiToken.token_id
+      );
+
+      if (tokenInfo) {
+        assetSymbol = tokenInfo.symbolWithoutChain;
+        assetIcon = tokenInfo.icon;
+      }
+    }
+  }
+
+  // TODO: Handle for FungibleToken
+
+  return {
+    assetSymbol,
+    assetIcon,
+  };
+};
+
+const useExchangeRateForAsset = ({
+  asset,
+  vaultContractId,
+}: {
+  asset: TAsset | null;
+  vaultContractId: string | null;
+}) => {
+  const exchangeRatesQuery = useQuery({
+    ...vaultQueries.getAllExchangeRatesQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const vaultConfigQuery = useQuery({
+    ...vaultQueries.getVaultConfigQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const exchangeRateForAsset = useMemo(() => {
+    if (vaultConfigQuery.data && exchangeRatesQuery.data) {
+      const selectedExchangeRateRaw = exchangeRatesQuery.data?.find((e) => {
+        const [assetInExchangeRate] = e;
+        if (_.isEqual(assetInExchangeRate, asset)) {
+          return true;
+        }
+      });
+
+      const rateDecimals = vaultConfigQuery.data.exchange_rate_decimals;
+
+      if (selectedExchangeRateRaw) {
+        const shareToAsset = Big(selectedExchangeRateRaw[1]).div(
+          Big(10).pow(rateDecimals)
+        );
+        const assetToShare = Big(1).div(shareToAsset);
+
+        return {
+          assetToShare: assetToShare.toString(),
+          shareToAsset: shareToAsset.toString(),
+        };
+      }
+    }
+  }, [exchangeRatesQuery.data, asset, vaultConfigQuery.data]);
+
+  return exchangeRateForAsset;
+};
+
 const DepositTab = () => {
   const [searchParams] = useSearchParams({
     vaultContractId: "stable-test-1.dew-finance.near",
@@ -125,7 +213,8 @@ const DepositTab = () => {
   const selectedChain = walletStore.selectors.useSelectedChain();
   const nearAddress = walletStore.selectors.useCurrentNearAccountId();
 
-  const slippagePercent = vaultActionStore.selectors.useSlippagePercent();
+  const slippagePercent =
+    vaultActionStore.selectors.useDepositSlippagePercent();
 
   const allAcceptedTokensQuery = useQuery({
     ...vaultQueries.getAllAcceptedTokensQueryOptions({
@@ -149,22 +238,8 @@ const DepositTab = () => {
     enabled: nearAddress !== null,
   });
 
-  const exchangeRatesQuery = useQuery({
-    ...vaultQueries.getAllExchangeRatesQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-
   const vaultShareMetadataQuery = useQuery({
     ...vaultQueries.getVaultShareMetadataQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-
-  const vaultConfigQuery = useQuery({
-    ...vaultQueries.getVaultConfigQueryOptions({
       vaultContractId: vaultContractId!,
     }),
     enabled: vaultContractId !== null,
@@ -175,46 +250,14 @@ const DepositTab = () => {
   const connectedWalletAddress =
     walletStore.selectors.useConnectedWalletAddress();
 
-  let assetSymbol = "";
-  let assetIcon = "";
+  const { assetIcon, assetSymbol } = useAssetSymbolAndIcon({
+    asset: selectedDepositAsset,
+  });
 
-  if (selectedDepositAsset) {
-    if ("MultiToken" in selectedDepositAsset) {
-      const tokenInfo = FLAT_LIST_TOKENS.find(
-        (e) => e.defuseAssetId === selectedDepositAsset.MultiToken.token_id
-      );
-
-      if (tokenInfo) {
-        assetSymbol = tokenInfo.symbolWithoutChain;
-        assetIcon = tokenInfo.icon;
-      }
-    }
-  }
-
-  const exchangeRateForSelectedToken = useMemo(() => {
-    if (vaultConfigQuery.data && exchangeRatesQuery.data) {
-      const selectedExchangeRateRaw = exchangeRatesQuery.data?.find((e) => {
-        const [asset] = e;
-        if (_.isEqual(asset, selectedDepositAsset)) {
-          return true;
-        }
-      });
-
-      const rateDecimals = vaultConfigQuery.data.exchange_rate_decimals;
-
-      if (selectedExchangeRateRaw) {
-        const shareToAsset = Big(selectedExchangeRateRaw[1]).div(
-          Big(10).pow(rateDecimals)
-        );
-        const assetToShare = Big(1).div(shareToAsset);
-
-        return {
-          assetToShare: assetToShare.toString(),
-          shareToAsset: shareToAsset.toString(),
-        };
-      }
-    }
-  }, [exchangeRatesQuery.data, selectedDepositAsset, vaultConfigQuery.data]);
+  const exchangeRateForSelectedAsset = useExchangeRateForAsset({
+    asset: selectedDepositAsset,
+    vaultContractId,
+  });
 
   const availableTokens = useMemo(() => {
     return (
@@ -234,7 +277,7 @@ const DepositTab = () => {
   }, [allAcceptedTokensQuery.data, selectedChain]);
 
   useEffect(() => {
-    vaultActionStore.store.trigger.setInitialSelectedToken({
+    vaultActionStore.store.trigger.setInitialSelectedDepositAsset({
       assets: availableTokens,
     });
   }, [availableTokens]);
@@ -257,11 +300,12 @@ const DepositTab = () => {
       </div>
       <div className="relative  md:max-w-md mt-1">
         <DepositInput />
-        <DepositToken />
+        <Token selectedAsset={selectedDepositAsset} />
+
         <div
           onClick={() => {
             if (balance.data) {
-              vaultActionStore.store.trigger.updateAmount({
+              vaultActionStore.store.trigger.updateDepositAmount({
                 amount: balance.data.formatted,
               });
             }
@@ -282,7 +326,7 @@ const DepositTab = () => {
             <img src={assetIcon} alt={assetSymbol} className="w-4 h-4" />
             <ArrowLeftRight className="text-gray" size={12} />
             <span>
-              {exchangeRateForSelectedToken?.assetToShare}{" "}
+              {exchangeRateForSelectedAsset?.assetToShare}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
             <img
@@ -307,7 +351,7 @@ const DepositTab = () => {
                 intentsAddressQuery.data &&
                 nearAddress &&
                 selectedDepositAsset &&
-                exchangeRateForSelectedToken &&
+                exchangeRateForSelectedAsset &&
                 vaultShareMetadataQuery.data &&
                 vaultContractId &&
                 connectedWalletAddress
@@ -318,10 +362,10 @@ const DepositTab = () => {
                   asset: selectedDepositAsset,
                   intentsDepositAddress: intentsAddressQuery.data.address,
                   amount: storeContext.depositAmount,
-                  exchangeRate: exchangeRateForSelectedToken.assetToShare,
+                  exchangeRate: exchangeRateForSelectedAsset.assetToShare,
                   sharesDecimals: vaultShareMetadataQuery.data?.decimals,
                   vaultContractId: vaultContractId,
-                  slippagePercent: storeContext.slippagePercent,
+                  slippagePercent: storeContext.depositSlippagePercent,
                   chain: selectedChain,
                   blockchainAddress: connectedWalletAddress.address,
                 });
@@ -346,6 +390,99 @@ const DepositTab = () => {
 };
 
 const WithdrawalTab = () => {
+  const [searchParams] = useSearchParams({
+    vaultContractId: "stable-test-1.dew-finance.near",
+  });
+
+  const selectedChain = walletStore.selectors.useSelectedChain();
+
+  const nearAddress = walletStore.selectors.useCurrentNearAccountId();
+
+  const vaultContractId = searchParams.get("vaultContractId");
+
+  const myPositionQuery = useQuery({
+    ...vaultQueries.getMyPositionQueryOptions({
+      vaultContractId: vaultContractId!,
+      nearAddress: nearAddress!,
+    }),
+    enabled: nearAddress !== null && vaultContractId !== null,
+  });
+
+  const vaultShareMetadataQuery = useQuery({
+    ...vaultQueries.getVaultShareMetadataQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const selectedWithdrawAsset =
+    vaultActionStore.selectors.selectedWithdrawAsset();
+
+  const slippagePercent =
+    vaultActionStore.selectors.useWithdrawSlippagePercent();
+
+  const myPosition = useMemo(() => {
+    if (vaultShareMetadataQuery.data && myPositionQuery.data) {
+      return Big(myPositionQuery.data)
+        .div(Big(10).pow(vaultShareMetadataQuery.data.decimals))
+        .toFixed();
+    }
+
+    return "0";
+  }, [vaultShareMetadataQuery.data, myPositionQuery.data]);
+
+  const exchangeRateForAsset = useExchangeRateForAsset({
+    vaultContractId,
+    asset: selectedWithdrawAsset,
+  });
+
+  const balanceInAsset = useMemo(() => {
+    if (exchangeRateForAsset) {
+      return Big(myPosition).mul(exchangeRateForAsset.shareToAsset).toFixed();
+    }
+    return "0";
+  }, [exchangeRateForAsset, myPosition]);
+
+  const allAcceptedTokensQuery = useQuery({
+    ...vaultQueries.getAllAcceptedTokensQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const availableTokens = useMemo(() => {
+    return (
+      allAcceptedTokensQuery.data?.filter((e) => {
+        // TODO: handle for FungibleToken
+        if ("MultiToken" in e) {
+          const tokenInfo = FLAT_LIST_TOKENS.find(
+            (token) => token.defuseAssetId === e.MultiToken.token_id
+          );
+          if (tokenInfo?.chainName === selectedChain) {
+            return true;
+          }
+        }
+        return false;
+      }) || []
+    );
+  }, [allAcceptedTokensQuery.data, selectedChain]);
+
+  useEffect(() => {
+    vaultActionStore.store.trigger.setInitialSelectedWithdrawAsset({
+      assets: availableTokens,
+    });
+  }, [availableTokens]);
+
+  const withdrawAmount = vaultActionStore.selectors.useWithdrawAmount();
+  const expectedShareToBeBurnt = useMemo(() => {
+    if (exchangeRateForAsset) {
+      return Big(withdrawAmount || "0")
+        .mul(Big(exchangeRateForAsset.assetToShare))
+        .toFixed();
+    }
+    return "0";
+  }, [withdrawAmount, exchangeRateForAsset]);
+
   return (
     <motion.div
       key="withdraw"
@@ -358,19 +495,21 @@ const WithdrawalTab = () => {
       {/* Amount Input */}
       <div className="flex  justify-between items-center mt-5  mb-1.5">
         <p className="text-sm font-base text-white">Amount </p>
-        <p className="text-sm font-base text-gray">Available: 10.329</p>
+        <p className="text-sm font-base text-gray">
+          Available: {balanceInAsset}
+        </p>
       </div>
       <div className="relative  md:max-w-md mt-1">
-        <input
-          type="text"
-          placeholder="0.0"
-          className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
-        />
-        <div className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none pointer-events-none rounded-l-sm min-w-[95px]">
-          <img src={Near} alt={"NEAR"} className="w-6 h-6" />
-          <span className="text-sm text-white font-semibold">NEAR</span>
-        </div>
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50">
+        <WithdrawInput />
+        <Token selectedAsset={selectedWithdrawAsset} />
+        <div
+          onClick={() => {
+            vaultActionStore.store.trigger.updateWithdrawAmount({
+              amount: balanceInAsset,
+            });
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50"
+        >
           Max
         </div>
       </div>
@@ -381,13 +520,19 @@ const WithdrawalTab = () => {
         <div className="flex justify-between text-sm">
           <span className="text-gray">Share</span>
           <div className="flex gap-1.5 items-center justify-center">
-            <span>0.0001</span>{" "}
-            <img src={Near} alt={"NEAR"} className="w-4 h-4" />
+            <span>
+              {expectedShareToBeBurnt} {vaultShareMetadataQuery.data?.symbol}
+            </span>{" "}
+            <img
+              src={vaultShareMetadataQuery.data?.icon || undefined}
+              alt={vaultShareMetadataQuery.data?.symbol}
+              className="w-4 h-4"
+            />
           </div>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-gray">Slippage Tolerance</span>
-          <span>1%</span>
+          <span>{slippagePercent}%</span>
         </div>
       </div>
 

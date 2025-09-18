@@ -11,13 +11,19 @@ const store = createStore({
     mode: "deposit",
     selectedDepositAsset: null,
     depositAmount: "",
-    slippagePercent: "1",
+    depositSlippagePercent: "1",
+    withdrawSlippagePercent: "1",
+    selectedWithdrawAsset: null,
+    withdrawAmount: "",
   } as {
     isSimulateModalOpen: boolean;
     mode: TMode;
     selectedDepositAsset: TAsset | null;
     depositAmount: string;
-    slippagePercent: string;
+    depositSlippagePercent: string;
+    withdrawSlippagePercent: string;
+    withdrawAmount: string;
+    selectedWithdrawAsset: TAsset | null;
   },
   on: {
     openSimulateModal: (context) =>
@@ -28,7 +34,7 @@ const store = createStore({
       produce(context, (draft) => {
         draft.isSimulateModalOpen = false;
       }),
-    setInitialSelectedToken: (
+    setInitialSelectedDepositAsset: (
       context,
       event: {
         assets: TAsset[];
@@ -41,12 +47,29 @@ const store = createStore({
           draft.selectedDepositAsset = null;
         }
       }),
+    setInitialSelectedWithdrawAsset: (
+      context,
+      event: {
+        assets: TAsset[];
+      }
+    ) =>
+      produce(context, (draft) => {
+        if (event.assets.length > 0) {
+          draft.selectedWithdrawAsset = event.assets[0];
+        } else {
+          draft.selectedWithdrawAsset = null;
+        }
+      }),
     changeMode: (context, event: { mode: TMode }) =>
       produce(context, (draft) => {
         draft.mode = event.mode;
-        draft.depositAmount = "";
+        if (event.mode === "deposit") {
+          draft.depositAmount = "";
+        } else {
+          draft.withdrawAmount = "";
+        }
       }),
-    updateAmount: (context, event: { amount: string }) =>
+    updateDepositAmount: (context, event: { amount: string }) =>
       produce(context, (draft) => {
         try {
           const number = Number(event.amount);
@@ -54,6 +77,18 @@ const store = createStore({
             throw new Error("Input is not a number");
           }
           draft.depositAmount = event.amount;
+        } catch (err) {
+          // ignore if fail
+        }
+      }),
+    updateWithdrawAmount: (context, event: { amount: string }) =>
+      produce(context, (draft) => {
+        try {
+          const number = Number(event.amount);
+          if (isNaN(number)) {
+            throw new Error("Input is not a number");
+          }
+          draft.withdrawAmount = event.amount;
         } catch (err) {
           // ignore if fail
         }
@@ -73,12 +108,24 @@ const useSelectedDepositAsset = () => {
   return useSelector(store, ({ context }) => context.selectedDepositAsset);
 };
 
+const selectedWithdrawAsset = () => {
+  return useSelector(store, ({ context }) => context.selectedWithdrawAsset);
+};
+
 const useDepositAmount = () => {
   return useSelector(store, ({ context }) => context.depositAmount);
 };
 
-const useSlippagePercent = () => {
-  return useSelector(store, ({ context }) => context.slippagePercent);
+const useWithdrawAmount = () => {
+  return useSelector(store, ({ context }) => context.withdrawAmount);
+};
+
+const useDepositSlippagePercent = () => {
+  return useSelector(store, ({ context }) => context.depositSlippagePercent);
+};
+
+const useWithdrawSlippagePercent = () => {
+  return useSelector(store, ({ context }) => context.withdrawSlippagePercent);
 };
 
 export const vaultActionStore = {
@@ -88,6 +135,9 @@ export const vaultActionStore = {
     useMode,
     useSelectedDepositAsset,
     useDepositAmount,
-    useSlippagePercent,
+    useDepositSlippagePercent,
+    selectedWithdrawAsset,
+    useWithdrawSlippagePercent,
+    useWithdrawAmount
   },
 };

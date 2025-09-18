@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useWalletSelector } from "../walletSelector";
 import { vaultQueries, type TAsset } from "../queries/vault";
 import { FLAT_LIST_TOKENS } from "../intents/constants/tokens";
@@ -7,7 +7,7 @@ import { queryClient } from "../queryClient";
 import { intentsQueries } from "../queries/intents";
 import { asyncTimerUtils } from "../utils/asyncTimerUtils";
 import { dewAccountUtils } from "../utils/dewAccountUtils";
-import type { ChainName } from "../stores/wallet_store";
+import { walletStore, type ChainName } from "../stores/wallet_store";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
 
 const useDepositToVaultMutation = () => {
@@ -164,6 +164,156 @@ const useDepositToVaultMutation = () => {
   });
 };
 
+const useWithdrawFromVaultMutation = () => {
+  const { signMessage } = useWalletSelector();
+
+  return useMutation({
+    mutationFn: async ({
+      share,
+      asset,
+      assetDecimals,
+      exchangeRate,
+      shareDecimals,
+      slippagePercent,
+      withdrawToAddress,
+      nearAddress,
+      vaultContractId,
+      chain,
+      blockchainAddress,
+    }: {
+      withdrawToAddress: string;
+      asset: TAsset;
+      share: string;
+      slippagePercent: string;
+      exchangeRate: string;
+      assetDecimals: number;
+      shareDecimals: number;
+      vaultContractId: string;
+      nearAddress: string;
+      blockchainAddress: string;
+      chain: ChainName;
+    }) => {
+      // withdraw now
+      // user must've gone through deposit before
+      // so their account's storage for the vault should be deposited
+      // we skip the storage deposit check here
+
+      const expectedAssetAmount = Big(share)
+        .mul(exchangeRate)
+        .mul(Big(10).pow(assetDecimals));
+
+      const minimumAssetAmount = expectedAssetAmount.mul(
+        Big(1 - Number(slippagePercent) / 100)
+      );
+
+      console.log("Getting message to be signed via wallet - redeem");
+      const redeemTransaction = {
+        receiverId: vaultContractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: "redeem",
+              args: {
+                shares: Big(share)
+                  .mul(Big(10).pow(shareDecimals))
+                  .toFixed(0, Big.roundDown),
+                asset,
+                min_assets: minimumAssetAmount.toFixed(0, Big.roundDown),
+              },
+              gas: "30000000000000",
+              deposit: "1",
+            },
+          },
+        ],
+      };
+
+      const { message: redeemMessage, blockchainId } =
+        await dewAccountUtils.getMessageForSigningTransaction({
+          nearAddress,
+          transaction: redeemTransaction,
+          chain,
+          blockchainAddress,
+        });
+
+      console.log("Pending wallet sign - redeem");
+      const redeemSignature = await signMessage(redeemMessage);
+
+      console.log("Pending backend to call the transaction - redeem");
+      await DewAccountBackend.signTransaction({
+        receiverId: nearAddress,
+        args: {
+          blockchain_address: blockchainAddress,
+          blockchain_id: blockchainId,
+          signature: redeemSignature,
+          transaction: redeemTransaction,
+        },
+      });
+
+      if ("MultiToken" in asset) {
+        console.log("mt_tokens should be arrived in the abstract account now");
+        console.log("lets call another transaction to withdraw it");
+
+        console.log(
+          "Checking balance in intents, we will use this amount and withdrawing all of them"
+        );
+        const balance = await queryClient.fetchQuery(
+          intentsQueries.getBalanceInIntentsQueryOptions({
+            nearAddress: nearAddress,
+            intentsTokenId: asset.MultiToken.token_id,
+          })
+        );
+
+        console.log("Getting message to be signed via wallet - ft_withdraw");
+        const tokenId = asset.MultiToken.token_id.replace("nep141:", "");
+        const withdrawTransaction = {
+          receiverId: "intents.near",
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "ft_withdraw",
+                args: {
+                  memo: `WITHDRAW_TO:${withdrawToAddress}`,
+                  amount: balance,
+                  token_id: tokenId,
+                  receiver_id: tokenId,
+                },
+                gas: "30000000000000",
+                deposit: "1",
+              },
+            },
+          ],
+        };
+
+        const { message: withdrawMessage, blockchainId } =
+          await dewAccountUtils.getMessageForSigningTransaction({
+            nearAddress,
+            transaction: withdrawTransaction,
+            chain,
+            blockchainAddress,
+          });
+
+        console.log("Pending wallet sign - ft_withdraw");
+        const withdrawSignature = await signMessage(withdrawMessage);
+
+        console.log("Pending backend to call the transaction - ft_withdraw");
+        await DewAccountBackend.signTransaction({
+          receiverId: nearAddress,
+          args: {
+            blockchain_address: blockchainAddress,
+            blockchain_id: blockchainId,
+            signature: withdrawSignature,
+            transaction: withdrawTransaction,
+          },
+        });
+      }
+      console.log("ALL DONE");
+    },
+  });
+};
+
 export const vaultMutations = {
   useDepositToVaultMutation,
+  useWithdrawFromVaultMutation
 };
