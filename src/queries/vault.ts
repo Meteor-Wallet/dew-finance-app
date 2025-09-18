@@ -55,7 +55,7 @@ const zVaultConfig = z.object({
   exchange_rate_decimals: z.number(),
 });
 
-const getVaultConfig = ({ vaultContractId }: { vaultContractId: string }) => {
+const getVaultConfigQueryOptions = ({ vaultContractId }: { vaultContractId: string }) => {
   return queryOptions({
     queryKey: ["vault", "vaultConfigs", vaultContractId],
     queryFn: async () => {
@@ -76,7 +76,7 @@ const zFtMetadata = z.object({
   decimals: z.number(),
 });
 
-const getVaultShareMetadata = ({
+const getVaultShareMetadataQueryOptions = ({
   vaultContractId,
 }: {
   vaultContractId: string;
@@ -125,7 +125,7 @@ const getCheckIsStorageDepositedQueryOptions = ({
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
-  getVaultConfig,
-  getVaultShareMetadata,
+  getVaultConfigQueryOptions,
+  getVaultShareMetadataQueryOptions,
   getCheckIsStorageDepositedQueryOptions,
 };

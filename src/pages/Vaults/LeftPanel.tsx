@@ -105,7 +105,7 @@ export default function LeftPanel() {
   });
 
   const vaultShareMetadataQuery = useQuery({
-    ...vaultQueries.getVaultShareMetadata({
+    ...vaultQueries.getVaultShareMetadataQueryOptions({
       vaultContractId: vaultContractId!,
     }),
     enabled: vaultContractId !== null,
@@ -115,7 +115,7 @@ export default function LeftPanel() {
     walletStore.selectors.useConnectedWalletAddress();
 
   const vaultConfigQuery = useQuery({
-    ...vaultQueries.getVaultConfig({
+    ...vaultQueries.getVaultConfigQueryOptions({
       vaultContractId: vaultContractId!,
     }),
     enabled: vaultContractId !== null,
