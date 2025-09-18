@@ -69,7 +69,7 @@ const MyPosition = () => {
   );
 };
 
-const Input = () => {
+const DepositInput = () => {
   const depositAmount = vaultActionStore.selectors.useDepositAmount();
   return (
     <input
@@ -86,8 +86,9 @@ const Input = () => {
   );
 };
 
-const Token = () => {
-  const selectedDepositAsset = vaultActionStore.selectors.useSelectedDepositAsset();
+const DepositToken = () => {
+  const selectedDepositAsset =
+    vaultActionStore.selectors.useSelectedDepositAsset();
 
   let assetSymbol = "";
   let assetIcon = "";
@@ -115,7 +116,7 @@ const Token = () => {
   );
 };
 
-export default function LeftPanel() {
+const DepositTab = () => {
   const [searchParams] = useSearchParams({
     vaultContractId: "stable-test-1.dew-finance.near",
   });
@@ -132,9 +133,9 @@ export default function LeftPanel() {
     }),
     enabled: vaultContractId !== null,
   });
-  const actionMode = vaultActionStore.selectors.useMode();
 
-  const selectedDepositAsset = vaultActionStore.selectors.useSelectedDepositAsset();
+  const selectedDepositAsset =
+    vaultActionStore.selectors.useSelectedDepositAsset();
 
   const balance = accountQueries.useAccountBalance({
     asset: selectedDepositAsset,
@@ -162,15 +163,17 @@ export default function LeftPanel() {
     enabled: vaultContractId !== null,
   });
 
-  const connectedWalletAddress =
-    walletStore.selectors.useConnectedWalletAddress();
-
   const vaultConfigQuery = useQuery({
     ...vaultQueries.getVaultConfigQueryOptions({
       vaultContractId: vaultContractId!,
     }),
     enabled: vaultContractId !== null,
   });
+
+  const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
+
+  const connectedWalletAddress =
+    walletStore.selectors.useConnectedWalletAddress();
 
   let assetSymbol = "";
   let assetIcon = "";
@@ -188,7 +191,6 @@ export default function LeftPanel() {
     }
   }
 
-  // 1 share = X asset
   const exchangeRateForSelectedToken = useMemo(() => {
     if (vaultConfigQuery.data && exchangeRatesQuery.data) {
       const selectedExchangeRateRaw = exchangeRatesQuery.data?.find((e) => {
@@ -237,7 +239,178 @@ export default function LeftPanel() {
     });
   }, [availableTokens]);
 
-  const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
+  return (
+    <motion.div
+      key="deposit"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-6"
+    >
+      {/* Amount Input */}
+      <div className="flex  justify-between items-center mt-5  mb-1.5">
+        <p className="text-sm font-base text-white">Amount </p>
+        <p className="text-sm font-base text-gray">
+          Available: {balance.data?.formatted}
+        </p>
+      </div>
+      <div className="relative  md:max-w-md mt-1">
+        <DepositInput />
+        <DepositToken />
+        <div
+          onClick={() => {
+            if (balance.data) {
+              vaultActionStore.store.trigger.updateAmount({
+                amount: balance.data.formatted,
+              });
+            }
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50"
+        >
+          Max
+        </div>
+      </div>
+
+      {/* Transaction Overview */}
+      <p className="text-sm mb-2">Transaction Details </p>
+      <div className="bg-card-background rounded-sm p-4 px-5 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray">Share</span>
+          <div className="flex gap-1.5 items-center justify-center">
+            <span>1 {assetSymbol}</span>{" "}
+            <img src={assetIcon} alt={assetSymbol} className="w-4 h-4" />
+            <ArrowLeftRight className="text-gray" size={12} />
+            <span>
+              {exchangeRateForSelectedToken?.assetToShare}{" "}
+              {vaultShareMetadataQuery.data?.symbol}
+            </span>{" "}
+            <img
+              src={vaultShareMetadataQuery.data?.icon || undefined}
+              alt={vaultShareMetadataQuery.data?.symbol}
+              className="w-4 h-4"
+            />
+          </div>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray">Slippage Tolerance</span>
+          <span>{slippagePercent}%</span>
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex gap-3 pt-5">
+        <button
+          onClick={() => {
+            if (!depositToVaultMutation.isPending) {
+              if (
+                intentsAddressQuery.data &&
+                nearAddress &&
+                selectedDepositAsset &&
+                exchangeRateForSelectedToken &&
+                vaultShareMetadataQuery.data &&
+                vaultContractId &&
+                connectedWalletAddress
+              ) {
+                const storeContext = vaultActionStore.store.get().context;
+                depositToVaultMutation.mutate({
+                  nearAddress: nearAddress,
+                  asset: selectedDepositAsset,
+                  intentsDepositAddress: intentsAddressQuery.data.address,
+                  amount: storeContext.depositAmount,
+                  exchangeRate: exchangeRateForSelectedToken.assetToShare,
+                  sharesDecimals: vaultShareMetadataQuery.data?.decimals,
+                  vaultContractId: vaultContractId,
+                  slippagePercent: storeContext.slippagePercent,
+                  chain: selectedChain,
+                  blockchainAddress: connectedWalletAddress.address,
+                });
+              }
+            }
+          }}
+          className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative"
+        >
+          Confirm
+        </button>
+        <button
+          className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
+          onClick={() => {
+            vaultActionStore.store.trigger.openSimulateModal();
+          }}
+        >
+          Simulate
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+const WithdrawalTab = () => {
+  return (
+    <motion.div
+      key="withdraw"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-6"
+    >
+      {/* Amount Input */}
+      <div className="flex  justify-between items-center mt-5  mb-1.5">
+        <p className="text-sm font-base text-white">Amount </p>
+        <p className="text-sm font-base text-gray">Available: 10.329</p>
+      </div>
+      <div className="relative  md:max-w-md mt-1">
+        <input
+          type="text"
+          placeholder="0.0"
+          className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
+        />
+        <div className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none pointer-events-none rounded-l-sm min-w-[95px]">
+          <img src={Near} alt={"NEAR"} className="w-6 h-6" />
+          <span className="text-sm text-white font-semibold">NEAR</span>
+        </div>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50">
+          Max
+        </div>
+      </div>
+
+      {/* Transaction Overview */}
+      <p className="text-sm mb-2">Transaction Details </p>
+      <div className="bg-card-background rounded-sm p-4 px-5 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray">Share</span>
+          <div className="flex gap-1.5 items-center justify-center">
+            <span>0.0001</span>{" "}
+            <img src={Near} alt={"NEAR"} className="w-4 h-4" />
+          </div>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray">Slippage Tolerance</span>
+          <span>1%</span>
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex gap-3 pt-5">
+        <button className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative">
+          Confirm
+        </button>
+        <button
+          className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
+          onClick={() => {
+            vaultActionStore.store.trigger.openSimulateModal();
+          }}
+        >
+          Simulate
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+export default function LeftPanel() {
+  const actionMode = vaultActionStore.selectors.useMode();
 
   return (
     <div className="w-full h-full md:w-1/3 sticky top-5">
@@ -305,184 +478,9 @@ export default function LeftPanel() {
 
             {/* Animate between Deposit & Withdraw */}
             <AnimatePresence mode="wait">
-              {actionMode === "deposit" && (
-                <motion.div
-                  key="deposit"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6"
-                >
-                  {/* Amount Input */}
-                  <div className="flex  justify-between items-center mt-5  mb-1.5">
-                    <p className="text-sm font-base text-white">Amount </p>
-                    <p className="text-sm font-base text-gray">
-                      Available: {balance.data?.formatted}
-                    </p>
-                  </div>
-                  <div className="relative  md:max-w-md mt-1">
-                    <Input />
-                    <Token />
-                    <div
-                      onClick={() => {
-                        if (balance.data) {
-                          vaultActionStore.store.trigger.updateAmount({
-                            amount: balance.data.formatted,
-                          });
-                        }
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50"
-                    >
-                      Max
-                    </div>
-                  </div>
+              {actionMode === "deposit" && <DepositTab />}
 
-                  {/* Transaction Overview */}
-                  <p className="text-sm mb-2">Transaction Details </p>
-                  <div className="bg-card-background rounded-sm p-4 px-5 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray">Share</span>
-                      <div className="flex gap-1.5 items-center justify-center">
-                        <span>1 {assetSymbol}</span>{" "}
-                        <img
-                          src={assetIcon}
-                          alt={assetSymbol}
-                          className="w-4 h-4"
-                        />
-                        <ArrowLeftRight className="text-gray" size={12} />
-                        <span>
-                          {exchangeRateForSelectedToken?.assetToShare}{" "}
-                          {vaultShareMetadataQuery.data?.symbol}
-                        </span>{" "}
-                        <img
-                          src={vaultShareMetadataQuery.data?.icon || undefined}
-                          alt={vaultShareMetadataQuery.data?.symbol}
-                          className="w-4 h-4"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray">Slippage Tolerance</span>
-                      <span>{slippagePercent}%</span>
-                    </div>
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-3 pt-5">
-                    <button
-                      onClick={() => {
-                        if (!depositToVaultMutation.isPending) {
-                          if (
-                            intentsAddressQuery.data &&
-                            nearAddress &&
-                            selectedDepositAsset &&
-                            exchangeRateForSelectedToken &&
-                            vaultShareMetadataQuery.data &&
-                            vaultContractId &&
-                            connectedWalletAddress
-                          ) {
-                            const storeContext =
-                              vaultActionStore.store.get().context;
-                            depositToVaultMutation.mutate({
-                              nearAddress: nearAddress,
-                              asset: selectedDepositAsset,
-                              intentsDepositAddress:
-                                intentsAddressQuery.data.address,
-                              amount: storeContext.depositAmount,
-                              exchangeRate:
-                                exchangeRateForSelectedToken.assetToShare,
-                              sharesDecimals:
-                                vaultShareMetadataQuery.data?.decimals,
-                              vaultContractId: vaultContractId,
-                              slippagePercent: storeContext.slippagePercent,
-                              chain: selectedChain,
-                              blockchainAddress: connectedWalletAddress.address,
-                            });
-                          }
-                        }
-                      }}
-                      className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative"
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
-                      onClick={() => {
-                        vaultActionStore.store.trigger.openSimulateModal();
-                      }}
-                    >
-                      Simulate
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {actionMode === "withdraw" && (
-                <motion.div
-                  key="withdraw"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6"
-                >
-                  {/* Amount Input */}
-                  <div className="flex  justify-between items-center mt-5  mb-1.5">
-                    <p className="text-sm font-base text-white">Amount </p>
-                    <p className="text-sm font-base text-gray">
-                      Available: 10.329
-                    </p>
-                  </div>
-                  <div className="relative  md:max-w-md mt-1">
-                    <input
-                      type="text"
-                      placeholder="0.0"
-                      className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
-                    />
-                    <div className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none pointer-events-none rounded-l-sm min-w-[95px]">
-                      <img src={Near} alt={"NEAR"} className="w-6 h-6" />
-                      <span className="text-sm text-white font-semibold">
-                        NEAR
-                      </span>
-                    </div>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50">
-                      Max
-                    </div>
-                  </div>
-
-                  {/* Transaction Overview */}
-                  <p className="text-sm mb-2">Transaction Details </p>
-                  <div className="bg-card-background rounded-sm p-4 px-5 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray">Share</span>
-                      <div className="flex gap-1.5 items-center justify-center">
-                        <span>0.0001</span>{" "}
-                        <img src={Near} alt={"NEAR"} className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray">Slippage Tolerance</span>
-                      <span>1%</span>
-                    </div>
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-3 pt-5">
-                    <button className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative">
-                      Confirm
-                    </button>
-                    <button
-                      className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
-                      onClick={() => {
-                        vaultActionStore.store.trigger.openSimulateModal();
-                      }}
-                    >
-                      Simulate
-                    </button>
-                  </div>
-                </motion.div>
-              )}
+              {actionMode === "withdraw" && <WithdrawalTab />}
             </AnimatePresence>
           </div>
         </div>
