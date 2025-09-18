@@ -53,6 +53,8 @@ const getAllAcceptedTokensQueryOptions = ({
 
 const zVaultConfig = z.object({
   exchange_rate_decimals: z.number(),
+  management_fee_bps: z.number(),
+  performance_fee_bps: z.number(),
 });
 
 const getVaultConfigQueryOptions = ({
@@ -153,6 +155,110 @@ const getMyPositionQueryOptions = ({
   });
 };
 
+const getAccountsWithRoleQueryOptions = ({
+  vaultContractId,
+  roleName,
+}: {
+  vaultContractId: string;
+  roleName: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "accountsWithRole", { vaultContractId, roleName }],
+    queryFn: async () => {
+      const accountsWithRole = (await nearUtils.provider.callFunction(
+        vaultContractId,
+        "get_accounts_with_role",
+        {
+          role_name: roleName,
+        }
+      )) as string[];
+
+      return accountsWithRole;
+    },
+  });
+};
+
+const zAllAssetDepositFees = z.array(z.tuple([zAsset, z.number()]));
+const zProtocolAllAssetDepositCut = z.array(z.tuple([zAsset, z.number()]));
+const zAllAssetWithdrawalFees = z.array(z.tuple([zAsset, z.number()]));
+const zProtocolAllAssetWithdrawalCut = z.array(z.tuple([zAsset, z.number()]));
+
+const getAllAssetDepositFeesQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "allAssetDepositFees", { vaultContractId }],
+    queryFn: async () => {
+      const allAssetDepositFees = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "get_all_asset_deposit_fees",
+        {}
+      );
+
+      return zAllAssetDepositFees.parse(allAssetDepositFees);
+    },
+  });
+};
+
+const getProtocolAllAssetDepositCutQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "protocolAllAssetDepositCut", { vaultContractId }],
+    queryFn: async () => {
+      const allAssetDepositCut = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "protocol_get_all_asset_deposit_cut",
+        {}
+      );
+
+      return zProtocolAllAssetDepositCut.parse(allAssetDepositCut);
+    },
+  });
+};
+
+const getAllAssetWithdrawalFeesQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "allAssetWithdrawalFees", { vaultContractId }],
+    queryFn: async () => {
+      const allAssetWithdrawalFees = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "get_all_asset_withdrawal_fees",
+        {}
+      );
+
+      return zAllAssetWithdrawalFees.parse(allAssetWithdrawalFees);
+    },
+  });
+};
+
+const getProtocolAllAssetWithdrawalCutQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "protocolAllAssetWithdrawalCut", { vaultContractId }],
+    queryFn: async () => {
+      const allAssetWithdrawalCut = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "protocol_get_all_asset_withdrawal_cut",
+        {}
+      );
+
+      return zProtocolAllAssetWithdrawalCut.parse(allAssetWithdrawalCut);
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
@@ -160,4 +266,9 @@ export const vaultQueries = {
   getVaultShareMetadataQueryOptions,
   getCheckIsStorageDepositedQueryOptions,
   getMyPositionQueryOptions,
+  getAccountsWithRoleQueryOptions,
+  getAllAssetDepositFeesQueryOptions,
+  getProtocolAllAssetDepositCutQueryOptions,
+  getAllAssetWithdrawalFeesQueryOptions,
+  getProtocolAllAssetWithdrawalCutQueryOptions,
 };

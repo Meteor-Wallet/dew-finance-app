@@ -14,46 +14,108 @@ import AllocationDonut from "../../components/sample/AllocationDonut";
 import DewChart2 from "../../components/sample/DewChart2";
 import { ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import TransactionTable from "../../components/sample/TransactionTable";
+import { useQuery } from "@tanstack/react-query";
+import { vaultQueries } from "../../queries/vault";
 
-const roles = [
-  {
-    title: "Access Manager",
-    addresses: ["0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5"],
-  },
-  {
-    title: "Withdraw Manager",
-    addresses: ["0x12C34EfA4CBD9bE1A5447BC69f6a451C7F7EAa123"],
-  },
-  {
-    title: "Price Oracle",
-    addresses: ["0xAB28EFa4CBD9bE1A5447BC69f6a451C7F7EAa456"],
-  },
-  {
-    title: "Owner",
-    addresses: ["0x40e609De1B52511B0B1aCccDB0B565803b0605E3"],
-  },
-  {
-    title: "Atomist",
-    addresses: [
-      "0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5",
-      "0x40e609De1B52511B0B1aCccDB0B565803b0605E3",
-    ],
-  },
-  {
-    title: "Alpha",
-    addresses: ["0x9A28EFa4CBD9bE1A5447BC69f6a451C7F7EAa789"],
-  },
-];
+// const roles = [
+//   {
+//     title: "Access Manager",
+//     addresses: ["0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5"],
+//   },
+//   {
+//     title: "Withdraw Manager",
+//     addresses: ["0x12C34EfA4CBD9bE1A5447BC69f6a451C7F7EAa123"],
+//   },
+//   {
+//     title: "Price Oracle",
+//     addresses: ["0xAB28EFa4CBD9bE1A5447BC69f6a451C7F7EAa456"],
+//   },
+//   {
+//     title: "Owner",
+//     addresses: ["0x40e609De1B52511B0B1aCccDB0B565803b0605E3"],
+//   },
+//   {
+//     title: "Atomist",
+//     addresses: [
+//       "0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5",
+//       "0x40e609De1B52511B0B1aCccDB0B565803b0605E3",
+//     ],
+//   },
+//   {
+//     title: "Alpha",
+//     addresses: ["0x9A28EFa4CBD9bE1A5447BC69f6a451C7F7EAa789"],
+//   },
+// ];
 
 const RightPanel = memo(() => {
+  const [searchParams] = useSearchParams({
+    vaultContractId: "stable-test-1.dew-finance.near",
+  });
+
+  const vaultContractId = searchParams.get("vaultContractId");
+
   const [hoverAddress, setHoverAddress] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState("overview");
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [rightTab]);
+
+  const vaultConfigQuery = useQuery({
+    ...vaultQueries.getVaultConfigQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const accountsWithRoleQuery = useQuery({
+    ...vaultQueries.getAccountsWithRoleQueryOptions({
+      vaultContractId: vaultContractId!,
+      roleName: "owner"!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const managementFee = vaultConfigQuery.data?.management_fee_bps
+    ? `${vaultConfigQuery.data?.management_fee_bps / 10000}%`
+    : "-";
+  const performanceFee = vaultConfigQuery.data?.performance_fee_bps
+    ? `${vaultConfigQuery.data?.performance_fee_bps / 10000}%`
+    : "-";
+
+  const roles = [
+    {
+      title: "Owner",
+      addresses: accountsWithRoleQuery.data ?? [],
+    },
+  ];
+
+  const allAssetDepositFeesQuery = useQuery({
+    ...vaultQueries.getAllAssetDepositFeesQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+  const protocolAllAssetDepositCutQuery = useQuery({
+    ...vaultQueries.getProtocolAllAssetDepositCutQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+  const allAssetWithdrawalFeesQuery = useQuery({
+    ...vaultQueries.getAllAssetWithdrawalFeesQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+  const protocolAllAssetWithdrawalCutQuery = useQuery({
+    ...vaultQueries.getProtocolAllAssetWithdrawalCutQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
 
   return (
     <div className="w-full h-full md:w-2/3 ">
@@ -315,7 +377,9 @@ const RightPanel = memo(() => {
                       <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-5 py-7 rounded-md border border-dark-border-color flex justify-between">
                         <div>
                           <p className="text-sm text-gray">Management fee</p>
-                          <p className="text-2xl font-semibold">0.05%</p>
+                          <p className="text-2xl font-semibold">
+                            {managementFee}
+                          </p>
                         </div>
                         <img src={FeeIcon1} className="  h-[60px]" />
                       </div>
@@ -323,7 +387,9 @@ const RightPanel = memo(() => {
                       <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-4 py-7 rounded-md border border-dark-border-color flex justify-between">
                         <div>
                           <p className="text-sm text-gray">Performance fee</p>
-                          <p className="text-2xl font-semibold">1%</p>
+                          <p className="text-2xl font-semibold">
+                            {performanceFee}
+                          </p>
                         </div>
                         <img src={FeeIcon2} className="  h-[60px]" />
                       </div>
@@ -352,7 +418,10 @@ const RightPanel = memo(() => {
                     {/* Roles Content  */}
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-base text-white ">Roles</p>
-                      <p className="text-sm text-gray">Total 6 Roles</p>
+                      <p className="text-sm text-gray">
+                        Total {roles.length}{" "}
+                        {roles.length > 1 ? "Roles" : "Role"}
+                      </p>
                     </div>
                     <div className="space-y-2">
                       {roles.map((role, i) => {
@@ -512,4 +581,4 @@ const RightPanel = memo(() => {
   );
 });
 
-export default RightPanel
+export default RightPanel;
