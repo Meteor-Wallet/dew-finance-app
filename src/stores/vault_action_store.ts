@@ -9,14 +9,14 @@ const store = createStore({
   context: {
     isSimulateModalOpen: false,
     mode: "deposit",
-    selectedAsset: null,
-    amount: "",
+    selectedDepositAsset: null,
+    depositAmount: "",
     slippagePercent: "1",
   } as {
     isSimulateModalOpen: boolean;
     mode: TMode;
-    selectedAsset: TAsset | null;
-    amount: string;
+    selectedDepositAsset: TAsset | null;
+    depositAmount: string;
     slippagePercent: string;
   },
   on: {
@@ -36,15 +36,15 @@ const store = createStore({
     ) =>
       produce(context, (draft) => {
         if (event.assets.length > 0) {
-          draft.selectedAsset = event.assets[0];
+          draft.selectedDepositAsset = event.assets[0];
         } else {
-          draft.selectedAsset = null;
+          draft.selectedDepositAsset = null;
         }
       }),
     changeMode: (context, event: { mode: TMode }) =>
       produce(context, (draft) => {
         draft.mode = event.mode;
-        draft.amount = "";
+        draft.depositAmount = "";
       }),
     updateAmount: (context, event: { amount: string }) =>
       produce(context, (draft) => {
@@ -53,7 +53,7 @@ const store = createStore({
           if (isNaN(number)) {
             throw new Error("Input is not a number");
           }
-          draft.amount = event.amount;
+          draft.depositAmount = event.amount;
         } catch (err) {
           // ignore if fail
         }
@@ -69,12 +69,12 @@ const useMode = () => {
   return useSelector(store, ({ context }) => context.mode);
 };
 
-const useSelectedAsset = () => {
-  return useSelector(store, ({ context }) => context.selectedAsset);
+const useSelectedDepositAsset = () => {
+  return useSelector(store, ({ context }) => context.selectedDepositAsset);
 };
 
-const useAmount = () => {
-  return useSelector(store, ({ context }) => context.amount);
+const useDepositAmount = () => {
+  return useSelector(store, ({ context }) => context.depositAmount);
 };
 
 const useSlippagePercent = () => {
@@ -86,8 +86,8 @@ export const vaultActionStore = {
   selectors: {
     useIsSimulateModalOpen,
     useMode,
-    useSelectedAsset,
-    useAmount,
+    useSelectedDepositAsset,
+    useDepositAmount,
     useSlippagePercent,
   },
 };

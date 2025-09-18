@@ -70,13 +70,13 @@ const MyPosition = () => {
 };
 
 const Input = () => {
-  const amount = vaultActionStore.selectors.useAmount();
+  const depositAmount = vaultActionStore.selectors.useDepositAmount();
   return (
     <input
       type="text"
       placeholder="0.0"
       className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
-      value={amount}
+      value={depositAmount}
       onChange={(e) =>
         vaultActionStore.store.trigger.updateAmount({
           amount: e.target.value,
@@ -87,15 +87,15 @@ const Input = () => {
 };
 
 const Token = () => {
-  const selectedAsset = vaultActionStore.selectors.useSelectedAsset();
+  const selectedDepositAsset = vaultActionStore.selectors.useSelectedDepositAsset();
 
   let assetSymbol = "";
   let assetIcon = "";
 
-  if (selectedAsset) {
-    if ("MultiToken" in selectedAsset) {
+  if (selectedDepositAsset) {
+    if ("MultiToken" in selectedDepositAsset) {
       const tokenInfo = FLAT_LIST_TOKENS.find(
-        (e) => e.defuseAssetId === selectedAsset.MultiToken.token_id
+        (e) => e.defuseAssetId === selectedDepositAsset.MultiToken.token_id
       );
 
       if (tokenInfo) {
@@ -134,10 +134,10 @@ export default function LeftPanel() {
   });
   const actionMode = vaultActionStore.selectors.useMode();
 
-  const selectedAsset = vaultActionStore.selectors.useSelectedAsset();
+  const selectedDepositAsset = vaultActionStore.selectors.useSelectedDepositAsset();
 
   const balance = accountQueries.useAccountBalance({
-    asset: selectedAsset,
+    asset: selectedDepositAsset,
   });
 
   const intentsAddressQuery = useQuery({
@@ -175,10 +175,10 @@ export default function LeftPanel() {
   let assetSymbol = "";
   let assetIcon = "";
 
-  if (selectedAsset) {
-    if ("MultiToken" in selectedAsset) {
+  if (selectedDepositAsset) {
+    if ("MultiToken" in selectedDepositAsset) {
       const tokenInfo = FLAT_LIST_TOKENS.find(
-        (e) => e.defuseAssetId === selectedAsset.MultiToken.token_id
+        (e) => e.defuseAssetId === selectedDepositAsset.MultiToken.token_id
       );
 
       if (tokenInfo) {
@@ -193,7 +193,7 @@ export default function LeftPanel() {
     if (vaultConfigQuery.data && exchangeRatesQuery.data) {
       const selectedExchangeRateRaw = exchangeRatesQuery.data?.find((e) => {
         const [asset] = e;
-        if (_.isEqual(asset, selectedAsset)) {
+        if (_.isEqual(asset, selectedDepositAsset)) {
           return true;
         }
       });
@@ -212,7 +212,7 @@ export default function LeftPanel() {
         };
       }
     }
-  }, [exchangeRatesQuery.data, selectedAsset, vaultConfigQuery.data]);
+  }, [exchangeRatesQuery.data, selectedDepositAsset, vaultConfigQuery.data]);
 
   const availableTokens = useMemo(() => {
     return (
@@ -376,7 +376,7 @@ export default function LeftPanel() {
                           if (
                             intentsAddressQuery.data &&
                             nearAddress &&
-                            selectedAsset &&
+                            selectedDepositAsset &&
                             exchangeRateForSelectedToken &&
                             vaultShareMetadataQuery.data &&
                             vaultContractId &&
@@ -386,10 +386,10 @@ export default function LeftPanel() {
                               vaultActionStore.store.get().context;
                             depositToVaultMutation.mutate({
                               nearAddress: nearAddress,
-                              asset: selectedAsset,
+                              asset: selectedDepositAsset,
                               intentsDepositAddress:
                                 intentsAddressQuery.data.address,
-                              amount: storeContext.amount,
+                              amount: storeContext.depositAmount,
                               exchangeRate:
                                 exchangeRateForSelectedToken.assetToShare,
                               sharesDecimals:
