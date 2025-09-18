@@ -70,8 +70,34 @@ const getVaultConfig = ({ vaultContractId }: { vaultContractId: string }) => {
   });
 };
 
+const zFtMetadata = z.object({
+  symbol: z.string(),
+  icon: z.string().nullable(),
+  decimals: z.number(),
+});
+
+const getVaultShareMetadata = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "vaultFtMetadata", vaultContractId],
+    queryFn: async () => {
+      const ftMetadata = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "ft_metadata",
+        {}
+      );
+
+      return zFtMetadata.parse(ftMetadata);
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
   getVaultConfig,
+  getVaultShareMetadata
 };
