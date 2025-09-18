@@ -51,6 +51,27 @@ const getAllAcceptedTokensQueryOptions = ({
   });
 };
 
+const zVaultConfig = z.object({
+  exchange_rate_decimals: z.number(),
+});
+
+const getVaultConfig = ({ vaultContractId }: { vaultContractId: string }) => {
+  return queryOptions({
+    queryKey: ["vault", "vaultConfigs", vaultContractId],
+    queryFn: async () => {
+      const exchangeRates = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "get_vault_config",
+        {}
+      );
+
+      return zVaultConfig.parse(exchangeRates);
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
+  getAllExchangeRatesQueryOptions,
+  getVaultConfig,
 };
