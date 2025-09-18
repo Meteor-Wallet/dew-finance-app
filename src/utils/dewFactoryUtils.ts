@@ -3,6 +3,16 @@ import { nearUtils } from "./nearUtils";
 
 const FACTORY_CONTRACT_ID = "aa-dew.near";
 
+const getBlockchainIdFromChainName = (chain: ChainName) => {
+  switch (chain) {
+    case "arbitrum":
+    case "eth":
+      return "ethereum";
+    case "solana":
+      return "solana";
+  }
+};
+
 const getAccountDetailsFromAddressAndChain = async ({
   address,
   chain,
@@ -10,15 +20,7 @@ const getAccountDetailsFromAddressAndChain = async ({
   address: string;
   chain: ChainName;
 }) => {
-  const blockchainId = (() => {
-    switch (chain) {
-      case "arbitrum":
-      case "eth":
-        return "ethereum";
-      case "solana":
-        return "solana";
-    }
-  })();
+  const blockchainId = getBlockchainIdFromChainName(chain);
   const shortBlockchainId = blockchainId.slice(0, 3);
 
   const nearAddress = (await nearUtils.provider.callFunction(
@@ -72,4 +74,5 @@ const getMessageForCreateAccount = async ({
 export const dewFactoryUtils = {
   getAccountDetailsFromAddressAndChain,
   getMessageForCreateAccount,
+  getBlockchainIdFromChainName
 };

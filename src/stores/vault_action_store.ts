@@ -11,11 +11,13 @@ const store = createStore({
     mode: "deposit",
     selectedAsset: null,
     amount: "",
+    slippagePercent: "1",
   } as {
     isSimulateModalOpen: boolean;
     mode: TMode;
     selectedAsset: TAsset | null;
     amount: string;
+    slippagePercent: string;
   },
   on: {
     openSimulateModal: (context) =>
@@ -73,6 +75,10 @@ const useAmount = () => {
   return useSelector(store, ({ context }) => context.amount);
 };
 
+const useSlippagePercent = () => {
+  return useSelector(store, ({context}) => context.slippagePercent)
+}
+
 export const vaultActionStore = {
   store,
   selectors: {
@@ -80,5 +86,6 @@ export const vaultActionStore = {
     useMode,
     useSelectedAsset,
     useAmount,
+    useSlippagePercent
   },
 };

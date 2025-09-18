@@ -13,6 +13,10 @@ import { walletStore } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
 import { useEffect, useMemo } from "react";
+import _ from "lodash";
+import { intentsQueries } from "../../queries/intents";
+import { vaultMutations } from "../../mutations/vault";
+import Big from "big.js";
 
 const Input = () => {
   const amount = vaultActionStore.selectors.useAmount();
@@ -34,8 +38,8 @@ const Input = () => {
 const Token = () => {
   const selectedAsset = vaultActionStore.selectors.useSelectedAsset();
 
-  let tokenSymbol = "";
-  let tokenIcon = "";
+  let assetSymbol = "";
+  let assetIcon = "";
 
   if (selectedAsset) {
     if ("MultiToken" in selectedAsset) {
@@ -44,8 +48,8 @@ const Token = () => {
       );
 
       if (tokenInfo) {
-        tokenSymbol = tokenInfo.symbolWithoutChain;
-        tokenIcon = tokenInfo.icon;
+        assetSymbol = tokenInfo.symbolWithoutChain;
+        assetIcon = tokenInfo.icon;
       }
     }
   }
@@ -54,8 +58,8 @@ const Token = () => {
 
   return (
     <div className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none pointer-events-none rounded-l-sm min-w-[95px]">
-      <img src={tokenIcon} alt={"NEAR"} className="w-6 h-6" />
-      <span className="text-sm text-white font-semibold">{tokenSymbol}</span>
+      <img src={assetIcon} alt={"NEAR"} className="w-6 h-6" />
+      <span className="text-sm text-white font-semibold">{assetSymbol}</span>
     </div>
   );
 };
@@ -67,6 +71,9 @@ export default function LeftPanel() {
 
   const vaultContractId = searchParams.get("vaultContractId");
   const selectedChain = walletStore.selectors.useSelectedChain();
+  const nearAddress = walletStore.selectors.useCurrentNearAccountId();
+
+  const slippagePercent = vaultActionStore.selectors.useSlippagePercent();
 
   const allAcceptedTokensQuery = useQuery({
     ...vaultQueries.getAllAcceptedTokensQueryOptions({
@@ -82,7 +89,75 @@ export default function LeftPanel() {
     asset: selectedAsset,
   });
 
-   const availableTokens = useMemo(() => {
+  const intentsAddressQuery = useQuery({
+    ...intentsQueries.getIntentsAddressQueryOptions({
+      chain: selectedChain,
+      nearAddress: nearAddress!,
+    }),
+    enabled: nearAddress !== null,
+  });
+
+  const exchangeRatesQuery = useQuery({
+    ...vaultQueries.getAllExchangeRatesQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const vaultShareMetadataQuery = useQuery({
+    ...vaultQueries.getVaultShareMetadata({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const connectedWalletAddress =
+    walletStore.selectors.useConnectedWalletAddress();
+
+  const vaultConfigQuery = useQuery({
+    ...vaultQueries.getVaultConfig({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  let assetSymbol = "";
+  let assetIcon = "";
+
+  if (selectedAsset) {
+    if ("MultiToken" in selectedAsset) {
+      const tokenInfo = FLAT_LIST_TOKENS.find(
+        (e) => e.defuseAssetId === selectedAsset.MultiToken.token_id
+      );
+
+      if (tokenInfo) {
+        assetSymbol = tokenInfo.symbolWithoutChain;
+        assetIcon = tokenInfo.icon;
+      }
+    }
+  }
+
+  // 1 share = X asset
+  const exchangeRateForSelectedToken = useMemo(() => {
+    if (vaultConfigQuery.data && exchangeRatesQuery.data) {
+      const selectedExchangeRate = exchangeRatesQuery.data?.find((e) => {
+        const [asset] = e;
+        if (_.isEqual(asset, selectedAsset)) {
+          return true;
+        }
+      });
+
+      const rateDecimals = vaultConfigQuery.data.exchange_rate_decimals;
+
+      if (selectedExchangeRate) {
+        return Big(selectedExchangeRate[1])
+          .div(Big(10).pow(rateDecimals))
+          .toFixed();
+      }
+    }
+  }, [exchangeRatesQuery.data, selectedAsset, vaultConfigQuery.data]);
+
+  const availableTokens = useMemo(() => {
     return (
       allAcceptedTokensQuery.data?.filter((e) => {
         // TODO: handle for FungibleToken
@@ -104,6 +179,8 @@ export default function LeftPanel() {
       assets: availableTokens,
     });
   }, [availableTokens]);
+
+  const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
 
   return (
     <div className="w-full h-full md:w-1/3 sticky top-5">
@@ -210,22 +287,65 @@ export default function LeftPanel() {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray">Share</span>
                       <div className="flex gap-1.5 items-center justify-center">
-                        <span>0.001</span>{" "}
-                        <img src={Near} alt={"NEAR"} className="w-4 h-4" />
+                        <span>1 {assetSymbol}</span>{" "}
+                        <img
+                          src={assetIcon}
+                          alt={assetSymbol}
+                          className="w-4 h-4"
+                        />
                         <ArrowLeftRight className="text-gray" size={12} />
-                        <span>1.03</span>{" "}
-                        <img src={Btc} alt={"USDT"} className="w-4 h-4" />
+                        <span>
+                          {exchangeRateForSelectedToken}{" "}
+                          {vaultShareMetadataQuery.data?.symbol}
+                        </span>{" "}
+                        <img
+                          src={vaultShareMetadataQuery.data?.icon || undefined}
+                          alt={vaultShareMetadataQuery.data?.symbol}
+                          className="w-4 h-4"
+                        />
                       </div>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray">Slippage Tolerance</span>
-                      <span>1%</span>
+                      <span>{slippagePercent}%</span>
                     </div>
                   </div>
 
                   {/* Buttons */}
                   <div className="flex gap-3 pt-5">
-                    <button className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative">
+                    <button
+                      onClick={() => {
+                        if (!depositToVaultMutation.isPending) {
+                          if (
+                            intentsAddressQuery.data &&
+                            nearAddress &&
+                            selectedAsset &&
+                            exchangeRateForSelectedToken &&
+                            vaultShareMetadataQuery.data &&
+                            vaultContractId &&
+                            connectedWalletAddress
+                          ) {
+                            const storeContext =
+                              vaultActionStore.store.get().context;
+                            depositToVaultMutation.mutate({
+                              nearAddress: nearAddress,
+                              asset: selectedAsset,
+                              intentsDepositAddress:
+                                intentsAddressQuery.data.address,
+                              amount: storeContext.amount,
+                              exchangeRate: exchangeRateForSelectedToken,
+                              sharesDecimals:
+                                vaultShareMetadataQuery.data?.decimals,
+                              vaultContractId: vaultContractId,
+                              slippagePercent: storeContext.slippagePercent,
+                              chain: selectedChain,
+                              blockchainAddress: connectedWalletAddress.address,
+                            });
+                          }
+                        }
+                      }}
+                      className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative"
+                    >
                       Confirm
                     </button>
                     <button

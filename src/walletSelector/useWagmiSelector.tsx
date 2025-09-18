@@ -128,16 +128,22 @@ export const useWagmiSelector = () => {
 
   const requestDeposit = useCallback(
     async ({
-      intents_token_id,
+      asset,
       amount,
       receiver_address,
       chain_name,
     }: {
-      intents_token_id: string;
+      asset: TAsset;
       amount: bigint;
       receiver_address: `0x${string}`;
       chain_name: EvmChainName;
     }) => {
+      if ("FungibleToken" in asset) {
+        throw new Error("FungibleToken is not supported in EVM");
+      }
+
+      const intents_token_id = asset.MultiToken.token_id;
+
       const token_info = FLAT_LIST_TOKENS.find(
         (e) =>
           e.defuseAssetId === intents_token_id && e.chainName === chain_name

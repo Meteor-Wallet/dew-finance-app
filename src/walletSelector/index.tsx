@@ -20,7 +20,7 @@ export const useWalletSelector = () => {
 
   const requestDeposit = useCallback(
     async (args: {
-      intents_token_id: string;
+      asset: TAsset;
       amount: bigint;
       receiver_address: `0x${string}` | string;
     }) => {
@@ -30,7 +30,7 @@ export const useWalletSelector = () => {
           receiver_address: args.receiver_address as `0x${string}`,
           chain_name: selectedChain,
           amount: args.amount,
-          intents_token_id: args.intents_token_id,
+          asset: args.asset,
         });
       } else {
         throw new Error("Unsupported selected chain");

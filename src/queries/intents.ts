@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { ChainName } from "../stores/wallet_store";
 import axios from "axios";
+import { nearUtils } from "../utils/nearUtils";
 
 const chainDefuserAxios = axios.create({
   baseURL: "https://bridge.chaindefuser.com/rpc",
@@ -79,4 +80,37 @@ const getIntentsAddressQueryOptions = ({
   });
 };
 
-export const intentsQueries = {};
+const getBalanceInIntentsQueryOptions = ({
+  nearAddress,
+  intentsTokenId,
+}: {
+  intentsTokenId: string;
+  nearAddress: string;
+}) => {
+  return queryOptions({
+    queryKey: [
+      "intents",
+      "intentsBalance",
+      {
+        intentsTokenId,
+        nearAddress,
+      },
+    ],
+    queryFn: async () => {
+      const balance = (await nearUtils.provider.callFunction(
+        "intents.near",
+        "mt_balance_of",
+        {
+          account_id: nearAddress,
+          token_id: intentsTokenId,
+        }
+      )) as string;
+      return balance;
+    },
+  });
+};
+
+export const intentsQueries = {
+  getIntentsAddressQueryOptions,
+  getBalanceInIntentsQueryOptions,
+};
