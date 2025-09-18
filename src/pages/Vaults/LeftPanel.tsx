@@ -12,11 +12,62 @@ import { useSearchParams } from "react-router-dom";
 import { walletStore } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
-import { useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import _ from "lodash";
 import { intentsQueries } from "../../queries/intents";
 import { vaultMutations } from "../../mutations/vault";
 import Big from "big.js";
+
+const MyPosition = () => {
+  const [searchParams] = useSearchParams({
+    vaultContractId: "stable-test-1.dew-finance.near",
+  });
+
+  const nearAddress = walletStore.selectors.useCurrentNearAccountId();
+
+  const vaultContractId = searchParams.get("vaultContractId");
+
+  const myPositionQuery = useQuery({
+    ...vaultQueries.getMyPositionQueryOptions({
+      vaultContractId: vaultContractId!,
+      nearAddress: nearAddress!,
+    }),
+    enabled: nearAddress !== null && vaultContractId !== null,
+  });
+
+  const vaultShareMetadataQuery = useQuery({
+    ...vaultQueries.getVaultShareMetadataQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const myPosition = useMemo(() => {
+    if (vaultShareMetadataQuery.data && myPositionQuery.data) {
+      return Big(myPositionQuery.data)
+        .div(Big(10).pow(vaultShareMetadataQuery.data.decimals))
+        .toFixed();
+    }
+
+    return "0";
+  }, [vaultShareMetadataQuery.data, myPositionQuery.data]);
+
+  return (
+    <Motion direction="left" duration={0.6} delay={0.7}>
+      <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color">
+        <p className="text-sm text-gray">My Position</p>
+        <div className="flex gap-1.5 items-center ">
+          <p className="text-2xl font-semibold">{myPosition} </p>
+          <img
+            src={vaultShareMetadataQuery.data?.icon || undefined}
+            alt={vaultShareMetadataQuery.data?.symbol}
+            className="w-7 h-7"
+          />
+        </div>
+      </div>
+    </Motion>
+  );
+};
 
 const Input = () => {
   const amount = vaultActionStore.selectors.useAmount();
@@ -447,15 +498,7 @@ export default function LeftPanel() {
             </p>
           </div>
         </Motion>
-        <Motion direction="left" duration={0.6} delay={0.7}>
-          <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color">
-            <p className="text-sm text-gray">My Position</p>
-            <div className="flex gap-1.5 items-center ">
-              <p className="text-2xl font-semibold">100 </p>
-              <img src={Near} alt={"NEAR"} className="w-7 h-7" />
-            </div>
-          </div>
-        </Motion>
+        <MyPosition />
       </div>
     </div>
   );
