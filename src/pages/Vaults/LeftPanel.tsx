@@ -201,8 +201,8 @@ export default function LeftPanel() {
       const rateDecimals = vaultConfigQuery.data.exchange_rate_decimals;
 
       if (selectedExchangeRate) {
-        return Big(selectedExchangeRate[1])
-          .div(Big(10).pow(rateDecimals))
+        return Big(1)
+          .div(Big(selectedExchangeRate[1]).div(Big(10).pow(rateDecimals)))
           .toFixed();
       }
     }
