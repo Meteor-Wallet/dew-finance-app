@@ -230,6 +230,7 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
     walletStore.selectors.useConnectedWalletAddress();
 
   const selectedChain = walletStore.selectors.useSelectedChain();
+  const currentNearAccountId = walletStore.selectors.useCurrentNearAccountId();
 
   const { signOut } = useWalletSelector();
 
@@ -259,6 +260,9 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
                 }}
                 size={12}
               />
+            </p>
+            <p className="text-base md:text-xs text-center text-gray md:mt-0 mt-[-5px]">
+              {currentNearAccountId}
             </p>
           </div>
         </Motion>

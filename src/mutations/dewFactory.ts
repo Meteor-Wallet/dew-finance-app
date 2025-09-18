@@ -15,7 +15,7 @@ const useAuthorizeWalletMutation = () => {
     mutationFn: async () => {
       if (connectedWallet) {
         const { message, blockchainId, deadline, nearAddress } =
-          dewFactoryUtils.getMessageForCreateAccount({
+          await dewFactoryUtils.getMessageForCreateAccount({
             chain: walletStore.store.get().context.selectedChain,
             blockchainAddress: connectedWallet.address,
           });
@@ -34,6 +34,9 @@ const useAuthorizeWalletMutation = () => {
           .catch(() => false);
 
         if (accountExists) {
+          walletStore.store.trigger.setCurrentNearAccountId({
+            nearAccountId: nearAddress,
+          });
           walletStore.store.trigger.closeOnboardModal();
         }
       }

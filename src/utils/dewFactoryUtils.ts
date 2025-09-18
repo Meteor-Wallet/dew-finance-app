@@ -1,8 +1,9 @@
 import type { ChainName } from "../stores/wallet_store";
+import { nearUtils } from "./nearUtils";
 
 const FACTORY_CONTRACT_ID = "aa-dew.near";
 
-const getAccountDetailsFromAddressAndChain = ({
+const getAccountDetailsFromAddressAndChain = async ({
   address,
   chain,
 }: {
@@ -19,7 +20,15 @@ const getAccountDetailsFromAddressAndChain = ({
     }
   })();
   const shortBlockchainId = blockchainId.slice(0, 3);
-  const nearAddress = `${address.toLowerCase()}-${shortBlockchainId}.${FACTORY_CONTRACT_ID}`;
+
+  const nearAddress = (await nearUtils.provider.callFunction(
+    FACTORY_CONTRACT_ID,
+    "preview_account_id",
+    {
+      blockchain_id: blockchainId,
+      blockchain_address: address,
+    }
+  )) as string;
 
   return {
     nearAddress,
@@ -28,30 +37,35 @@ const getAccountDetailsFromAddressAndChain = ({
   };
 };
 
-const getMessageForCreateAccount = ({
+const getMessageForCreateAccount = async ({
   blockchainAddress,
   chain,
 }: {
   blockchainAddress: string;
   chain: ChainName;
 }) => {
-  const { blockchainId, nearAddress } = getAccountDetailsFromAddressAndChain({
-    address: blockchainAddress,
-    chain,
-  });
+  const { blockchainId, nearAddress } =
+    await getAccountDetailsFromAddressAndChain({
+      address: blockchainAddress,
+      chain,
+    });
 
-  const deadline = ((Date.now() + 1 * 60 * 1000) * 1000000).toString();
+  const message = (await nearUtils.provider.callFunction(
+    FACTORY_CONTRACT_ID,
+    "message_for_create_account",
+    {
+      blockchain_id: blockchainId,
+      blockchain_address: blockchainAddress,
+    }
+  )) as string;
+
+  const parsedMessage = JSON.parse(message);
 
   return {
-    message: JSON.stringify({
-      account_id: nearAddress,
-      blockchain_address: blockchainAddress,
-      blockchain_id: blockchainId,
-      deadline,
-    }),
+    message: message,
     blockchainId,
     nearAddress,
-    deadline,
+    deadline: parsedMessage.deadline,
   };
 };
 

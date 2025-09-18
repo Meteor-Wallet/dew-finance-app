@@ -17,6 +17,7 @@ const store = createStore({
     isOnboardModalOpen: false,
     connectedWallets: [],
     selectedChain: "eth",
+    nearAccountId: null,
   } as {
     isSwitchNetworkModalOpen: boolean;
     isConnectWalletModalOpen: boolean;
@@ -26,6 +27,7 @@ const store = createStore({
       supportedChains: ChainName[];
     }[];
     selectedChain: ChainName;
+    nearAccountId: string | null;
   },
   on: {
     openConnectWalletModal: (context) =>
@@ -93,6 +95,15 @@ const store = createStore({
         draft.isSwitchNetworkModalOpen = false;
       });
     },
+    setCurrentNearAccountId: (
+      context,
+      event: {
+        nearAccountId: string | null;
+      }
+    ) =>
+      produce(context, (draft) => {
+        draft.nearAccountId = event.nearAccountId;
+      }),
   },
   emits: {
     switchChain: (_payload: { chain: ChainName }) => {},
@@ -133,6 +144,10 @@ const useSelectedChain = () => {
   return useSelector(store, ({ context }) => context.selectedChain);
 };
 
+const useCurrentNearAccountId = () => {
+  return useSelector(store, ({ context }) => context.nearAccountId);
+};
+
 export const walletStore = {
   store,
   selectors: {
@@ -141,5 +156,6 @@ export const walletStore = {
     useIsOnboardModalOpen,
     useSelectedChain,
     useConnectedWalletAddress,
+    useCurrentNearAccountId,
   },
 };

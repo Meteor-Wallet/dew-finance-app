@@ -16,11 +16,18 @@ const connectedWalletSelector = walletStore.store.select(
   (ctx) =>
     ctx.connectedWallets.find((e) =>
       e.supportedChains.includes(ctx.selectedChain)
-    ),
+    ) || null,
   _.isEqual
 );
 
 connectedWalletSelector.subscribe(async (wallet) => {
+  // DO NOT REMOVE THIS SETTIMEOUT
+  // IT WILL SOMEHOW REMOVE THE SUBSCRIPTION
+  setTimeout(() => {
+    walletStore.store.trigger.setCurrentNearAccountId({
+      nearAccountId: null,
+    });
+  }, 0);
   if (wallet) {
     let toastId: string | number | undefined = undefined;
     try {
@@ -33,7 +40,7 @@ connectedWalletSelector.subscribe(async (wallet) => {
       }
       const address = wallet.address;
       const { nearAddress } =
-        dewFactoryUtils.getAccountDetailsFromAddressAndChain({
+        await dewFactoryUtils.getAccountDetailsFromAddressAndChain({
           address,
           chain: supportedChain,
         });
@@ -46,19 +53,23 @@ connectedWalletSelector.subscribe(async (wallet) => {
       if (!accountExists) {
         toast.info("Account", {
           description: "Account is pending creation",
-          id: toastId
+          id: toastId,
         });
+
         walletStore.store.trigger.openOnboardModal();
       } else {
+        walletStore.store.trigger.setCurrentNearAccountId({
+          nearAccountId: nearAddress,
+        });
         toast.success("Account", {
           description: "Account is ready",
-          id: toastId
+          id: toastId,
         });
       }
     } catch (err) {
       toast.error("Account", {
         description: "Failed to check account status, please try to refresh",
-        id: toastId
+        id: toastId,
       });
     }
   }
