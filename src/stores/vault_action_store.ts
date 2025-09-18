@@ -37,6 +37,8 @@ const store = createStore({
       produce(context, (draft) => {
         if (event.assets.length > 0) {
           draft.selectedAsset = event.assets[0];
+        } else {
+          draft.selectedAsset = null;
         }
       }),
     changeMode: (context, event: { mode: TMode }) =>
@@ -76,8 +78,8 @@ const useAmount = () => {
 };
 
 const useSlippagePercent = () => {
-  return useSelector(store, ({context}) => context.slippagePercent)
-}
+  return useSelector(store, ({ context }) => context.slippagePercent);
+};
 
 export const vaultActionStore = {
   store,
@@ -86,6 +88,6 @@ export const vaultActionStore = {
     useMode,
     useSelectedAsset,
     useAmount,
-    useSlippagePercent
+    useSlippagePercent,
   },
 };

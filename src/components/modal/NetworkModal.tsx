@@ -70,19 +70,6 @@ const NetworkModal = () => {
             </div>
             Arbitrum
           </li>
-          <li
-            className="connect-wallet-list-items"
-            onClick={() => {
-              walletStore.store.trigger.switchChain({
-                chain: "solana",
-              });
-            }}
-          >
-            <div className="list-logo near-logo">
-              <img src={solanaLogo} />{" "}
-            </div>
-            Solana
-          </li>
         </ul>
         <button
           onClick={handleClose}
