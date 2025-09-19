@@ -51,7 +51,7 @@ const RedeemModal = () => {
     `}
     >
       <div className="w-full md:w-[500px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
-        <h2 className="text-2xl font-semibold mb-0 mt-4">Redeem Into Vault Name</h2>
+        <h2 className="text-2xl font-semibold mb-0 mt-4">Redeem </h2>
         <hr className="border-t border-border-color mt-6 mb-6" />
 
         <div className="flex  justify-between items-center mt-5  mb-1.5">

@@ -6,6 +6,7 @@ import { accountQueries } from "../../queries/account";
 import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import { ArrowLeftRight } from "lucide-react";
 import CountUp from "../../components/utils/CountUp";
+import { useRive } from "@rive-app/react-canvas";
 import { useSearchParams } from "react-router-dom";
 import { walletStore } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,8 @@ import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 
 const MyPosition = () => {
+
+
   const [searchParams] = useSearchParams({
     vaultContractId: "stable-test-1.dew-finance.near",
   });
@@ -642,6 +645,11 @@ const WithdrawalTab = () => {
 export default function LeftPanel() {
   const actionMode = vaultActionStore.selectors.useMode();
 
+  const { RiveComponent } = useRive({
+    src: "/rive/position.riv",
+    autoplay: true,
+    stateMachines: "State Machine 1",
+  });
   return (
     <div className="w-full h-full md:w-1/3 sticky top-5">
       {/* Stats */}
@@ -701,10 +709,10 @@ export default function LeftPanel() {
             </div>
             <p className='text-base font-semibold'>0.00000</p>
           </div>
-          <div className="flex gap-3 pt-5 mt-2">
-            {/* <ConfirmButton>
+          <div className="flex flex-col gap-3 pt-5 mt-2">
+            <ConfirmButton>
               Connect Wallet
-            </ConfirmButton> */}
+            </ConfirmButton>
             <ConfirmButton onClick={() => {
               walletStore.store.trigger.openDepositWalletModal();
             }}>
@@ -716,6 +724,12 @@ export default function LeftPanel() {
           <h2 className="font-semibold text-xl">
             My Position
           </h2>
+          <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background mt-3 p-6 text-center flex-col">
+            <div className="w-[60px] h-[60px]">
+              <RiveComponent />
+            </div>
+            You currently have no positions. Deposit to start earning.
+          </div>
           <div className='flex justify-between items-center mt-3'>
             <div className='flex gap-2 items-center '>
               <img
