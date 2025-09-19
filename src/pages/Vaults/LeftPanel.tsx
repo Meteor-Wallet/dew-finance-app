@@ -16,6 +16,9 @@ import _ from "lodash";
 import { intentsQueries } from "../../queries/intents";
 import { vaultMutations } from "../../mutations/vault";
 import Big from "big.js";
+import { CircularProgress } from "../../components/utils/CircularProgress";
+import { twMerge } from "tailwind-merge";
+import clsx from "clsx";
 
 const MyPosition = () => {
   const [searchParams] = useSearchParams({
@@ -207,6 +210,44 @@ const useExchangeRateForAsset = ({
   return exchangeRateForAsset;
 };
 
+type ConfirmButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  isLoading?: boolean;
+};
+
+const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
+  return (
+    <button
+      {...props}
+      onClick={(e) => {
+        if (!props.disabled) {
+          if (props.onClick) {
+            props.onClick(e);
+          }
+        }
+      }}
+      className={
+        twMerge([
+          "flex justify-center items-center",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
+          clsx({
+            "cursor-progress disabled:cursor-progress": props.isLoading
+          }),
+          "flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative",
+          props.className
+        ])
+      }
+    >
+      {props.isLoading ? (
+        <div className="mr-1">
+          <CircularProgress size="small" />
+        </div>
+      ) : (
+        props.children
+      )}
+    </button>
+  );
+};
+
 const DepositTab = () => {
   const [searchParams] = useSearchParams({
     vaultContractId: "stable-test-1.dew-finance.near",
@@ -347,7 +388,9 @@ const DepositTab = () => {
 
       {/* Buttons */}
       <div className="flex gap-3 pt-5">
-        <button
+        <ConfirmButton
+          isLoading={depositToVaultMutation.isPending}
+          disabled={depositToVaultMutation.isPending}
           onClick={() => {
             if (!depositToVaultMutation.isPending) {
               if (
@@ -375,10 +418,9 @@ const DepositTab = () => {
               }
             }
           }}
-          className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative"
         >
           Confirm
-        </button>
+        </ConfirmButton>
         <button
           className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
           onClick={() => {
@@ -551,7 +593,9 @@ const WithdrawalTab = () => {
 
       {/* Buttons */}
       <div className="flex gap-3 pt-5">
-        <button
+        <ConfirmButton
+          isLoading={withdrawFromVaultMutation.isPending}
+          disabled={withdrawFromVaultMutation.isPending}
           onClick={() => {
             if (!withdrawFromVaultMutation.isPending) {
               if (
@@ -580,10 +624,9 @@ const WithdrawalTab = () => {
               }
             }
           }}
-          className="flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative"
         >
           Confirm
-        </button>
+        </ConfirmButton>
         <button
           className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
           onClick={() => {
