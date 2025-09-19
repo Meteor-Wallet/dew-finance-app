@@ -651,7 +651,7 @@ export default function LeftPanel() {
     stateMachines: "State Machine 1",
   });
   return (
-    <div className="w-full h-full md:w-1/3 sticky top-5">
+    <div className="w-full h-full lg:w-1/3 sticky top-5 lg:order-2 order-1 ">
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Motion direction="left" duration={0.6} delay={0.5}>
@@ -683,7 +683,7 @@ export default function LeftPanel() {
 
       {/* Input Section */}
       <Motion direction="right" duration={0.6} delay={0.6}>
-        <div className="w-full bg-[linear-gradient(139deg,#1a1c27,#0D0D0D,#0D0D0D)]  border border-border-color rounded-lg shadow-lg mt-5 p-6">
+        <div className="w-full bg-[linear-gradient(139deg,#1a1c27,#0D0D0D,#0D0D0D)]  border border-border-color rounded-lg shadow-lg mt-5 p-6  lg:pb-6 pb-[60px]">
           <h2 className="font-semibold text-xl">
             Wallet Balance
           </h2>
@@ -710,9 +710,9 @@ export default function LeftPanel() {
             <p className='text-base font-semibold'>0.00000</p>
           </div>
           <div className="flex flex-col gap-3 pt-5 mt-2">
-            <ConfirmButton>
+            {/* <ConfirmButton>
               Connect Wallet
-            </ConfirmButton>
+            </ConfirmButton> */}
             <ConfirmButton onClick={() => {
               walletStore.store.trigger.openDepositWalletModal();
             }}>
@@ -724,12 +724,12 @@ export default function LeftPanel() {
           <h2 className="font-semibold text-xl">
             My Position
           </h2>
-          <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background mt-3 p-6 text-center flex-col">
-            <div className="w-[60px] h-[60px]">
+          {/* <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background mt-3 p-6 text-center flex-col">
+            <div className="md:w-[40px] md:h-[40px] lg:w-[60px] lg:h-[60px] w-[80px] h-[80px]">
               <RiveComponent />
             </div>
             You currently have no positions. Deposit to start earning.
-          </div>
+          </div> */}
           <div className='flex justify-between items-center mt-3'>
             <div className='flex gap-2 items-center '>
               <img

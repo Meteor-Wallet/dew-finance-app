@@ -99,7 +99,7 @@ const RedeemModal = () => {
           )}
         </div>
         <p className="text-sm mb-2 mt-5">Transaction Details </p>
-        <div className="bg-card-background rounded-sm p-4 px-5 space-y-2">
+        <div className="bg-card-background rounded-sm p-4 px-5 space-y-4">
           <div className="flex justify-between text-sm">
             <span className="text-gray">Share</span>
             <div className="flex gap-1.5 items-center justify-center">

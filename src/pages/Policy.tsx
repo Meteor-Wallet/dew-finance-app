@@ -200,8 +200,8 @@ export default function Policy() {
     return (
         <div className="min-h-screen mt-[40px]">
 
-            <img src={Dew2} className="absolute top-[30vh] left-[-80px] w-[10px] dew-float" />
-            <img src={Dew3} className="absolute top-[95vh] right-[-50px] w-[20px] dew-float2" />
+            <img src={Dew2} className="hidden md:block md:absolute top-[30vh] left-[-80px] w-[10px] dew-float" />
+            <img src={Dew3} className="hidden md:block md:absolute top-[95vh] right-[-50px] w-[20px] dew-float2" />
 
             {/* Back */}
             <Motion direction="left" duration={0.6}>
@@ -232,7 +232,7 @@ export default function Policy() {
                     </div>
                 </Motion>
                 <Motion direction="right" duration={0.6} delay={0.6}>
-                    <label className="group flex items-center w-full md:w-[250px] rounded-lg px-3 py-2 bg-input-background shadow-xs cursor-text border border-input-border transition-all duration-300 focus-within:ring-2 focus-within:ring-[#28282F] focus-within:border-[#28282F]">
+                    <label className="group flex items-center w-full md:w-[250px] rounded-lg px-3 py-2 bg-input-background shadow-xs cursor-text border border-input-border transition-all duration-300 focus-within:ring-2 focus-within:ring-[#28282F] focus-within:border-[#28282F] md:mb-0 mb-4">
                         <Search size={16} className="text-gray mr-2" />
                         <input
                             type="text"

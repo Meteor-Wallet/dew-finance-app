@@ -4,7 +4,7 @@ import { useIntersectionObserver } from "usehooks-ts";
 import { useEffect } from "react";
 
 const slideVariants = {
-  left: { hidden: { x: -50, opacity: 0 }, visible: { x: 0, opacity: 1 } },
+  left: { hidden: { x: -20, opacity: 0 }, visible: { x: 0, opacity: 1 } },
   right: { hidden: { x: 50, opacity: 0 }, visible: { x: 0, opacity: 1 } },
   up: { hidden: { y: 50, opacity: 0 }, visible: { y: 0, opacity: 1 } },
   down: { hidden: { y: -10, opacity: 0 }, visible: { y: 0, opacity: 1 } },

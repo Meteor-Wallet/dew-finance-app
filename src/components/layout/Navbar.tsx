@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, Copy, LogOut, X, Menu } from "lucide-react";
 import Motion from "../utils/Motion";
-import Near from "../../assets/near.png";
-import Eth from "../../assets/eth-full.svg";
 import ethLogo from "../../assets/eth.svg";
 import arbLogo from "../../assets/arb.png";
 import solanaLogo from "../../assets/solana.svg";
@@ -73,7 +71,7 @@ export default function Navbar() {
         <Motion direction="left" duration={0.6}>
           <div className="text-white flex gap-3 text-[1.4rem] items-center">
             <div className="relative">
-              <div className="w-[40px] h-[40px]">
+              <div className="w-[30px] h-[30px] md:w-[40px] md:h-[40px]">
                 <RiveComponent />
               </div>
             </div>
@@ -88,10 +86,10 @@ export default function Navbar() {
                 onClick={() => {
                   walletStore.store.trigger.openSwitchNetworkModal();
                 }}
-                className="flex items-center gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
+                className="flex items-center gap-1.5 md:gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
               >
                 <img
-                  className="w-[30px]"
+                  className="w-[25px] md:w-[30px]"
                   src={
                     selectedChain ? chain_image_map[selectedChain] : undefined
                   }
@@ -105,7 +103,7 @@ export default function Navbar() {
                     onClick={() => {
                       walletStore.store.trigger.openConnectWalletModal();
                     }}
-                    className="bg-primary text-black px-6 py-3 rounded-md font-bold primary-button-shadow text-base"
+                    className="bg-primary text-black px-3 py-3 md:px-6 md:py-3 rounded-md font-bold primary-button-shadow text-base"
                   >
                     Connect Wallet
                   </button>
@@ -143,12 +141,12 @@ export default function Navbar() {
               )}
             </div>
           </Motion>
-          <button
+          {/* <button
             className="md:hidden text-white text-xl"
             onClick={() => setMenuOpen(true)}
           >
             <Menu />
-          </button>
+          </button> */}
         </div>
       </nav>
 

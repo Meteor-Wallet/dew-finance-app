@@ -52,7 +52,7 @@ export default function OnboardingModal() {
           </div>
 
           <div className=" mb-8 ">
-            <h2 className="text-xl font-bold text-white mb-1">
+            <h2 className="text-2xl md:text-xl font-bold text-white mb-1">
               Welcome to Dew Finance
             </h2>
             <p className="text-gray text-base md:text-sm leading-relaxed">
@@ -65,18 +65,18 @@ export default function OnboardingModal() {
         </motion.div>
       </AnimatePresence>
       <div className="flex justify-end items-center w-full mt-4">
-        <div className="flex  gap-4">
+        <div className="flex gap-4  md:flex-row flex-col md:w-fit w-full md:mb-0 mb-3">
           <button
             onClick={() => {
               signOut();
               walletStore.store.trigger.closeOnboardModal();
             }}
-            className="text-gray hover:text-white text-base"
+            className="text-gray hover:text-white text-base md:order-1 order-2 w-full md:w-fit"
           >
             Cancel
           </button>
           <button
-            className="text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200"
+            className="text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative md:ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200 md:order-2 order-1  w-full md:w-fit"
             onClick={async () => {
               if (!authorizeWalletMutation.isPending) {
                 authorizeWalletMutation.mutate();

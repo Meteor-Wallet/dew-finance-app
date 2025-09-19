@@ -150,9 +150,10 @@ body {
 
 #root,
 nav {
-  width: 95vw;
+  width: 90vw;
   margin: auto;
   max-width: 1600px;
+
 }
 
 @media (min-width: 1024px) {

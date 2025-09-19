@@ -61,7 +61,17 @@ const RightPanel = memo(() => {
   const [rightTab, setRightTab] = useState("overview");
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const isLarge = window.matchMedia("(min-width: 1024px)").matches;
+
+    if (isLarge) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      const el = document.getElementById("leftPanelSection");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
   }, [rightTab]);
 
   const vaultConfigQuery = useQuery({
@@ -120,9 +130,9 @@ const RightPanel = memo(() => {
   });
 
   return (
-    <div className="w-full h-full md:w-2/3 ">
+    <div className="w-[calc(100%+_10vw)] ml-[-5vw] lg:ml-0 h-full lg:w-2/3 lg:order-1 order-2 ">
       <Motion direction="left" duration={0.6} delay={0.3}>
-        <div className="w-full h-full bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-2xl shadow-lg space-y-6 border border-dark-border-color min-h-[90vh] mb-[100px]">
+        <div className="w-full h-full bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-2xl shadow-lg space-y-6 border border-dark-border-color min-h-[90vh] mb-[100px]" id="leftPanelSection">
           {/* Tabs */}
           <div className="p-6 pb-1 sticky top-0 z-9  bg-black/10 backdrop-blur-sm  rounded-2xl ">
             <div className="flex bg-tab-background rounded-sm mb-6 overflow-hidden ">
@@ -244,7 +254,7 @@ const RightPanel = memo(() => {
                     <div className="relative w-full h-full rounded-lg overflow-hidden">
                       <div className=" p-4 rounded-lg">
                         <div className="">
-                          <div className="flex justify-between items-center mb-2">
+                          <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
                                 src={Near}
@@ -291,7 +301,7 @@ const RightPanel = memo(() => {
                     <div className="relative w-full h-full rounded-lg overflow-hidden">
                       <div className=" p-4 rounded-lg">
                         <div className="">
-                          <div className="flex justify-between items-center mb-2">
+                          <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
                                 src={Near}
@@ -338,7 +348,7 @@ const RightPanel = memo(() => {
                     <div className="relative w-full h-full rounded-lg overflow-hidden">
                       <div className=" p-4 rounded-lg">
                         <div className="">
-                          <div className="flex justify-between items-center mb-2">
+                          <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
                                 src={Near}
@@ -470,8 +480,8 @@ const RightPanel = memo(() => {
                                 <div
                                   key={idx}
                                   className={`flex items-center justify-end space-x-2 cursor-pointer p-1 px-2 transition-colors duration-200 ${hoverAddress === addr
-                                      ? "bg-input-focus rounded "
-                                      : ""
+                                    ? "bg-input-focus rounded "
+                                    : ""
                                     }`}
                                   onMouseEnter={() => setHoverAddress(addr)}
                                   onMouseLeave={() => setHoverAddress(null)}
