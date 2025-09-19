@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { nearUtils } from "../utils/nearUtils";
 import z from "zod";
+import { DewAccountBackend } from "../backend/DewAccountBackend";
 
 const zAsset = z.union([
   z.object({
@@ -477,6 +478,29 @@ const getAllPoliciesInfiniteQueryOptions = ({
   });
 };
 
+const getVaultApyQueryOptions = ({
+    vaultContractId,
+    variant
+}: {
+  vaultContractId: string;
+  variant: "1" | "7" | "30"
+}) => {
+  return queryOptions({
+    queryKey: ['vault', 'vaultApy', {
+      vaultContractId,
+      variant
+    }],
+    queryFn: async() => {
+      const {data} = await DewAccountBackend.getVaultApy({
+        variant,
+        vaultContractId
+      })
+
+      return data
+    }
+  })
+}
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
@@ -492,4 +516,5 @@ export const vaultQueries = {
   getProtocolAllAssetWithdrawalCutQueryOptions,
   getPolicyCountQueryOptions,
   getAllPoliciesInfiniteQueryOptions,
+  getVaultApyQueryOptions
 };

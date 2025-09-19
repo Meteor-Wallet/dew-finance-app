@@ -643,6 +643,20 @@ const WithdrawalTab = () => {
 export default function LeftPanel() {
   const actionMode = vaultActionStore.selectors.useMode();
 
+  const [searchParams] = useSearchParams({
+    vaultContractId: "stable-test-2.dew-finance.near",
+  });
+
+  const vaultContractId = searchParams.get("vaultContractId");
+
+  const vaultApyQuery = useQuery({
+    ...vaultQueries.getVaultApyQueryOptions({
+      variant: "1",
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
   return (
     <div className="w-full h-full md:w-1/3 sticky top-5">
       {/* Input Section */}
@@ -722,15 +736,14 @@ export default function LeftPanel() {
           <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color ">
             <p className="text-sm text-gray">Net APY</p>
             <p className="text-2xl font-semibold text-green">
-              {/* <CountUp
+              <CountUp
                 from={0}
-                to={parseFloat("18.34")}
+                to={parseFloat(vaultApyQuery.data || "0") * 100}
                 separator=","
                 direction="up"
                 duration={0.1}
                 className="count-up-text"
-              /> */}
-              -
+              />
               %
             </p>
           </div>

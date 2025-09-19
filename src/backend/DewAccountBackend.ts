@@ -14,7 +14,7 @@ const createDewAccount = (data: {
   signature: string;
   deadline: string;
 }) => {
-  return axiosInstance.post("create-account", data);
+  return axiosInstance.post("/dew-account/create-account", data);
 };
 
 const signTransaction = (data: {
@@ -27,15 +27,23 @@ const signTransaction = (data: {
     transaction: any;
   };
 }) => {
-  return axiosInstance.post("sponsor-sign", data);
+  return axiosInstance.post("/dew-account/sponsor-sign", data);
 };
 
 const storageDeposit = (data: { account_id: string; vault_id: string }) => {
-  return axiosInstance.post("sponsor-storage-deposit", data);
+  return axiosInstance.post("/dew-account/sponsor-storage-deposit", data);
+};
+
+const getVaultApy = (data: {
+  variant: "1" | "7" | "30";
+  vaultContractId: string;
+}) => {
+  return axiosInstance.post<string>("/dew-vault/vault-apy", data);
 };
 
 export const DewAccountBackend = {
   createDewAccount,
   signTransaction,
   storageDeposit,
+  getVaultApy,
 };
