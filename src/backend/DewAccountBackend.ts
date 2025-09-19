@@ -2,7 +2,7 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   baseURL:
-    "https://meteor-leding-dev-276870342533.europe-southwest1.run.app/dew-account",
+    "https://meteor-leding-dev-276870342533.europe-southwest1.run.app",
   headers: {
     "Content-Type": "application/json",
   },
