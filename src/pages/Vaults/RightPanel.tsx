@@ -70,10 +70,9 @@ const RightPanel = memo(() => {
     enabled: vaultContractId !== null,
   });
 
-  const accountsWithRoleQuery = useQuery({
-    ...vaultQueries.getAccountsWithRoleQueryOptions({
+  const allRoleAssignmentsQuery = useQuery({
+    ...vaultQueries.getAllRoleAssignmentsQueryOptions({
       vaultContractId: vaultContractId!,
-      roleName: "owner"!,
     }),
     enabled: vaultContractId !== null,
   });
@@ -86,37 +85,7 @@ const RightPanel = memo(() => {
     : 0;
   const totalFee = (managementFee + performanceFee).toFixed(3);
 
-  const roles = [
-    {
-      title: "Owner",
-      addresses: accountsWithRoleQuery.data ?? [],
-    },
-  ];
-
-  const allAssetDepositFeesQuery = useQuery({
-    ...vaultQueries.getAllAssetDepositFeesQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-  const protocolAllAssetDepositCutQuery = useQuery({
-    ...vaultQueries.getProtocolAllAssetDepositCutQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-  const allAssetWithdrawalFeesQuery = useQuery({
-    ...vaultQueries.getAllAssetWithdrawalFeesQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-  const protocolAllAssetWithdrawalCutQuery = useQuery({
-    ...vaultQueries.getProtocolAllAssetWithdrawalCutQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
+  const roleData = allRoleAssignmentsQuery.data ?? [];
 
   return (
     <div className="w-full h-full md:w-2/3 ">
@@ -422,14 +391,15 @@ const RightPanel = memo(() => {
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-base text-white ">Roles</p>
                       <p className="text-sm text-gray">
-                        Total {roles.length}{" "}
-                        {roles.length > 1 ? "Roles" : "Role"}
+                        Total {roleData.length}{" "}
+                        {roleData.length > 1 ? "Roles" : "Role"}
                       </p>
                     </div>
                     <div className="space-y-2">
-                      {roles.map((role, i) => {
+                      {roleData.map((role, i) => {
                         const isFirst = i === 0;
-                        const isLast = i === roles.length - 1;
+                        const isLast = i === roleData.length - 1;
+
                         return (
                           <div
                             key={i}
@@ -444,8 +414,11 @@ const RightPanel = memo(() => {
                             }`}
                           >
                             <div>
-                              <p className="text-sm font-medium">
-                                {role.title}
+                              <p
+                                className="text-sm font-medium"
+                                style={{ textTransform: "capitalize" }}
+                              >
+                                {role.role}
                               </p>
                             </div>
                             <div className="text-right space-y-1">

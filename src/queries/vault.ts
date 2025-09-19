@@ -178,6 +178,51 @@ const getAccountsWithRoleQueryOptions = ({
   });
 };
 
+const zAllRoleAssignments = z.array(
+  z.tuple([
+    z.union([
+      z.object({ AccountId: z.string() }),
+      z.object({ Codehash: z.string() }),
+    ]),
+    z.array(z.string()),
+  ])
+);
+
+const getAllRoleAssignmentsQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "allRoleAssignments", { vaultContractId }],
+    queryFn: async () => {
+      const allRoleAssignments = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "get_all_role_assignments",
+        {}
+      );
+
+      const rawData = zAllRoleAssignments.parse(allRoleAssignments);
+      const map: Record<string, string[]> = {};
+
+      for (const [obj, roles] of rawData) {
+        const key = "AccountId" in obj ? obj.AccountId : obj.Codehash;
+        for (const role of roles) {
+          if (!map[role]) {
+            map[role] = [];
+          }
+          map[role].push(key);
+        }
+      }
+
+      return Object.entries(map).map(([role, addresses]) => ({
+        role,
+        addresses,
+      }));
+    },
+  });
+};
+
 const zAllAssetDepositFees = z.array(z.tuple([zAsset, z.number()]));
 const zProtocolAllAssetDepositCut = z.array(z.tuple([zAsset, z.number()]));
 const zAllAssetWithdrawalFees = z.array(z.tuple([zAsset, z.number()]));
@@ -267,6 +312,7 @@ export const vaultQueries = {
   getCheckIsStorageDepositedQueryOptions,
   getMyPositionQueryOptions,
   getAccountsWithRoleQueryOptions,
+  getAllRoleAssignmentsQueryOptions,
   getAllAssetDepositFeesQueryOptions,
   getProtocolAllAssetDepositCutQueryOptions,
   getAllAssetWithdrawalFeesQueryOptions,
