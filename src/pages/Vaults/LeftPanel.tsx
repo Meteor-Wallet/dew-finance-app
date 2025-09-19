@@ -421,14 +421,14 @@ const DepositTab = () => {
         >
           Confirm
         </ConfirmButton>
-        <button
+        {/* <button
           className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
           onClick={() => {
             vaultActionStore.store.trigger.openSimulateModal();
           }}
         >
           Simulate
-        </button>
+        </button> */}
       </div>
     </motion.div>
   );
@@ -627,14 +627,14 @@ const WithdrawalTab = () => {
         >
           Confirm
         </ConfirmButton>
-        <button
+        {/* <button
           className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
           onClick={() => {
             vaultActionStore.store.trigger.openSimulateModal();
           }}
         >
           Simulate
-        </button>
+        </button> */}
       </div>
     </motion.div>
   );
