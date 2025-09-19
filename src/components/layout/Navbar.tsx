@@ -26,7 +26,7 @@ export default function Navbar() {
   const [walletDrawerClosing, setWalletDrawerClosing] = useState(false);
   const [menuDrawerClosing, setMenuDrawerClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-
+  const { signIn } = useWalletSelector();
   const connectedWalletAddress =
     walletStore.selectors.useConnectedWalletAddress();
   const selectedChain = walletStore.selectors.useSelectedChain();
@@ -103,7 +103,17 @@ export default function Navbar() {
                 <div className="relative md:block">
                   <button
                     onClick={() => {
-                      walletStore.store.trigger.openConnectWalletModal();
+                      // walletStore.store.trigger.openConnectWalletModal();
+                      const selectedChain =
+                        walletStore.store.get().context.selectedChain;
+                      if (
+                        selectedChain === "arbitrum" ||
+                        selectedChain === "eth"
+                      ) {
+                        signIn("evm");
+                      } else if (selectedChain === "solana") {
+                        signIn("sol");
+                      }
                     }}
                     className="bg-primary text-black px-6 py-3 rounded-md font-bold primary-button-shadow text-base"
                   >

@@ -57,7 +57,9 @@ createAppKit({
 
 export const useWagmiSelector = () => {
   const { open, close } = useAppKit();
-  const { isConnected, address } = useAppKitAccount();
+  const { isConnected, address } = useAppKitAccount({
+    namespace: "eip155",
+  });
   const { chainId, switchNetwork } = useAppKitNetwork();
 
   const { signMessageAsync: wagmiSignMessage } = useSignMessage();
