@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { nearUtils } from "../utils/nearUtils";
 import z from "zod";
 
@@ -304,6 +304,179 @@ const getProtocolAllAssetWithdrawalCutQueryOptions = ({
   });
 };
 
+const getPolicyCountQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "policyCount", { vaultContractId }],
+    queryFn: async () => {
+      const policyCount = (await nearUtils.provider.callFunction(
+        vaultContractId,
+        "get_policy_count",
+        {}
+      )) as number;
+
+      return policyCount;
+    },
+  });
+};
+
+export const zConditionSchema = z.object({
+  path: z.string(),
+  type: z.enum(["String", "BigInt", "Address"]).or(z.string()),
+  eq: z.union([z.string(), z.number(), z.null()]).nullable().optional(),
+  ne: z.union([z.string(), z.number(), z.null()]).nullable().optional(),
+  gte: z.union([z.string(), z.number(), z.null()]).nullable().optional(),
+  lte: z.union([z.string(), z.number(), z.null()]).nullable().optional(),
+  gt: z.union([z.string(), z.number(), z.null()]).nullable().optional(),
+  lt: z.union([z.string(), z.number(), z.null()]).nullable().optional(),
+  nullable: z.union([z.boolean(), z.null()]).optional(),
+});
+
+const zRestrictionSchema = z.object({
+  method: z.string(),
+  contract_id: z.string(),
+  schema: z.array(zConditionSchema),
+  interface: z.string(),
+});
+
+const zPolicyBase = z.object({
+  id: z.string(),
+  description: z.string(),
+  required_role: z.string(),
+  required_vote_count: z.union([
+    z.number(),
+    z.string().regex(/^\d+$/).transform(Number),
+  ]),
+  policy_status: z.enum(["Active", "Inactive"]),
+  activation_time: z.string(),
+});
+
+const zVaultConfigurationPolicy = zPolicyBase.extend({
+  policy_type: z.literal("VaultConfiguration"),
+  policy_details: z.literal("VaultConfiguration"),
+});
+export const zChainSigTransactionPolicy = zPolicyBase.extend({
+  policy_type: z.literal("ChainSigTransaction"),
+  policy_details: z.object({
+    ChainSigTransaction: z.object({
+      derivation_path: z.string(),
+      chain_environment: z.string(),
+      restrictions: z.array(zRestrictionSchema).default([]),
+    }),
+  }),
+});
+const zPolicy = z.discriminatedUnion("policy_type", [
+  zVaultConfigurationPolicy,
+  zChainSigTransactionPolicy,
+]);
+
+export type TPolicy = z.infer<typeof zPolicy>;
+export type TChainSigTransactionPolicy = z.infer<
+  typeof zChainSigTransactionPolicy
+>;
+
+const zAllPolicies = z.array(z.tuple([z.string(), zPolicy]));
+
+const getAllPoliciesInfiniteQueryOptions = ({
+  vaultContractId,
+  limit = 12,
+}: {
+  vaultContractId: string;
+  limit?: number;
+}) => {
+  return infiniteQueryOptions({
+    queryKey: ["vault", "allPolicies", { vaultContractId }],
+    queryFn: async ({ pageParam }) => {
+      const allPolicies = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "get_all_policies",
+        {
+          from_index: pageParam ?? 0,
+          limit,
+        }
+      );
+
+      // const allPolicies = [
+      //   [
+      //     "morpho_blue_arb_usdc_approve",
+      //     {
+      //       id: "morpho_blue_arb_usdc_approve",
+      //       description:
+      //         "Policy for approving USDC for Morpho Blue vault operations on Arbitrum",
+      //       required_role: "strategist",
+      //       required_vote_count: 1,
+      //       policy_status: "Active",
+      //       policy_type: "ChainSigTransaction",
+      //       policy_details: {
+      //         ChainSigTransaction: {
+      //           derivation_path: "arbitrum,1",
+      //           chain_environment: "EVM",
+      //           restrictions: [
+      //             {
+      //               method: "approve",
+      //               contract_id: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+      //               schema: [
+      //                 {
+      //                   path: "$.spender",
+      //                   type: "String",
+      //                   eq: "0xa60643c90a542a95026c0f1dbdb0615ff42019cf",
+      //                   ne: null,
+      //                   gte: null,
+      //                   lte: null,
+      //                   gt: null,
+      //                   lt: null,
+      //                   nullable: null,
+      //                 },
+      //                 {
+      //                   path: "$.amount",
+      //                   type: "BigInt",
+      //                   eq: null,
+      //                   ne: null,
+      //                   gte: null,
+      //                   lte: "1000000000000",
+      //                   gt: null,
+      //                   lt: null,
+      //                   nullable: null,
+      //                 },
+      //               ],
+      //               interface:
+      //                 "W3siaW5wdXRzIjpbeyJpbnRlcm5hbFR5cGUiOiJhZGRyZXNzIiwibmFtZSI6InNwZW5kZXIiLCJ0eXBlIjoiYWRkcmVzcyJ9LHsiaW50ZXJuYWxUeXBlIjoidWludDI1NiIsIm5hbWUiOiJhbW91bnQiLCJ0eXBlIjoidWludDI1NiJ9XSwibmFtZSI6ImFwcHJvdmUiLCJvdXRwdXRzIjpbeyJpbnRlcm5hbFR5cGUiOiJib29sIiwibmFtZSI6IiIsInR5cGUiOiJib29sIn1dLCJzdGF0ZU11dGFiaWxpdHkiOiJub25wYXlhYmxlIiwidHlwZSI6ImZ1bmN0aW9uIn1d",
+      //               go_to_index_if_not_found: null,
+      //             },
+      //           ],
+      //         },
+      //       },
+      //       activation_time: "1758118352459930404",
+      //       proposal_expiry_time_nanosec: "86400000000000",
+      //     },
+      //   ],
+      // ];
+
+      const policies = zAllPolicies
+        .transform((items) => items.map(([_, policy]) => policy))
+        .parse(allPolicies);
+
+      return policies;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (!lastPage || lastPage.length === 0) {
+        return undefined;
+      }
+      return (lastPageParam ?? 0) + limit;
+    },
+    getPreviousPageParam: (_firstPage, _allPages, firstPageParam) => {
+      if (!firstPageParam || firstPageParam <= 0) {
+        return undefined;
+      }
+      return Math.max(0, firstPageParam - limit);
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
@@ -317,4 +490,6 @@ export const vaultQueries = {
   getProtocolAllAssetDepositCutQueryOptions,
   getAllAssetWithdrawalFeesQueryOptions,
   getProtocolAllAssetWithdrawalCutQueryOptions,
+  getPolicyCountQueryOptions,
+  getAllPoliciesInfiniteQueryOptions,
 };

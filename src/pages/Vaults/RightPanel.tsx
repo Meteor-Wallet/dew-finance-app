@@ -16,38 +16,9 @@ import { ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import TransactionTable from "../../components/sample/TransactionTable";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
-
-// const roles = [
-//   {
-//     title: "Access Manager",
-//     addresses: ["0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5"],
-//   },
-//   {
-//     title: "Withdraw Manager",
-//     addresses: ["0x12C34EfA4CBD9bE1A5447BC69f6a451C7F7EAa123"],
-//   },
-//   {
-//     title: "Price Oracle",
-//     addresses: ["0xAB28EFa4CBD9bE1A5447BC69f6a451C7F7EAa456"],
-//   },
-//   {
-//     title: "Owner",
-//     addresses: ["0x40e609De1B52511B0B1aCccDB0B565803b0605E3"],
-//   },
-//   {
-//     title: "Atomist",
-//     addresses: [
-//       "0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5",
-//       "0x40e609De1B52511B0B1aCccDB0B565803b0605E3",
-//     ],
-//   },
-//   {
-//     title: "Alpha",
-//     addresses: ["0x9A28EFa4CBD9bE1A5447BC69f6a451C7F7EAa789"],
-//   },
-// ];
+import clsx from "clsx";
 
 const RightPanel = memo(() => {
   const [searchParams] = useSearchParams({
@@ -69,10 +40,22 @@ const RightPanel = memo(() => {
     }),
     enabled: vaultContractId !== null,
   });
-
   const allRoleAssignmentsQuery = useQuery({
     ...vaultQueries.getAllRoleAssignmentsQueryOptions({
       vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+  const policyCountQuery = useQuery({
+    ...vaultQueries.getPolicyCountQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+  const allPoliciesQuery = useInfiniteQuery({
+    ...vaultQueries.getAllPoliciesInfiniteQueryOptions({
+      vaultContractId: vaultContractId!,
+      limit: 5,
     }),
     enabled: vaultContractId !== null,
   });
@@ -86,6 +69,10 @@ const RightPanel = memo(() => {
   const totalFee = (managementFee + performanceFee).toFixed(3);
 
   const roleData = allRoleAssignmentsQuery.data ?? [];
+
+  const totalPolicy = policyCountQuery.data ?? 0;
+
+  const policies = allPoliciesQuery.data?.pages.flat() ?? [];
 
   return (
     <div className="w-full h-full md:w-2/3 ">
@@ -464,53 +451,37 @@ const RightPanel = memo(() => {
                     {/* Policy Content  */}
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-base text-white ">Policy</p>
-                      <p className="text-sm text-gray">Total 381 Policies</p>
+                      <p className="text-sm text-gray">
+                        Total {totalPolicy} Policies
+                      </p>
                     </div>
-                    <Link to="/policy">
-                      <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
-                        <div>
-                          <p className="text-base font-semibold">
-                            transfer_sepolia_usdc
-                          </p>
-                          <p className="text-sm  text-gray">
-                            Policy for transferring usdc
-                          </p>
+                    {policies.map((policy, idx) => (
+                      <Link to="/policy">
+                        <div
+                          key={idx}
+                          className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background"
+                        >
+                          <div>
+                            <p className="text-base font-semibold">
+                              {policy.id}
+                            </p>
+                            <p className="text-sm  text-gray">
+                              {policy.description}
+                            </p>
+                          </div>
+                          <span
+                            className={clsx(
+                              "px-2 py-1 text-xs font-semibold rounded-full",
+                              policy.policy_status === "Active"
+                                ? "text-green-800 bg-green-200"
+                                : "text-red-800 bg-red-200"
+                            )}
+                          >
+                            {policy.policy_status}
+                          </span>
                         </div>
-                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
-                          Active
-                        </span>
-                      </div>
-                    </Link>
-                    <Link to="/policy">
-                      <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
-                        <div>
-                          <p className="text-base font-semibold">
-                            transfer_sepolia_usdc
-                          </p>
-                          <p className="text-sm  text-gray">
-                            Policy for transferring usdc
-                          </p>
-                        </div>
-                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
-                          Active
-                        </span>
-                      </div>
-                    </Link>
-                    <Link to="/policy">
-                      <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
-                        <div>
-                          <p className="text-base font-semibold">
-                            transfer_sepolia_usdc
-                          </p>
-                          <p className="text-sm  text-gray">
-                            Policy for transferring usdc
-                          </p>
-                        </div>
-                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
-                          Active
-                        </span>
-                      </div>
-                    </Link>
+                      </Link>
+                    ))}
                     <Link to="/policy">
                       <div className="flex justify-end items-center gap-2 mt-4 group">
                         <button className="text-sm text-primary group-hover:opacity-70">
