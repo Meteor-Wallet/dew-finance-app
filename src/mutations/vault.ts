@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useWalletSelector } from "../walletSelector";
 import { vaultQueries, type TAsset } from "../queries/vault";
 import { FLAT_LIST_TOKENS } from "../intents/constants/tokens";
@@ -7,12 +7,27 @@ import { queryClient } from "../queryClient";
 import { intentsQueries } from "../queries/intents";
 import { asyncTimerUtils } from "../utils/asyncTimerUtils";
 import { dewAccountUtils } from "../utils/dewAccountUtils";
-import { walletStore, type ChainName } from "../stores/wallet_store";
+import { type ChainName } from "../stores/wallet_store";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
+import { toast } from "sonner";
+import { vaultActionStore } from "../stores/vault_action_store";
+import { useRef } from "react";
 
 const useDepositToVaultMutation = () => {
   const { requestDeposit, signMessage } = useWalletSelector();
+
+  const toastIdRef = useRef<number | string>(undefined);
+
   return useMutation({
+    onError: (error) => {
+      toast.error("Something went wrong", {
+        description: error.message,
+        id: toastIdRef.current,
+      });
+    },
+    onSuccess: () => {
+      vaultActionStore.store.trigger.updateDepositAmount({ amount: "" });
+    },
     mutationFn: async ({
       intentsDepositAddress,
       nearAddress,
@@ -38,7 +53,43 @@ const useDepositToVaultMutation = () => {
       blockchainAddress: string;
       chain: ChainName;
     }) => {
-      console.log("Checking if storage deposited");
+      toastIdRef.current = toast.loading("Depositing", {
+        description: "Making sure deposit amount is valid",
+      });
+
+      if ("MultiToken" in asset) {
+        const intentsSupportedTokens = await queryClient.fetchQuery(
+          intentsQueries.getSupportedTokensQueryOptions()
+        );
+
+        const tokenInfo = intentsSupportedTokens.tokens.find(
+          (e) => e.intents_token_id === asset.MultiToken.token_id
+        );
+
+        if (!tokenInfo) {
+          throw new Error(
+            "Unable to map token minimum deposit, please try again later"
+          );
+        }
+
+        if (
+          Big(amount)
+            .mul(Big(10).pow(tokenInfo.decimals))
+            .lte(Big(tokenInfo.min_deposit_amount))
+        ) {
+          throw new Error(
+            `Minimum deposit is ${Big(tokenInfo.min_deposit_amount)
+              .div(Big(10).pow(tokenInfo.decimals))
+              .toFixed()}`
+          );
+        }
+      }
+
+      toast.loading("Depositing", {
+        description: "Checking if storage is deposited",
+        id: toastIdRef.current,
+      });
+
       const isStorageDepositedToVault = await queryClient.fetchQuery(
         vaultQueries.getCheckIsStorageDepositedQueryOptions({
           vaultContractId,
@@ -47,7 +98,10 @@ const useDepositToVaultMutation = () => {
       );
 
       if (!isStorageDepositedToVault) {
-        console.log("Calling backend to sponsor storage deposit to this vault");
+        toast.loading("Depositing", {
+          description: "Sponsoring storage deposit",
+          id: toastIdRef.current,
+        });
         await DewAccountBackend.storageDeposit({
           account_id: nearAddress,
           vault_id: vaultContractId,
@@ -81,14 +135,20 @@ const useDepositToVaultMutation = () => {
 
       console.log(depositAmount, "depositAmount");
       console.log(minShares, "minShares");
+      toast.loading("Depositing", {
+        description: "Requesting deposit in wallet selector",
+        id: toastIdRef.current,
+      });
       await requestDeposit({
         asset,
         amount: depositAmount,
         receiver_address: intentsDepositAddress,
       });
 
-      console.log("Deposited successfully");
-      console.log("Pending intents to detect the deposit");
+      toast.loading("Depositing", {
+        description: "Awaiting funds to be detected (This may take a minute)",
+        id: toastIdRef.current,
+      });
       // only MultiToken need this check
       // FungibleToken is immediate
       if ("MultiToken" in asset) {
@@ -115,7 +175,11 @@ const useDepositToVaultMutation = () => {
         }
       }
 
-      console.log("Getting message to be signed via wallet");
+      toast.loading("Depositing", {
+        description:
+          "Generating message to be signed for publishing transaction",
+        id: toastIdRef.current,
+      });
       const transaction = {
         receiverId: "intents.near",
         actions: [
@@ -146,10 +210,16 @@ const useDepositToVaultMutation = () => {
           blockchainAddress,
         });
 
-      console.log("Pending wallet sign");
+      toast.loading("Depositing", {
+        description: "Requesting wallet selector to sign the message",
+        id: toastIdRef.current,
+      });
       const signature = await signMessage(message);
 
-      console.log("Pending backend to call the transaction");
+      toast.loading("Depositing", {
+        description: "Publishing transaction",
+        id: toastIdRef.current,
+      });
       await DewAccountBackend.signTransaction({
         receiverId: nearAddress,
         args: {
@@ -159,7 +229,10 @@ const useDepositToVaultMutation = () => {
           transaction,
         },
       });
-      console.log("All done");
+      toast.success("Depositing", {
+        description: "Successfully deposited!",
+        id: toastIdRef.current,
+      });
     },
   });
 };
@@ -167,7 +240,18 @@ const useDepositToVaultMutation = () => {
 const useWithdrawFromVaultMutation = () => {
   const { signMessage } = useWalletSelector();
 
+  const toastIdRef = useRef<number | string>(undefined);
+
   return useMutation({
+    onError: (error) => {
+      toast.error("Something went wrong", {
+        description: error.message,
+        id: toastIdRef.current,
+      });
+    },
+    onSuccess: () => {
+      vaultActionStore.store.trigger.updateWithdrawAmount({ amount: "" });
+    },
     mutationFn: async ({
       share,
       asset,
@@ -206,7 +290,45 @@ const useWithdrawFromVaultMutation = () => {
         Big(1 - Number(slippagePercent) / 100)
       );
 
-      console.log("Getting message to be signed via wallet - redeem");
+      toastIdRef.current = toast.loading("Withdrawing", {
+        description: "Making sure the withdrawal amount is valid",
+      });
+
+      if ("MultiToken" in asset) {
+        const intentsSupportedTokens = await queryClient.fetchQuery(
+          intentsQueries.getSupportedTokensQueryOptions()
+        );
+
+        const tokenInfo = intentsSupportedTokens.tokens.find(
+          (e) => e.intents_token_id === asset.MultiToken.token_id
+        );
+
+        if (!tokenInfo) {
+          throw new Error(
+            "Unable to map token minimum withdrawal, please try again later"
+          );
+        }
+
+        // add both of these to make sure withdrawal is not exhausted
+        const withdrawalCost = Big(tokenInfo.min_withdrawal_amount).add(
+          Big(tokenInfo.withdrawal_fee)
+        );
+
+        if (expectedAssetAmount.lte(withdrawalCost)) {
+          throw new Error(
+            `Minimum withdrawal is ${withdrawalCost
+              .div(Big(10).pow(tokenInfo.decimals))
+              .toFixed()}`
+          );
+        }
+      }
+
+      toast.loading("Withdrawing", {
+        description:
+          "Generating message to be signed for publishing transaction - redeem",
+        id: toastIdRef.current,
+      });
+      console.log(toastIdRef.current);
       const redeemTransaction = {
         receiverId: vaultContractId,
         actions: [
@@ -236,10 +358,16 @@ const useWithdrawFromVaultMutation = () => {
           blockchainAddress,
         });
 
-      console.log("Pending wallet sign - redeem");
+      toast.loading("Withdrawing", {
+        description: "Requesting wallet selector to sign the message - redeem",
+        id: toastIdRef.current,
+      });
       const redeemSignature = await signMessage(redeemMessage);
 
-      console.log("Pending backend to call the transaction - redeem");
+      toast.loading("Withdrawing", {
+        description: "Publishing transaction - redeem",
+        id: toastIdRef.current,
+      });
       await DewAccountBackend.signTransaction({
         receiverId: nearAddress,
         args: {
@@ -251,12 +379,10 @@ const useWithdrawFromVaultMutation = () => {
       });
 
       if ("MultiToken" in asset) {
-        console.log("mt_tokens should be arrived in the abstract account now");
-        console.log("lets call another transaction to withdraw it");
-
-        console.log(
-          "Checking balance in intents, we will use this amount and withdrawing all of them"
-        );
+        toast.loading("Withdrawing", {
+          description: "Reading balance in abstract account after redeeming",
+          id: toastIdRef.current,
+        });
         const balance = await queryClient.fetchQuery(
           intentsQueries.getBalanceInIntentsQueryOptions({
             nearAddress: nearAddress,
@@ -264,7 +390,11 @@ const useWithdrawFromVaultMutation = () => {
           })
         );
 
-        console.log("Getting message to be signed via wallet - ft_withdraw");
+        toast.loading("Withdrawing", {
+          description:
+            "Generating message to be signed for publishing transaction - withdraw",
+          id: toastIdRef.current,
+        });
         const tokenId = asset.MultiToken.token_id.replace("nep141:", "");
         const withdrawTransaction = {
           receiverId: "intents.near",
@@ -294,10 +424,17 @@ const useWithdrawFromVaultMutation = () => {
             blockchainAddress,
           });
 
-        console.log("Pending wallet sign - ft_withdraw");
+        toast.loading("Withdrawing", {
+          description:
+            "Requesting wallet selector to sign the message - withdraw",
+          id: toastIdRef.current,
+        });
         const withdrawSignature = await signMessage(withdrawMessage);
 
-        console.log("Pending backend to call the transaction - ft_withdraw");
+        toast.loading("Withdrawing", {
+          description: "Publishing transaction - withdraw",
+          id: toastIdRef.current,
+        });
         await DewAccountBackend.signTransaction({
           receiverId: nearAddress,
           args: {
@@ -308,12 +445,15 @@ const useWithdrawFromVaultMutation = () => {
           },
         });
       }
-      console.log("ALL DONE");
+      toast.success("Withdrawing", {
+        description: "Withdraw successfully",
+        id: toastIdRef.current,
+      });
     },
   });
 };
 
 export const vaultMutations = {
   useDepositToVaultMutation,
-  useWithdrawFromVaultMutation
+  useWithdrawFromVaultMutation,
 };

@@ -110,7 +110,43 @@ const getBalanceInIntentsQueryOptions = ({
   });
 };
 
+const getSupportedTokensQueryOptions = () => {
+  return queryOptions({
+    queryKey: ["intents", "supportedTokens"],
+    queryFn: async () => {
+      const { data } = await chainDefuserAxios.post<
+        TChainDefuserResult<{
+          tokens: ({
+            defuse_asset_identifier: string;
+            near_token_id: string;
+            decimals: number;
+            asset_name: string;
+            min_deposit_amount: string;
+            min_withdrawal_amount: string;
+            withdrawal_fee: string;
+            intents_token_id: string;
+          } & (
+            | { standard: "nep141" }
+            | {
+                standard: "nep245";
+                multi_token_id: string;
+              }
+          ))[];
+        }>
+      >("", {
+        jsonrpc: "2.0",
+        id: "dontcare",
+        method: "supported_tokens",
+        params: [],
+      });
+
+      return chainDefuserResultParser(data);
+    },
+  });
+};
+
 export const intentsQueries = {
   getIntentsAddressQueryOptions,
   getBalanceInIntentsQueryOptions,
+  getSupportedTokensQueryOptions
 };
