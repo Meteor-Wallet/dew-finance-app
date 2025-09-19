@@ -38,7 +38,9 @@ const getVaultApy = (data: {
   variant: "1" | "7" | "30";
   vaultContractId: string;
 }) => {
-  return axiosInstance.post<string>("/dew-vault/vault-apy", data);
+  return axiosInstance.get<string>("/dew-vault/vault-apy", {
+    params: data
+  });
 };
 
 export const DewAccountBackend = {
