@@ -12,6 +12,7 @@ import { DewAccountBackend } from "../backend/DewAccountBackend";
 import { toast } from "sonner";
 import { vaultActionStore } from "../stores/vault_action_store";
 import { useRef } from "react";
+import { accountQueries } from "../queries/account";
 
 const useDepositToVaultMutation = () => {
   const { requestDeposit, signMessage } = useWalletSelector();
@@ -25,7 +26,14 @@ const useDepositToVaultMutation = () => {
         id: toastIdRef.current,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, params) => {
+      queryClient.invalidateQueries({
+        queryKey: accountQueries.queryKey.accountBalanceQueryKey({
+          asset: params.asset,
+          selectedChain: params.chain,
+          address: params.blockchainAddress,
+        }),
+      });
       vaultActionStore.store.trigger.updateDepositAmount({ amount: "" });
     },
     mutationFn: async ({
@@ -249,7 +257,13 @@ const useWithdrawFromVaultMutation = () => {
         id: toastIdRef.current,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, params) => {
+      queryClient.invalidateQueries(
+        vaultQueries.getMyPositionQueryOptions({
+          vaultContractId: params.vaultContractId,
+          nearAddress: params.nearAddress,
+        })
+      );
       vaultActionStore.store.trigger.updateWithdrawAmount({ amount: "" });
     },
     mutationFn: async ({
@@ -281,6 +295,17 @@ const useWithdrawFromVaultMutation = () => {
       // user must've gone through deposit before
       // so their account's storage for the vault should be deposited
       // we skip the storage deposit check here
+
+      // make sure the intents token is starting with nep141:
+      // nep245: is not supported yet
+
+      if ("MultiToken" in asset) {
+        if (!asset.MultiToken.token_id.startsWith("nep141:")) {
+          throw new Error(
+            `Token (${asset.MultiToken.token_id}) not supported at the moment.`
+          );
+        }
+      }
 
       const expectedAssetAmount = Big(share)
         .mul(exchangeRate)

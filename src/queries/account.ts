@@ -1,7 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
 import { useWalletSelector } from "../walletSelector";
 import type { TAsset } from "./vault";
-import { walletStore } from "../stores/wallet_store";
+import { walletStore, type ChainName } from "../stores/wallet_store";
+
+const accountBalanceQueryKey = ({
+  asset,
+  address,
+  selectedChain,
+}: {
+  asset: TAsset | null;
+  address?: string;
+  selectedChain: ChainName;
+}) => {
+  return [
+    "account",
+    "balance",
+    {
+      asset,
+      address: address,
+      // required to refresh when changing between EVM networks
+      selectedChain,
+    },
+  ];
+};
 
 const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
   const { getBalance } = useWalletSelector();
@@ -10,16 +31,12 @@ const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
     walletStore.selectors.useConnectedWalletAddress();
 
   return useQuery({
-    queryKey: [
-      "account",
-      "balance",
-      {
-        asset,
-        address: connectedWalletAddress?.address,
-        // required to refresh when changing between EVM networks
-        selectedChain,
-      },
-    ],
+    queryKey: accountBalanceQueryKey({
+      asset,
+      address: connectedWalletAddress?.address,
+      // required to refresh when changing between EVM networks
+      selectedChain,
+    }),
     queryFn: async () => {
       return getBalance({
         address: connectedWalletAddress?.address!,
@@ -32,4 +49,7 @@ const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
 
 export const accountQueries = {
   useAccountBalance,
+  queryKey: {
+    accountBalanceQueryKey
+  }
 };
