@@ -722,14 +722,15 @@ export default function LeftPanel() {
           <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color ">
             <p className="text-sm text-gray">Net APY</p>
             <p className="text-2xl font-semibold text-green">
-              <CountUp
+              {/* <CountUp
                 from={0}
                 to={parseFloat("18.34")}
                 separator=","
                 direction="up"
                 duration={0.1}
                 className="count-up-text"
-              />
+              /> */}
+              -
               %
             </p>
           </div>
