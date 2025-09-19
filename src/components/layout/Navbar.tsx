@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useRive } from "@rive-app/react-canvas";
 import { walletStore, type ChainName } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
+import { stringUtils } from "../../utils/stringUtils";
 
 const chain_image_map: {
   [key in ChainName]: string;
@@ -115,7 +116,9 @@ export default function Navbar() {
                     onClick={() => setShowDropdown(!showDropdown)}
                     className="bg-card-background border border-card-border flex items-center gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-98 hover:opacity-80"
                   >
-                    {connectedWalletAddress.address}
+                    {stringUtils
+                      .omitText(connectedWalletAddress?.address)
+                      .toLocaleUpperCase()}
                     <ChevronDown
                       size={18}
                       className={`transition-transform duration-300 ${
@@ -247,7 +250,9 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
               />
             </div>
             <p className="text-xl md:text-base text-center font-semibold flex gap-1 items-center">
-              {connectedWalletAddress?.address}
+              {stringUtils
+                .omitText(connectedWalletAddress?.address ?? "")
+                .toLocaleUpperCase()}
               <Copy
                 className="cursor-pointer"
                 onClick={() => {
@@ -262,7 +267,9 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
               />
             </p>
             <p className="text-base md:text-xs text-center text-gray md:mt-0 mt-[-5px]">
-              {currentNearAccountId}
+              {stringUtils
+                .omitText(currentNearAccountId ?? "")
+                .toLocaleUpperCase()}
             </p>
           </div>
         </Motion>

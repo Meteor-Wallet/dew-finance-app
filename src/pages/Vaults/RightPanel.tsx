@@ -79,11 +79,12 @@ const RightPanel = memo(() => {
   });
 
   const managementFee = vaultConfigQuery.data?.management_fee_bps
-    ? `${vaultConfigQuery.data?.management_fee_bps / 10000}%`
-    : "-";
+    ? vaultConfigQuery.data?.management_fee_bps / 10000
+    : 0;
   const performanceFee = vaultConfigQuery.data?.performance_fee_bps
-    ? `${vaultConfigQuery.data?.performance_fee_bps / 10000}%`
-    : "-";
+    ? vaultConfigQuery.data?.performance_fee_bps / 10000
+    : 0;
+  const totalFee = (managementFee + performanceFee).toFixed(3);
 
   const roles = [
     {
@@ -371,14 +372,16 @@ const RightPanel = memo(() => {
                     {/* Vault Fees Content  */}
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-base text-white ">Vault Fee</p>
-                      <p className="text-sm text-gray">Total Fee : 1.05%</p>
+                      <p className="text-sm text-gray">
+                        Total Fee : {totalFee}%
+                      </p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 mt-3">
                       <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-5 py-7 rounded-md border border-dark-border-color flex justify-between">
                         <div>
                           <p className="text-sm text-gray">Management fee</p>
                           <p className="text-2xl font-semibold">
-                            {managementFee}
+                            {managementFee}%
                           </p>
                         </div>
                         <img src={FeeIcon1} className="  h-[60px]" />
@@ -388,7 +391,7 @@ const RightPanel = memo(() => {
                         <div>
                           <p className="text-sm text-gray">Performance fee</p>
                           <p className="text-2xl font-semibold">
-                            {performanceFee}
+                            {performanceFee}%
                           </p>
                         </div>
                         <img src={FeeIcon2} className="  h-[60px]" />
