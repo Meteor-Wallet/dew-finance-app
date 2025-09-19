@@ -394,7 +394,7 @@ const RightPanel = memo(() => {
                         <img src={FeeIcon2} className="  h-[60px]" />
                       </div>
 
-                      <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-4 py-7 rounded-md border border-dark-border-color flex justify-between">
+                      {/* <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-4 py-7 rounded-md border border-dark-border-color flex justify-between">
                         <div>
                           <p className="text-sm text-gray">Entry/Exit Fee</p>
                           <p className="text-2xl font-semibold">0.8%</p>
@@ -410,7 +410,7 @@ const RightPanel = memo(() => {
                           <p className="text-2xl font-semibold">0.1%</p>
                         </div>
                         <img src={FeeIcon4} className="  h-[60px]" />
-                      </div>
+                      </div> */}
                     </div>
 
                     <hr className="border-t border-border-color mt-9 mb-9" />
