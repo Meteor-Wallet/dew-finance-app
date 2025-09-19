@@ -3,6 +3,7 @@ import nearLogo from "../../assets/near.svg";
 import ethLogo from "../../assets/eth.svg";
 import arbLogo from "../../assets/arb.png";
 import solanaLogo from "../../assets/solana.svg";
+import Motion from "../utils/Motion";
 import Modal from "react-modal";
 import { memo } from "react";
 import { walletStore } from "../../stores/wallet_store";
@@ -43,33 +44,37 @@ const NetworkModal = () => {
           Switch to a supported blockchain network to access and manage your
           vault
         </p>
-        <ul className="max-h-[70vh] overflow-y-auto space-y-4 pb-4">
-          <li
-            className="connect-wallet-list-items"
-            onClick={() => {
-              walletStore.store.trigger.switchChain({
-                chain: "eth",
-              });
-            }}
-          >
-            <div className="list-logo near-logo">
-              <img src={ethLogo} />{" "}
-            </div>
-            Ethereum
-          </li>
-          <li
-            className="connect-wallet-list-items"
-            onClick={() => {
-              walletStore.store.trigger.switchChain({
-                chain: "arbitrum",
-              });
-            }}
-          >
-            <div className="list-logo near-logo">
-              <img src={arbLogo} />{" "}
-            </div>
-            Arbitrum
-          </li>
+        <ul className="max-h-[70vh]  space-y-4 pb-4">
+          <Motion direction="left" duration={0.4} delay={0.1}>
+            <li
+              className="connect-wallet-list-items"
+              onClick={() => {
+                walletStore.store.trigger.switchChain({
+                  chain: "eth",
+                });
+              }}
+            >
+              <div className="list-logo near-logo">
+                <img src={ethLogo} />{" "}
+              </div>
+              Ethereum
+            </li>
+          </Motion>
+          <Motion direction="left" duration={0.4} delay={0.3}>
+            <li
+              className="connect-wallet-list-items"
+              onClick={() => {
+                walletStore.store.trigger.switchChain({
+                  chain: "arbitrum",
+                });
+              }}
+            >
+              <div className="list-logo near-logo">
+                <img src={arbLogo} />{" "}
+              </div>
+              Arbitrum
+            </li>
+          </Motion>
         </ul>
         <button
           onClick={handleClose}

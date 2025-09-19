@@ -20,9 +20,10 @@ export default function Vaults() {
         className="absolute bottom-[10vh] right-[-40px] w-[10px] dew-float3"
       />
 
+      
       <LeftPanel />
-
       <RightPanel />
+
     </div>
   );
 }

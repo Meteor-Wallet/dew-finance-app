@@ -12,6 +12,8 @@ export type ChainName = EvmChainName | SolanaChainName;
 
 const store = createStore({
   context: {
+    isDepositWalletModalOpen: false,
+    isRedeemWalletModalOpen: false,
     isConnectWalletModalOpen: false,
     isSwitchNetworkModalOpen: false,
     isOnboardModalOpen: false,
@@ -20,6 +22,8 @@ const store = createStore({
     nearAccountId: null,
   } as {
     isSwitchNetworkModalOpen: boolean;
+    isDepositWalletModalOpen: boolean;
+    isRedeemWalletModalOpen: boolean;
     isConnectWalletModalOpen: boolean;
     isOnboardModalOpen: boolean;
     connectedWallets: {
@@ -30,6 +34,22 @@ const store = createStore({
     nearAccountId: string | null;
   },
   on: {
+    openRedeemWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isRedeemWalletModalOpen = true;
+      }),
+    closeRedeemWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isRedeemWalletModalOpen = false;
+      }),
+    openDepositWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isDepositWalletModalOpen = true;
+      }),
+    closeDepositWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isDepositWalletModalOpen = false;
+      }),
     openConnectWalletModal: (context) =>
       produce(context, (draft) => {
         draft.isConnectWalletModalOpen = true;
@@ -128,6 +148,14 @@ const useConnectedWalletAddress = () => {
   );
 };
 
+const useIsRedeemWalletModalOpen = () => {
+  return useSelector(store, ({ context }) => context.isRedeemWalletModalOpen);
+};
+
+const useIsDepositWalletModalOpen = () => {
+  return useSelector(store, ({ context }) => context.isDepositWalletModalOpen);
+};
+
 const useIsConnectWalletModalOpen = () => {
   return useSelector(store, ({ context }) => context.isConnectWalletModalOpen);
 };
@@ -152,6 +180,8 @@ export const walletStore = {
   store,
   selectors: {
     useIsConnectWalletModalOpen,
+    useIsDepositWalletModalOpen,
+    useIsRedeemWalletModalOpen,
     useIsSwitchNetworkModalOpen,
     useIsOnboardModalOpen,
     useSelectedChain,
