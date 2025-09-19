@@ -51,7 +51,7 @@ import { vaultQueries } from "../../queries/vault";
 
 const RightPanel = memo(() => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: "stable-test-2.dew-finance.near",
   });
 
   const vaultContractId = searchParams.get("vaultContractId");

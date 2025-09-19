@@ -22,7 +22,7 @@ import clsx from "clsx";
 
 const MyPosition = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: "stable-test-2.dew-finance.near",
   });
 
   const nearAddress = walletStore.selectors.useCurrentNearAccountId();
@@ -250,7 +250,7 @@ const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
 
 const DepositTab = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: "stable-test-2.dew-finance.near",
   });
 
   const vaultContractId = searchParams.get("vaultContractId");
@@ -436,7 +436,7 @@ const DepositTab = () => {
 
 const WithdrawalTab = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: "stable-test-2.dew-finance.near",
   });
 
   const selectedChain = walletStore.selectors.useSelectedChain();
