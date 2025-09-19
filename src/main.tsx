@@ -67,6 +67,7 @@ connectedWalletSelector.subscribe(async (wallet) => {
         });
       }
     } catch (err) {
+      console.log(err)
       toast.error("Account", {
         description: "Failed to check account status, please try to refresh",
         id: toastId,
