@@ -26,7 +26,7 @@ function decodeInterface(base64: string): string {
   }
 }
 
-const DEFAULT_VAULT_CONTRACT_ID = "stable-test-1.dew-finance.near"
+const DEFAULT_VAULT_CONTRACT_ID = "stable-test-2.dew-finance.near"
 
 export const vaultUtils = {
   isChainSigTransaction,
