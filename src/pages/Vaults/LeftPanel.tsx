@@ -298,6 +298,8 @@ const DepositTab = () => {
     });
   }, [availableTokens]);
 
+  const depositAmount = vaultActionStore.selectors.useDepositAmount();
+
   const canDeposit =
     intentsAddressQuery.data &&
     nearAddress &&
@@ -305,7 +307,7 @@ const DepositTab = () => {
     exchangeRateForSelectedAsset &&
     vaultShareMetadataQuery.data &&
     vaultContractId &&
-    connectedWalletAddress;
+    connectedWalletAddress && depositAmount;
 
   return (
     <motion.div
@@ -520,7 +522,8 @@ const WithdrawalTab = () => {
     vaultShareMetadataQuery.data &&
     vaultContractId &&
     connectedWalletAddress &&
-    assetDecimals !== null
+    assetDecimals !== null &&
+    withdrawAmount
 
   return (
     <motion.div
