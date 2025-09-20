@@ -22,7 +22,14 @@ const data = [
   { date: "Dec 16", value: 5.72 },
 ];
 
-export default function DewChart() {
+export default function DewChart({
+  data
+}: {
+  data: {
+    date: string;
+    value: number;
+  }[]
+}) {
   return (
     <div className="w-full h-96">
       <ResponsiveContainer>

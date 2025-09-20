@@ -85,6 +85,24 @@ const RightPanel = memo(() => {
     // }
   });
 
+  const historicalBalanceQuery = useQuery({
+    ...vaultQueries.getHistoricalBalanceQueryOptions({
+      vaultContractId: vaultContractId!,
+      limit: 10,
+      numberOf30MinsInterval: "1",
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const historicalSharePriceQuery = useQuery({
+    ...vaultQueries.getHistoricalSharePriceQueryOptions({
+      vaultContractId: vaultContractId!,
+      limit: 10,
+      numberOf30MinsInterval: "1",
+    }),
+    enabled: vaultContractId !== null,
+  });
+
   const allocationDonutDetails = useMemo(() => {
     const filteredList = (balanceDistributionQuery.data || []).filter((v) => {
       if (Number(v.amount) <= 0) {
@@ -112,6 +130,47 @@ const RightPanel = memo(() => {
       totalDistribution: totalDistributionInBig.toFixed(),
     };
   }, [balanceDistributionQuery.data]);
+
+  const sharePriceDetails = useMemo(() => {
+    let latestSharePrice = "0";
+    if (
+      historicalSharePriceQuery.data &&
+      historicalSharePriceQuery.data.length > 0
+    ) {
+      latestSharePrice = historicalSharePriceQuery.data[0].price_in_base_asset;
+    }
+    const chart = (historicalSharePriceQuery.data || []).map((v) => {
+      return {
+        date: new Date(v.bucket).toLocaleString(),
+        value: Number(v.price_in_base_asset),
+      };
+    }).reverse()
+
+    return {
+      latestSharePrice,
+      chart,
+    };
+  }, [historicalSharePriceQuery.data]);
+
+  const balanceDetails = useMemo(() => {
+    let latestCurrentTotal = "0";
+    if (historicalBalanceQuery.data && historicalBalanceQuery.data.length > 0) {
+      latestCurrentTotal = historicalBalanceQuery.data[0].balance_in_base_asset;
+    }
+    const chart = (historicalBalanceQuery.data || [])
+      .map((v) => {
+        return {
+          date: new Date(v.bucket).toLocaleString(),
+          value: Number(v.balance_in_base_asset),
+        };
+      })
+      .reverse();
+
+    return {
+      latestCurrentTotal,
+      chart,
+    };
+  }, [historicalBalanceQuery.data]);
 
   const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
     asset: baseAssetQuery.data || null,
@@ -251,12 +310,15 @@ const RightPanel = memo(() => {
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 {assetSymbol}{" "}
+                                  {stringUtils.truncateDecimals(
+                                    balanceDetails.latestCurrentTotal
+                                  )}{" "}
+                                  {assetSymbol}{" "}
                                 </h3>
                                 {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
-                            <div className="flex gap-2 text-xs">
+                            {/* <div className="flex gap-2 text-xs">
                               {["1D", "1W", "1M", "1Y"].map((range) => (
                                 <button
                                   key={range}
@@ -271,10 +333,10 @@ const RightPanel = memo(() => {
                               >
                                 {"ALL"}
                               </button>
-                            </div>
+                            </div> */}
                           </div>
                           <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <DewChart />
+                            <DewChart data={balanceDetails.chart} />
                           </div>
                         </div>
                       </div>
@@ -338,7 +400,7 @@ const RightPanel = memo(() => {
 
                     {/* APY History Graph  */}
                     <p className="text-base text-white mb-4">
-                      APY History Overview
+                      Share Price History Overview
                     </p>
                     <div className="relative w-full h-full rounded-lg overflow-hidden">
                       <div className=" p-4 rounded-lg">
@@ -352,12 +414,13 @@ const RightPanel = memo(() => {
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 {assetSymbol}{" "}
+                                  {sharePriceDetails.latestSharePrice}{" "}
+                                  {assetSymbol}{" "}
                                 </h3>
                                 {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
-                            <div className="flex gap-2 text-xs">
+                            {/* <div className="flex gap-2 text-xs">
                               {["1D", "1W", "1M", "1Y"].map((range) => (
                                 <button
                                   key={range}
@@ -372,10 +435,10 @@ const RightPanel = memo(() => {
                               >
                                 {"ALL"}
                               </button>
-                            </div>
+                            </div> */}
                           </div>
                           <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <DewChart2 />
+                            <DewChart2 data={sharePriceDetails.chart} />
                           </div>
                         </div>
                       </div>

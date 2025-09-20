@@ -514,30 +514,82 @@ const getVaultBaseAssetQueryOptions = ({
   return queryOptions({
     queryKey: ["vault", "baseAsset", vaultContractId],
     queryFn: async () => {
-      const data = await nearUtils.provider.callFunction(
+      const data = (await nearUtils.provider.callFunction(
         vaultContractId,
         "asset",
         {}
-      ) as TAsset;
+      )) as TAsset;
 
-      return data
+      return data;
     },
   });
 };
 
 const getVaultBalanceDistributionQueryOptions = ({
-  vaultContractId
+  vaultContractId,
 }: {
-  vaultContractId: string
+  vaultContractId: string;
 }) => {
   return queryOptions({
-    queryKey: ['vault', 'vaultBalanceDistribution', vaultContractId],
+    queryKey: ["vault", "vaultBalanceDistribution", vaultContractId],
     queryFn: async () => {
-      const {data} = await DewAgentBackend.getCacheBalanceDistribution()
-      return data
-    }
-  })
-}
+      const { data } = await DewAgentBackend.getCacheBalanceDistribution();
+      return data;
+    },
+  });
+};
+
+const getHistoricalSharePriceQueryOptions = ({
+  vaultContractId,
+  limit,
+  numberOf30MinsInterval,
+}: {
+  vaultContractId: string;
+  limit: number;
+  numberOf30MinsInterval: "1";
+}) => {
+  return queryOptions({
+    queryKey: [
+      "vault",
+      "historicalSharePrice",
+      { vaultContractId, limit, numberOf30MinsInterval },
+    ],
+    queryFn: async () => {
+      const { data } = await DewAccountBackend.getHistoricalSharePrice({
+        vaultContractId,
+        limit,
+        numberOf30MinsInterval,
+      });
+      return data;
+    },
+  });
+};
+
+const getHistoricalBalanceQueryOptions = ({
+  vaultContractId,
+  limit,
+  numberOf30MinsInterval,
+}: {
+  vaultContractId: string;
+  limit: number;
+  numberOf30MinsInterval: "1";
+}) => {
+  return queryOptions({
+    queryKey: [
+      "vault",
+      "historicalBalance",
+      { vaultContractId, limit, numberOf30MinsInterval },
+    ],
+    queryFn: async () => {
+      const { data } = await DewAccountBackend.getHistoricalBalance({
+        vaultContractId,
+        limit,
+        numberOf30MinsInterval,
+      });
+      return data;
+    },
+  });
+};
 
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
@@ -556,5 +608,7 @@ export const vaultQueries = {
   getAllPoliciesInfiniteQueryOptions,
   getVaultApyQueryOptions,
   getVaultBaseAssetQueryOptions,
-  getVaultBalanceDistributionQueryOptions
+  getVaultBalanceDistributionQueryOptions,
+  getHistoricalSharePriceQueryOptions,
+  getHistoricalBalanceQueryOptions,
 };
