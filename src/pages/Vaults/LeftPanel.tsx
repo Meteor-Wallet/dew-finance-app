@@ -19,10 +19,12 @@ import Big from "big.js";
 import { CircularProgress } from "../../components/utils/CircularProgress";
 import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
+import { vaultUtils } from "../../utils/vaultUtils";
+import { stringUtils } from "../../utils/stringUtils";
 
 const MyPosition = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-2.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const nearAddress = walletStore.selectors.useCurrentNearAccountId();
@@ -250,7 +252,7 @@ const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
 
 const DepositTab = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-2.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const vaultContractId = searchParams.get("vaultContractId");
@@ -370,7 +372,7 @@ const DepositTab = () => {
             <img src={assetIcon} alt={assetSymbol} className="w-4 h-4" />
             <ArrowLeftRight className="text-gray" size={12} />
             <span>
-              {exchangeRateForSelectedAsset?.assetToShare}{" "}
+              {stringUtils.truncateDecimals(exchangeRateForSelectedAsset?.assetToShare)}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
             <img
@@ -436,7 +438,7 @@ const DepositTab = () => {
 
 const WithdrawalTab = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-2.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const selectedChain = walletStore.selectors.useSelectedChain();
@@ -576,7 +578,7 @@ const WithdrawalTab = () => {
           <span className="text-gray">Share</span>
           <div className="flex gap-1.5 items-center justify-center">
             <span>
-              {expectedShareToBeBurnt} {vaultShareMetadataQuery.data?.symbol}
+              {stringUtils.truncateDecimals(expectedShareToBeBurnt)} {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
             <img
               src={vaultShareMetadataQuery.data?.icon || undefined}
@@ -644,7 +646,7 @@ export default function LeftPanel() {
   const actionMode = vaultActionStore.selectors.useMode();
 
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-2.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const vaultContractId = searchParams.get("vaultContractId");

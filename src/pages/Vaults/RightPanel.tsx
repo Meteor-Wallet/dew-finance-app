@@ -19,10 +19,11 @@ import TransactionTable from "../../components/sample/TransactionTable";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
 import clsx from "clsx";
+import { vaultUtils } from "../../utils/vaultUtils";
 
 const RightPanel = memo(() => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-2.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const vaultContractId = searchParams.get("vaultContractId");

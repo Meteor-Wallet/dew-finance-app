@@ -14,7 +14,7 @@ import { vaultUtils } from "../utils/vaultUtils";
 
 export default function Policy() {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-2.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const vaultContractId = searchParams.get("vaultContractId");
