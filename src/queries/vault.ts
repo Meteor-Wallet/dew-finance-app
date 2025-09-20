@@ -370,9 +370,34 @@ export const zChainSigTransactionPolicy = zPolicyBase.extend({
     }),
   }),
 });
+
+export const zChainSigMessagePolicy = zPolicyBase.extend({
+  policy_type: z.literal("ChainSigMessage"),
+  policy_details: z.object({
+    ChainSigMessage: z.object({
+      derivation_path: z.string(),
+      sign_method: z.union([
+        z.literal("NearIntentsSwap")
+      ]),
+    }),
+  }),
+});
+
+export const zNearNativeTransactionPolicy = zPolicyBase.extend({
+  policy_type: z.literal("NearNativeTransaction"),
+  policy_details: z.object({
+    NearNativeTransaction: z.object({
+      chain_environment: z.string(),
+      restrictions: z.array(zRestrictionSchema).default([]),
+    }),
+  }),
+});
+
 const zPolicy = z.discriminatedUnion("policy_type", [
   zVaultConfigurationPolicy,
   zChainSigTransactionPolicy,
+  zChainSigMessagePolicy,
+  zNearNativeTransactionPolicy
 ]);
 
 export type TPolicy = z.infer<typeof zPolicy>;
