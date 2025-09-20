@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import Arb from "../../assets/arb.png";
 import Btc from "../../assets/btc.png";
 import Dai from "../../assets/dai-full.svg";
@@ -6,8 +6,6 @@ import Near from "../../assets/near.png";
 import Motion from "../../components/utils/Motion";
 import FeeIcon1 from "../../assets/fee_icon1.svg";
 import FeeIcon2 from "../../assets/fee_icon2.svg";
-import FeeIcon3 from "../../assets/fee_icon3.svg";
-import FeeIcon4 from "../../assets/fee_icon4.svg";
 import { motion, AnimatePresence } from "framer-motion";
 import DewChart from "../../components/sample/DewChart";
 import AllocationDonut from "../../components/sample/AllocationDonut";
@@ -20,6 +18,9 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
 import clsx from "clsx";
 import { vaultUtils } from "../../utils/vaultUtils";
+import { assetUtils } from "../../utils/assetUtils";
+import { stringUtils } from "../../utils/stringUtils";
+import Big from "big.js";
 
 const RightPanel = memo(() => {
   const [searchParams] = useSearchParams({
@@ -59,6 +60,54 @@ const RightPanel = memo(() => {
       limit: 5,
     }),
     enabled: vaultContractId !== null,
+  });
+
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const balanceDistributionQuery = useQuery({
+    ...vaultQueries.getVaultBalanceDistributionQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+    // to mock the pie chart data
+    // select: (data) => {
+    //   return data.map((v, idx) => {
+    //     return {
+    //       ...v,
+    //     amount: v.amount + idx * 100
+    //     }
+    //   })
+    // }
+  });
+
+  const allocationDonutDetails = useMemo(() => {
+    const totalDistributionInBig = (balanceDistributionQuery.data || []).reduce(
+      (prev, cur) => {
+        return prev.add(Big(cur.amount));
+      },
+      Big(0)
+    );
+    const donutFigures = (balanceDistributionQuery.data || []).map((v) => {
+
+      return {
+        name: v.assetSymbol,
+        value: v.amount === 0 ? 0 : Big(v.amount).div(totalDistributionInBig).mul(Big(100)).toNumber(),
+      };
+    });
+
+    return {
+      donutFigures,
+      totalDistribution: totalDistributionInBig.toFixed(),
+    };
+  }, [balanceDistributionQuery.data]);
+
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data || null,
   });
 
   const managementFee = vaultConfigQuery.data?.management_fee_bps
@@ -146,11 +195,15 @@ const RightPanel = memo(() => {
                           Benchmark Assets
                         </p>
                         <div className="flex gap-1.5 items-center ">
-                          <img src={Near} alt={"NEAR"} className="w-6 h-6" />{" "}
-                          <p className="text-base text-gray">NEAR </p>
+                          <img
+                            src={assetIcon}
+                            alt={assetSymbol}
+                            className="w-6 h-6"
+                          />{" "}
+                          <p className="text-base text-gray">{assetSymbol}</p>
                         </div>
                       </div>
-                      <div>
+                      {/* <div>
                         <p className="text-base text-white mb-2">Rewards</p>
                         <div className="flex gap-1.5 items-center ">
                           <img src={Near} alt={"NEAR"} className="w-6 h-6" />
@@ -170,7 +223,7 @@ const RightPanel = memo(() => {
                             className="w-6 h-6 ml-[-10px]"
                           />
                         </div>
-                      </div>
+                      </div> */}
                     </div>
 
                     <hr className="border-t border-border-color mt-9 mb-9" />
@@ -185,15 +238,15 @@ const RightPanel = memo(() => {
                           <div className="flex justify-between items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
-                                src={Near}
-                                alt={"NEAR"}
+                                src={assetIcon}
+                                alt={assetSymbol}
                                 className="w-12 h-12"
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 near{" "}
+                                  11,714.13 {assetSymbol}{" "}
                                 </h3>
-                                <p className="text-sm text-gray">$51,737,237</p>
+                                {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
                             <div className="flex gap-2 text-xs">
@@ -232,18 +285,21 @@ const RightPanel = memo(() => {
                           <div className="flex justify-between items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
-                                src={Near}
-                                alt={"NEAR"}
+                                src={assetIcon}
+                                alt={assetSymbol}
                                 className="w-12 h-12"
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 near{" "}
+                                  {stringUtils.truncateDecimals(
+                                    allocationDonutDetails.totalDistribution
+                                  )}{" "}
+                                  {assetSymbol}{" "}
                                 </h3>
-                                <p className="text-sm text-gray">$51,737,237</p>
+                                {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
-                            <div className="flex gap-2 text-xs">
+                            {/* <div className="flex gap-2 text-xs">
                               {["1D", "1W", "1M", "1Y"].map((range) => (
                                 <button
                                   key={range}
@@ -258,11 +314,15 @@ const RightPanel = memo(() => {
                               >
                                 {"ALL"}
                               </button>
+                            </div> */}
+                          </div>
+                          {allocationDonutDetails.totalDistribution !== "0" && (
+                            <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
+                              <AllocationDonut
+                                data={allocationDonutDetails.donutFigures}
+                              />
                             </div>
-                          </div>
-                          <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <AllocationDonut />
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -279,15 +339,15 @@ const RightPanel = memo(() => {
                           <div className="flex justify-between items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
-                                src={Near}
-                                alt={"NEAR"}
+                                src={assetIcon}
+                                alt={assetSymbol}
                                 className="w-12 h-12"
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 near{" "}
+                                  11,714.13 {assetSymbol}{" "}
                                 </h3>
-                                <p className="text-sm text-gray">$51,737,237</p>
+                                {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
                             <div className="flex gap-2 text-xs">

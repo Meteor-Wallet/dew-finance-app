@@ -21,6 +21,7 @@ import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 import { vaultUtils } from "../../utils/vaultUtils";
 import { stringUtils } from "../../utils/stringUtils";
+import { assetUtils } from "../../utils/assetUtils";
 
 const MyPosition = () => {
   const [searchParams] = useSearchParams({
@@ -132,35 +133,6 @@ const Token = ({ selectedAsset }: { selectedAsset: TAsset | null }) => {
       <span className="text-sm text-white font-semibold">{assetSymbol}</span>
     </div>
   );
-};
-
-// put as hook here as FungibleToken is very likely to use useQuery
-const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
-  let assetSymbol = "";
-  let assetIcon = "";
-  let assetDecimals: null | number = null;
-
-  if (asset) {
-    if ("MultiToken" in asset) {
-      const tokenInfo = FLAT_LIST_TOKENS.find(
-        (e) => e.defuseAssetId === asset.MultiToken.token_id
-      );
-
-      if (tokenInfo) {
-        assetSymbol = tokenInfo.symbolWithoutChain;
-        assetIcon = tokenInfo.icon;
-        assetDecimals = tokenInfo.decimals;
-      }
-    }
-  }
-
-  // TODO: Handle for FungibleToken
-
-  return {
-    assetSymbol,
-    assetIcon,
-    assetDecimals,
-  };
 };
 
 const useExchangeRateForAsset = ({
@@ -296,7 +268,7 @@ const DepositTab = () => {
   const connectedWalletAddress =
     walletStore.selectors.useConnectedWalletAddress();
 
-  const { assetIcon, assetSymbol } = useAssetSymbolAndIcon({
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
     asset: selectedDepositAsset,
   });
 
@@ -503,7 +475,7 @@ const WithdrawalTab = () => {
   const withdrawFromVaultMutation =
     vaultMutations.useWithdrawFromVaultMutation();
 
-  const { assetDecimals } = useAssetSymbolAndIcon({
+  const { assetDecimals } = assetUtils.useAssetSymbolAndIcon({
     asset: selectedWithdrawAsset,
   });
 

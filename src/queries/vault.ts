@@ -2,6 +2,7 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { nearUtils } from "../utils/nearUtils";
 import z from "zod";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
+import { DewAgentBackend } from "../backend/DewAgentBackend";
 
 const zAsset = z.union([
   z.object({
@@ -479,23 +480,60 @@ const getAllPoliciesInfiniteQueryOptions = ({
 };
 
 const getVaultApyQueryOptions = ({
-    vaultContractId,
-    variant
+  vaultContractId,
+  variant,
 }: {
   vaultContractId: string;
-  variant: "1" | "7" | "30"
+  variant: "1" | "7" | "30";
 }) => {
   return queryOptions({
-    queryKey: ['vault', 'vaultApy', {
-      vaultContractId,
-      variant
-    }],
-    queryFn: async() => {
-      const {data} = await DewAccountBackend.getVaultApy({
+    queryKey: [
+      "vault",
+      "vaultApy",
+      {
+        vaultContractId,
         variant,
-        vaultContractId
-      })
+      },
+    ],
+    queryFn: async () => {
+      const { data } = await DewAccountBackend.getVaultApy({
+        variant,
+        vaultContractId,
+      });
 
+      return data;
+    },
+  });
+};
+
+const getVaultBaseAssetQueryOptions = ({
+  vaultContractId,
+}: {
+  vaultContractId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vault", "baseAsset", vaultContractId],
+    queryFn: async () => {
+      const data = await nearUtils.provider.callFunction(
+        vaultContractId,
+        "asset",
+        {}
+      ) as TAsset;
+
+      return data
+    },
+  });
+};
+
+const getVaultBalanceDistributionQueryOptions = ({
+  vaultContractId
+}: {
+  vaultContractId: string
+}) => {
+  return queryOptions({
+    queryKey: ['vault', 'vaultBalanceDistribution', vaultContractId],
+    queryFn: async () => {
+      const {data} = await DewAgentBackend.getCacheBalanceDistribution()
       return data
     }
   })
@@ -516,5 +554,7 @@ export const vaultQueries = {
   getProtocolAllAssetWithdrawalCutQueryOptions,
   getPolicyCountQueryOptions,
   getAllPoliciesInfiniteQueryOptions,
-  getVaultApyQueryOptions
+  getVaultApyQueryOptions,
+  getVaultBaseAssetQueryOptions,
+  getVaultBalanceDistributionQueryOptions
 };

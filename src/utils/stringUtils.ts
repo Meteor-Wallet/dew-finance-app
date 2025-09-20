@@ -17,7 +17,7 @@ function truncateDecimals(number?: string | number) {
   if(!number){
     return "0"
   }
-  return Big(number).toFixed(6, Big.roundDown)
+  return Big(number).round(6, Big.roundDown).toFixed()
 }
 
 export const stringUtils = {

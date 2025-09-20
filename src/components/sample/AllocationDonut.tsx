@@ -1,4 +1,11 @@
-import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const data = [
   { name: "Party A", value: 8 },
@@ -18,29 +25,42 @@ const COLORS = [
   "#E67E22",
 ];
 
-export default function AllocationDonut() {
+export default function AllocationDonut({
+  data,
+}: {
+  data: { name: string; value: number }[];
+}) {
   return (
-    <div className="flex justify-center items-center">
-      <PieChart width={400} height={300}>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={70}
-          outerRadius={100}
-          paddingAngle={3}
-          dataKey="value"
-        >
-          {data.map((_, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={COLORS[index % COLORS.length]}
-            />
-          ))}
-        </Pie>
-        <Tooltip formatter={(val: number) => `${val}%`} />
-        <Legend />
-      </PieChart>
+    <div className="flex justify-center items-center h-full w-full">
+      <div
+        style={{
+          width: "80%",
+          height: "100%",
+        }}
+      >
+        <ResponsiveContainer>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={70}
+              outerRadius={100}
+              paddingAngle={3}
+              dataKey="value"
+            >
+              {data.map((_, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={COLORS[index % COLORS.length]}
+                />
+              ))}
+            </Pie>
+            <Tooltip formatter={(val: number) => `${val.toFixed(2)}%`} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
