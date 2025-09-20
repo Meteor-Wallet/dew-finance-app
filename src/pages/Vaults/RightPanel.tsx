@@ -86,19 +86,26 @@ const RightPanel = memo(() => {
   });
 
   const allocationDonutDetails = useMemo(() => {
-    const totalDistributionInBig = (balanceDistributionQuery.data || []).reduce(
-      (prev, cur) => {
-        return prev.add(Big(cur.amount));
-      },
-      Big(0)
-    );
-    const donutFigures = (balanceDistributionQuery.data || []).map((v) => {
-
-      return {
-        name: v.assetSymbol,
-        value: v.amount === 0 ? 0 : Big(v.amount).div(totalDistributionInBig).mul(Big(100)).toNumber(),
-      };
+    const filteredList = (balanceDistributionQuery.data || []).filter((v) => {
+      if (Number(v.amount) <= 0) {
+        return false;
+      }
+      return true;
     });
+    const totalDistributionInBig = filteredList.reduce((prev, cur) => {
+      return prev.add(Big(cur.amount));
+    }, Big(0));
+    const donutFigures = filteredList
+      .map((v) => {
+        return {
+          name: v.assetSymbol,
+          value: Big(v.amount)
+            .div(totalDistributionInBig)
+            .mul(Big(100))
+            .toNumber(),
+        };
+      })
+      .filter((e) => e.value !== 0);
 
     return {
       donutFigures,

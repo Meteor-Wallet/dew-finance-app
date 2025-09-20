@@ -42,10 +42,36 @@ const getVaultApy = (data: {
     params: data
   });
 };
+const getHistoricalSharePrice = (data: {
+  numberOf30MinsInterval: "1"
+  vaultContractId: string;
+  limit: number
+}) => {
+  return axiosInstance.get<{
+    bucket: string;
+    price_in_base_asset: string
+  }[]>("/dew-vault/vault-historical-share-price", {
+    params: data
+  });
+};
+const getHistoricalBalance = (data: {
+  numberOf30MinsInterval: "1"
+  vaultContractId: string;
+  limit: number
+}) => {
+  return axiosInstance.get<{
+    bucket: string;
+    balance_in_base_asset: string
+  }[]>("/dew-vault/vault-historical-balance", {
+    params: data
+  });
+};
 
 export const DewAccountBackend = {
   createDewAccount,
   signTransaction,
   storageDeposit,
   getVaultApy,
+  getHistoricalSharePrice,
+  getHistoricalBalance
 };
