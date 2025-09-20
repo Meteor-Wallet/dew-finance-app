@@ -199,17 +199,15 @@ const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
           }
         }
       }}
-      className={
-        twMerge([
-          "flex justify-center items-center",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          clsx({
-            "cursor-progress disabled:cursor-progress": props.isLoading
-          }),
-          "flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative",
-          props.className
-        ])
-      }
+      className={twMerge([
+        "flex justify-center items-center",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        clsx({
+          "cursor-progress disabled:cursor-progress": props.isLoading,
+        }),
+        "flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative",
+        props.className,
+      ])}
     >
       {props.isLoading ? (
         <div className="mr-1">
@@ -300,6 +298,15 @@ const DepositTab = () => {
     });
   }, [availableTokens]);
 
+  const canDeposit =
+    intentsAddressQuery.data &&
+    nearAddress &&
+    selectedDepositAsset &&
+    exchangeRateForSelectedAsset &&
+    vaultShareMetadataQuery.data &&
+    vaultContractId &&
+    connectedWalletAddress;
+
   return (
     <motion.div
       key="deposit"
@@ -344,7 +351,9 @@ const DepositTab = () => {
             <img src={assetIcon} alt={assetSymbol} className="w-4 h-4" />
             <ArrowLeftRight className="text-gray" size={12} />
             <span>
-              {stringUtils.truncateDecimals(exchangeRateForSelectedAsset?.assetToShare)}{" "}
+              {stringUtils.truncateDecimals(
+                exchangeRateForSelectedAsset?.assetToShare
+              )}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
             <img
@@ -364,18 +373,10 @@ const DepositTab = () => {
       <div className="flex gap-3 pt-5">
         <ConfirmButton
           isLoading={depositToVaultMutation.isPending}
-          disabled={depositToVaultMutation.isPending}
+          disabled={depositToVaultMutation.isPending || !canDeposit}
           onClick={() => {
             if (!depositToVaultMutation.isPending) {
-              if (
-                intentsAddressQuery.data &&
-                nearAddress &&
-                selectedDepositAsset &&
-                exchangeRateForSelectedAsset &&
-                vaultShareMetadataQuery.data &&
-                vaultContractId &&
-                connectedWalletAddress
-              ) {
+              if (canDeposit) {
                 const storeContext = vaultActionStore.store.get().context;
                 depositToVaultMutation.mutate({
                   nearAddress: nearAddress,
@@ -512,6 +513,15 @@ const WithdrawalTab = () => {
     return "0";
   }, [withdrawAmount, exchangeRateForAsset]);
 
+  const canDeposit = 
+    nearAddress &&
+    selectedWithdrawAsset &&
+    exchangeRateForAsset &&
+    vaultShareMetadataQuery.data &&
+    vaultContractId &&
+    connectedWalletAddress &&
+    assetDecimals !== null
+
   return (
     <motion.div
       key="withdraw"
@@ -550,7 +560,8 @@ const WithdrawalTab = () => {
           <span className="text-gray">Share</span>
           <div className="flex gap-1.5 items-center justify-center">
             <span>
-              {stringUtils.truncateDecimals(expectedShareToBeBurnt)} {vaultShareMetadataQuery.data?.symbol}
+              {stringUtils.truncateDecimals(expectedShareToBeBurnt)}{" "}
+              {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
             <img
               src={vaultShareMetadataQuery.data?.icon || undefined}
@@ -569,18 +580,10 @@ const WithdrawalTab = () => {
       <div className="flex gap-3 pt-5">
         <ConfirmButton
           isLoading={withdrawFromVaultMutation.isPending}
-          disabled={withdrawFromVaultMutation.isPending}
+          disabled={withdrawFromVaultMutation.isPending || !canDeposit}
           onClick={() => {
             if (!withdrawFromVaultMutation.isPending) {
-              if (
-                nearAddress &&
-                selectedWithdrawAsset &&
-                exchangeRateForAsset &&
-                vaultShareMetadataQuery.data &&
-                vaultContractId &&
-                connectedWalletAddress &&
-                assetDecimals !== null
-              ) {
+              if (canDeposit) {
                 const storeContext = vaultActionStore.store.get().context;
                 withdrawFromVaultMutation.mutate({
                   nearAddress: nearAddress,
