@@ -42,7 +42,7 @@ export default function DewChart({
 
           {/* Y Axis */}
           <YAxis
-            domain={[1.0, 1.08]}
+            domain={["auto", "auto"]}
             tickFormatter={(v) => v.toFixed(4)}
             tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
           />
