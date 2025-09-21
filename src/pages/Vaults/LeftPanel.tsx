@@ -24,8 +24,6 @@ import { stringUtils } from "../../utils/stringUtils";
 import { assetUtils } from "../../utils/assetUtils";
 
 const MyPosition = () => {
-
-
   const [searchParams] = useSearchParams({
     vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
@@ -60,16 +58,18 @@ const MyPosition = () => {
   }, [vaultShareMetadataQuery.data, myPositionQuery.data]);
 
   return (
-    <Motion direction="right" duration={0.6} delay={0.9}>
+    <Motion direction="right" duration={0.6} delay={0.4}>
       <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color">
         <p className="text-sm text-gray">My Position</p>
         <div className="flex gap-1.5 items-center ">
           <p className="text-2xl font-semibold">{myPosition} </p>
-          <img
-            src={vaultShareMetadataQuery.data?.icon || undefined}
-            alt={vaultShareMetadataQuery.data?.symbol}
-            className="w-7 h-7"
-          />
+          {vaultShareMetadataQuery.data?.icon && (
+            <img
+              src={vaultShareMetadataQuery.data?.icon || undefined}
+              alt={vaultShareMetadataQuery.data?.symbol}
+              className="w-7 h-7"
+            />
+          )}
         </div>
       </div>
     </Motion>
@@ -309,7 +309,8 @@ const DepositTab = () => {
     exchangeRateForSelectedAsset &&
     vaultShareMetadataQuery.data &&
     vaultContractId &&
-    connectedWalletAddress && depositAmount;
+    connectedWalletAddress &&
+    depositAmount;
 
   return (
     <motion.div
@@ -517,7 +518,7 @@ const WithdrawalTab = () => {
     return "0";
   }, [withdrawAmount, exchangeRateForAsset]);
 
-  const canDeposit = 
+  const canDeposit =
     nearAddress &&
     selectedWithdrawAsset &&
     exchangeRateForAsset &&
@@ -525,7 +526,7 @@ const WithdrawalTab = () => {
     vaultContractId &&
     connectedWalletAddress &&
     assetDecimals !== null &&
-    withdrawAmount
+    withdrawAmount;
 
   return (
     <motion.div
@@ -644,6 +645,21 @@ export default function LeftPanel() {
     enabled: vaultContractId !== null,
   });
 
+  const roundedAPY = useMemo(() => {
+    if (vaultApyQuery.data) {
+      try {
+        return Big(vaultApyQuery.data)
+          .mul(Big(100))
+          .round(2, Big.roundDown)
+          .toNumber();
+      } catch (err) {
+        
+      }
+    }
+
+    return 0;
+  }, [vaultApyQuery.data]);
+
   return (
     <div className="w-full h-full lg:w-1/3 sticky top-5 lg:order-2 order-1 ">
       {/* Stats */}
@@ -652,88 +668,71 @@ export default function LeftPanel() {
           <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color ">
             <p className="text-sm text-gray">Net APY</p>
             <p className="text-3xl font-semibold text-green">
-              {/* <CountUp
+              <CountUp
                 from={0}
-                to={parseFloat("18.34")}
+                to={roundedAPY}
                 separator=","
                 direction="up"
                 duration={0.1}
                 className="count-up-text"
-              /> */}
-              -
+              />
               %
             </p>
           </div>
         </Motion>
-        <Motion direction="right" duration={0.6} delay={0.9}>
+        {/* <Motion direction="right" duration={0.6} delay={0.9}>
           <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color ">
             <p className="text-sm text-gray">Total Deposited</p>
-            <p className="text-3xl font-semibold text-white">
-              $135.42M
-            </p>
+            <p className="text-3xl font-semibold text-white">$135.42M</p>
           </div>
-        </Motion>
+        </Motion> */}
       </div>
 
       {/* Input Section */}
       <Motion direction="right" duration={0.6} delay={0.6}>
         <div className="w-full bg-[linear-gradient(139deg,#1a1c27,#0D0D0D,#0D0D0D)]  border border-border-color rounded-lg shadow-lg mt-5 p-6  lg:pb-6 pb-[60px]">
-          <h2 className="font-semibold text-xl">
-            Wallet Balance
-          </h2>
-          <div className='flex justify-between items-center mt-3'>
-            <div className='flex gap-2 items-center '>
-              <img
-                src={Near}
-                alt={"Dai"}
-                className="w-6 h-6"
-              />
-              <p className='text-base font-normal text-gray'> Available NEAR</p>
+          <h2 className="font-semibold text-xl">Wallet Balance</h2>
+          <div className="flex justify-between items-center mt-3">
+            <div className="flex gap-2 items-center ">
+              <img src={Near} alt={"Dai"} className="w-6 h-6" />
+              <p className="text-base font-normal text-gray"> Available NEAR</p>
             </div>
-            <p className='text-base font-semibold'>0.00000</p>
+            <p className="text-base font-semibold">0.00000</p>
           </div>
-          <div className='flex justify-between items-center mt-3'>
-            <div className='flex gap-2 items-center '>
-              <img
-                src={Near}
-                alt={"Dai"}
-                className="w-6 h-6"
-              />
-              <p className='text-base font-normal text-gray'> Available NEAR</p>
+          <div className="flex justify-between items-center mt-3">
+            <div className="flex gap-2 items-center ">
+              <img src={Near} alt={"Dai"} className="w-6 h-6" />
+              <p className="text-base font-normal text-gray"> Available NEAR</p>
             </div>
-            <p className='text-base font-semibold'>0.00000</p>
+            <p className="text-base font-semibold">0.00000</p>
           </div>
           <div className="flex flex-col gap-3 pt-5 mt-2">
             {/* <ConfirmButton>
               Connect Wallet
             </ConfirmButton> */}
-            <ConfirmButton onClick={() => {
-              walletStore.store.trigger.openDepositWalletModal();
-            }}>
+            <ConfirmButton
+              onClick={() => {
+                walletStore.store.trigger.openDepositWalletModal();
+              }}
+            >
               Deposit Into Vault
             </ConfirmButton>
           </div>
 
           <hr className="border-t border-border-color mt-6 mb-6" />
-          <h2 className="font-semibold text-xl">
-            My Position
-          </h2>
+          <h2 className="font-semibold text-xl">My Position</h2>
           {/* <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background mt-3 p-6 text-center flex-col">
             <div className="md:w-[40px] md:h-[40px] lg:w-[60px] lg:h-[60px] w-[80px] h-[80px]">
               <RiveComponent />
             </div>
             You currently have no positions. Deposit to start earning.
           </div> */}
-          <div className='flex justify-between items-center mt-3'>
-            <div className='flex gap-2 items-center '>
-              <img
-                src={Near}
-                alt={"Dai"}
-                className="w-6 h-6"
-              />
-              <p className='text-base font-normal text-gray'>  NEAR</p>
+          <div className="flex justify-between items-center mt-3">
+            <div className="flex gap-2 items-center ">
+              <img src={Near} alt={"Dai"} className="w-6 h-6" />
+              <p className="text-base font-normal text-gray"> NEAR</p>
             </div>
-            <p className='text-base font-semibold'>0.00000</p>
+            <p className="text-base font-semibold">0.00000</p>
           </div>
           <div className="flex gap-3 pt-5 mt-2">
             <button
@@ -795,7 +794,7 @@ export default function LeftPanel() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 mt-3 gap-4">
-        <Motion direction="left" duration={0.6} delay={0.5}>
+        {/* <Motion direction="left" duration={0.6} delay={0.5}>
           <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color ">
             <p className="text-sm text-gray">Net APY</p>
             <p className="text-2xl font-semibold text-green">
@@ -810,7 +809,7 @@ export default function LeftPanel() {
               %
             </p>
           </div>
-        </Motion>
+        </Motion> */}
         <MyPosition />
       </div>
     </div>
