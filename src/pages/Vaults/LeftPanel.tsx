@@ -63,11 +63,11 @@ const MyPosition = () => {
         <p className="text-sm text-gray">My Position</p>
         <div className="flex gap-1.5 items-center ">
           <p className="text-2xl font-semibold">{myPosition} </p>
-          <img
+          {vaultShareMetadataQuery.data?.icon && <img
             src={vaultShareMetadataQuery.data?.icon || undefined}
             alt={vaultShareMetadataQuery.data?.symbol}
             className="w-7 h-7"
-          />
+          />}
         </div>
       </div>
     </Motion>
@@ -358,11 +358,11 @@ const DepositTab = () => {
               )}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
-            <img
+            {vaultShareMetadataQuery.data?.icon && <img
               src={vaultShareMetadataQuery.data?.icon || undefined}
               alt={vaultShareMetadataQuery.data?.symbol}
               className="w-4 h-4"
-            />
+            />}
           </div>
         </div>
         <div className="flex justify-between text-sm">
@@ -566,11 +566,11 @@ const WithdrawalTab = () => {
               {stringUtils.truncateDecimals(expectedShareToBeBurnt)}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
-            <img
+            {vaultShareMetadataQuery.data?.icon && <img
               src={vaultShareMetadataQuery.data?.icon || undefined}
               alt={vaultShareMetadataQuery.data?.symbol}
               className="w-4 h-4"
-            />
+            />}
           </div>
         </div>
         <div className="flex justify-between text-sm">
@@ -636,6 +636,22 @@ export default function LeftPanel() {
     }),
     enabled: vaultContractId !== null,
   });
+
+
+  const roundedAPY = useMemo(() => {
+    if (vaultApyQuery.data) {
+      try {
+        return Big(vaultApyQuery.data)
+          .mul(Big(100))
+          .round(2, Big.roundDown)
+          .toNumber();
+      } catch (err) {
+        
+      }
+    }
+
+    return 0;
+  }, [vaultApyQuery.data]);
 
   return (
     <div className="w-full h-full md:w-1/3 sticky top-5">
@@ -718,7 +734,7 @@ export default function LeftPanel() {
             <p className="text-2xl font-semibold text-green">
               <CountUp
                 from={0}
-                to={parseFloat(vaultApyQuery.data || "0") * 100}
+                to={roundedAPY}
                 separator=","
                 direction="up"
                 duration={0.1}
