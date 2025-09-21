@@ -11,6 +11,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TPolicy } from "../queries/vault";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { vaultUtils } from "../utils/vaultUtils";
+import { assetUtils } from "../utils/assetUtils";
 
 export default function Policy() {
   const [searchParams] = useSearchParams({
@@ -20,6 +21,17 @@ export default function Policy() {
   const vaultContractId = searchParams.get("vaultContractId");
 
   const [selectedPolicy, setSelectedPolicy] = useState<TPolicy | null>(null);
+
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+   const { assetIcon } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data || null,
+  });
 
   const policyCountQuery = useQuery({
     ...vaultQueries.getPolicyCountQueryOptions({
@@ -68,7 +80,7 @@ export default function Policy() {
             <div className="w-[55px] h-[55px] relative">
               <img src={vaultIcon} className="w-[55px] h-[55px]" />
               <img
-                src={Near}
+                src={assetIcon}
                 className="absolute bottom-[-5px] right-[-10px] w-[30px] h-[30px]"
               />
             </div>

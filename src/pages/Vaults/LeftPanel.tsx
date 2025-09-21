@@ -627,7 +627,19 @@ export default function LeftPanel() {
     vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
+  
   const vaultContractId = searchParams.get("vaultContractId");
+
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+   const { assetIcon } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data || null,
+  });
 
   const vaultApyQuery = useQuery({
     ...vaultQueries.getVaultApyQueryOptions({
@@ -636,7 +648,6 @@ export default function LeftPanel() {
     }),
     enabled: vaultContractId !== null,
   });
-
 
   const roundedAPY = useMemo(() => {
     if (vaultApyQuery.data) {
@@ -663,7 +674,7 @@ export default function LeftPanel() {
             <div className="w-[50px] h-[50px] relative">
               <img src={vaultIcon} />
               <img
-                src={Near}
+                src={assetIcon}
                 className="absolute bottom-[-5px] right-[-5px] w-[25px] h-[25px]"
               />
             </div>
