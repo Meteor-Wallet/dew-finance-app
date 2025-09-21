@@ -21,8 +21,8 @@ export default function Vaults() {
       />
 
       
-      <LeftPanel />
       <RightPanel />
+      <LeftPanel />
 
     </div>
   );
