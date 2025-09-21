@@ -57,7 +57,6 @@ const RightPanel = memo(() => {
   const allPoliciesQuery = useInfiniteQuery({
     ...vaultQueries.getAllPoliciesInfiniteQueryOptions({
       vaultContractId: vaultContractId!,
-      limit: 5,
     }),
     enabled: vaultContractId !== null,
   });
@@ -188,7 +187,10 @@ const RightPanel = memo(() => {
 
   const totalPolicy = policyCountQuery.data ?? 0;
 
-  const policies = allPoliciesQuery.data?.pages.flat() ?? [];
+  const policies = useMemo(() => {
+    const flatten = allPoliciesQuery.data?.pages.flat() ?? []
+    return flatten.slice(0, 5)
+  }, [allPoliciesQuery.data]);
 
   return (
     <div className="w-full h-full md:w-2/3 ">
