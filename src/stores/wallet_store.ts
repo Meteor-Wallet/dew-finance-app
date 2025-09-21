@@ -2,6 +2,7 @@ import { createStore } from "@xstate/store";
 import { useSelector } from "@xstate/store/react";
 import { produce } from "immer";
 import type { SupportedChainName } from "../intents/types/base";
+import z from "zod";
 
 const EvmChains = ["eth", "arbitrum"] as const satisfies SupportedChainName[];
 const SolanaChains = ["solana"] as const satisfies SupportedChainName[];
@@ -10,13 +11,37 @@ export type EvmChainName = (typeof EvmChains)[number];
 export type SolanaChainName = (typeof SolanaChains)[number];
 export type ChainName = EvmChainName | SolanaChainName;
 
+const zChainName = z.union([
+  z.literal("eth"),
+  z.literal("arbitrum"),
+  z.literal("solana"),
+]);
+
+const selectedChainNameStorageKey = "last_selected_chain_name";
+
+const defaultSelectedChain: ChainName = (() => {
+  try {
+    const lastSelectedChainNameInStorage = localStorage.getItem(
+      selectedChainNameStorageKey
+    );
+    if (lastSelectedChainNameInStorage) {
+      const lastSelectedChainName = JSON.parse(lastSelectedChainNameInStorage);
+
+      return zChainName.parse(lastSelectedChainName);
+    }
+  } catch (err) {
+    // ignore error
+  }
+  return "eth";
+})();
+
 const store = createStore({
   context: {
     isConnectWalletModalOpen: false,
     isSwitchNetworkModalOpen: false,
     isOnboardModalOpen: false,
     connectedWallets: [],
-    selectedChain: "eth",
+    selectedChain: defaultSelectedChain,
     nearAccountId: null,
   } as {
     isSwitchNetworkModalOpen: boolean;
@@ -108,6 +133,12 @@ const store = createStore({
   emits: {
     switchChain: (_payload: { chain: ChainName }) => {},
   },
+});
+
+const selectedChainSelector = store.select((s) => s.selectedChain);
+
+selectedChainSelector.subscribe((chainName) => {
+  localStorage.setItem(selectedChainNameStorageKey, JSON.stringify(chainName));
 });
 
 /**
