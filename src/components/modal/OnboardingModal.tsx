@@ -6,6 +6,9 @@ import { walletStore } from "../../stores/wallet_store";
 import _ from "lodash";
 import { useWalletSelector } from "../../walletSelector";
 import { dewFactoryMutations } from "../../mutations/dewFactory";
+import { CircularProgress } from "../utils/CircularProgress";
+import { twMerge } from "tailwind-merge";
+import clsx from "clsx";
 
 export default function OnboardingModal() {
   const { RiveComponent } = useRive({
@@ -20,6 +23,8 @@ export default function OnboardingModal() {
 
   const authorizeWalletMutation =
     dewFactoryMutations.useAuthorizeWalletMutation();
+
+  const isPending = authorizeWalletMutation.isPending;
 
   return (
     <Modal
@@ -68,6 +73,9 @@ export default function OnboardingModal() {
         <div className="flex gap-4  md:flex-row flex-col md:w-fit w-full md:mb-0 mb-3">
           <button
             onClick={() => {
+              if (isPending) {
+                return;
+              }
               signOut();
               walletStore.store.trigger.closeOnboardModal();
             }}
@@ -76,15 +84,28 @@ export default function OnboardingModal() {
             Cancel
           </button>
           <button
-            className="text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative md:ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200 md:order-2 order-1  w-full md:w-fit"
+            className={twMerge([
+              "flex justify-center items-center",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              clsx({
+                "cursor-progress disabled:cursor-progress": isPending,
+              }),
+              "text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200 md:order-2 order-1 w-full md:w-fit",
+            ])}
             onClick={async () => {
-              if (!authorizeWalletMutation.isPending) {
+              if (!isPending) {
                 authorizeWalletMutation.mutate();
               }
             }}
-            disabled={authorizeWalletMutation.isPending}
+            disabled={isPending}
           >
-            Authorize Wallet
+            {isPending ? (
+              <div className="mr-1">
+                <CircularProgress size="small" />
+              </div>
+            ) : (
+              "Authorize Wallet"
+            )}
           </button>
         </div>
       </div>

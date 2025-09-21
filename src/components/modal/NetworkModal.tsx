@@ -44,7 +44,7 @@ const NetworkModal = () => {
           Switch to a supported blockchain network to access and manage your
           vault
         </p>
-        <ul className="max-h-[70vh]  space-y-4 pb-4">
+        <ul className="max-h-[70vh] space-y-4 pb-4">
           <Motion direction="left" duration={0.4} delay={0.1}>
             <li
               className="connect-wallet-list-items"
@@ -59,8 +59,6 @@ const NetworkModal = () => {
               </div>
               Ethereum
             </li>
-          </Motion>
-          <Motion direction="left" duration={0.4} delay={0.3}>
             <li
               className="connect-wallet-list-items"
               onClick={() => {
@@ -73,6 +71,19 @@ const NetworkModal = () => {
                 <img src={arbLogo} />{" "}
               </div>
               Arbitrum
+            </li>
+            <li
+              className="connect-wallet-list-items"
+              onClick={() => {
+                walletStore.store.trigger.switchChain({
+                  chain: "solana",
+                });
+              }}
+            >
+              <div className="list-logo near-logo">
+                <img src={solanaLogo} />{" "}
+              </div>
+              Solana
             </li>
           </Motion>
         </ul>

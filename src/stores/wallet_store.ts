@@ -90,7 +90,7 @@ const store = createStore({
           address: event.address,
           supportedChains: event.supportedChains,
         });
-        draft.selectedChain = event.selectedChain;
+        // draft.selectedChain = event.selectedChain;
       }),
     disconnectSelectedChainWallet: (context) =>
       produce(context, (draft) => {
@@ -100,9 +100,9 @@ const store = createStore({
           (e) => !e.supportedChains.includes(currentChain)
         );
 
-        if (remainingConnectedWallets.length > 0) {
-          draft.selectedChain = remainingConnectedWallets[0].supportedChains[0];
-        }
+        // if (remainingConnectedWallets.length > 0) {
+        //   draft.selectedChain = remainingConnectedWallets[0].supportedChains[0];
+        // }
 
         draft.connectedWallets = remainingConnectedWallets;
       }),

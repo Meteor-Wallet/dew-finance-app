@@ -19,12 +19,15 @@ import Big from "big.js";
 import { CircularProgress } from "../../components/utils/CircularProgress";
 import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
+import { vaultUtils } from "../../utils/vaultUtils";
+import { stringUtils } from "../../utils/stringUtils";
+import { assetUtils } from "../../utils/assetUtils";
 
 const MyPosition = () => {
 
 
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const nearAddress = walletStore.selectors.useCurrentNearAccountId();
@@ -134,35 +137,6 @@ const Token = ({ selectedAsset }: { selectedAsset: TAsset | null }) => {
   );
 };
 
-// put as hook here as FungibleToken is very likely to use useQuery
-const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
-  let assetSymbol = "";
-  let assetIcon = "";
-  let assetDecimals: null | number = null;
-
-  if (asset) {
-    if ("MultiToken" in asset) {
-      const tokenInfo = FLAT_LIST_TOKENS.find(
-        (e) => e.defuseAssetId === asset.MultiToken.token_id
-      );
-
-      if (tokenInfo) {
-        assetSymbol = tokenInfo.symbolWithoutChain;
-        assetIcon = tokenInfo.icon;
-        assetDecimals = tokenInfo.decimals;
-      }
-    }
-  }
-
-  // TODO: Handle for FungibleToken
-
-  return {
-    assetSymbol,
-    assetIcon,
-    assetDecimals,
-  };
-};
-
 const useExchangeRateForAsset = ({
   asset,
   vaultContractId,
@@ -227,17 +201,15 @@ const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
           }
         }
       }}
-      className={
-        twMerge([
-          "flex justify-center items-center",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          clsx({
-            "cursor-progress disabled:cursor-progress": props.isLoading
-          }),
-          "flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative",
-          props.className
-        ])
-      }
+      className={twMerge([
+        "flex justify-center items-center",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        clsx({
+          "cursor-progress disabled:cursor-progress": props.isLoading,
+        }),
+        "flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative",
+        props.className,
+      ])}
     >
       {props.isLoading ? (
         <div className="mr-1">
@@ -252,7 +224,7 @@ const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
 
 const DepositTab = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const vaultContractId = searchParams.get("vaultContractId");
@@ -296,7 +268,7 @@ const DepositTab = () => {
   const connectedWalletAddress =
     walletStore.selectors.useConnectedWalletAddress();
 
-  const { assetIcon, assetSymbol } = useAssetSymbolAndIcon({
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
     asset: selectedDepositAsset,
   });
 
@@ -327,6 +299,17 @@ const DepositTab = () => {
       assets: availableTokens,
     });
   }, [availableTokens]);
+
+  const depositAmount = vaultActionStore.selectors.useDepositAmount();
+
+  const canDeposit =
+    intentsAddressQuery.data &&
+    nearAddress &&
+    selectedDepositAsset &&
+    exchangeRateForSelectedAsset &&
+    vaultShareMetadataQuery.data &&
+    vaultContractId &&
+    connectedWalletAddress && depositAmount;
 
   return (
     <motion.div
@@ -372,7 +355,9 @@ const DepositTab = () => {
             <img src={assetIcon} alt={assetSymbol} className="w-4 h-4" />
             <ArrowLeftRight className="text-gray" size={12} />
             <span>
-              {exchangeRateForSelectedAsset?.assetToShare}{" "}
+              {stringUtils.truncateDecimals(
+                exchangeRateForSelectedAsset?.assetToShare
+              )}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
             <img
@@ -392,18 +377,10 @@ const DepositTab = () => {
       <div className="flex gap-3 pt-5">
         <ConfirmButton
           isLoading={depositToVaultMutation.isPending}
-          disabled={depositToVaultMutation.isPending}
+          disabled={depositToVaultMutation.isPending || !canDeposit}
           onClick={() => {
             if (!depositToVaultMutation.isPending) {
-              if (
-                intentsAddressQuery.data &&
-                nearAddress &&
-                selectedDepositAsset &&
-                exchangeRateForSelectedAsset &&
-                vaultShareMetadataQuery.data &&
-                vaultContractId &&
-                connectedWalletAddress
-              ) {
+              if (canDeposit) {
                 const storeContext = vaultActionStore.store.get().context;
                 depositToVaultMutation.mutate({
                   nearAddress: nearAddress,
@@ -438,7 +415,7 @@ const DepositTab = () => {
 
 const WithdrawalTab = () => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const selectedChain = walletStore.selectors.useSelectedChain();
@@ -503,7 +480,7 @@ const WithdrawalTab = () => {
   const withdrawFromVaultMutation =
     vaultMutations.useWithdrawFromVaultMutation();
 
-  const { assetDecimals } = useAssetSymbolAndIcon({
+  const { assetDecimals } = assetUtils.useAssetSymbolAndIcon({
     asset: selectedWithdrawAsset,
   });
 
@@ -539,6 +516,16 @@ const WithdrawalTab = () => {
     }
     return "0";
   }, [withdrawAmount, exchangeRateForAsset]);
+
+  const canDeposit = 
+    nearAddress &&
+    selectedWithdrawAsset &&
+    exchangeRateForAsset &&
+    vaultShareMetadataQuery.data &&
+    vaultContractId &&
+    connectedWalletAddress &&
+    assetDecimals !== null &&
+    withdrawAmount
 
   return (
     <motion.div
@@ -578,7 +565,8 @@ const WithdrawalTab = () => {
           <span className="text-gray">Share</span>
           <div className="flex gap-1.5 items-center justify-center">
             <span>
-              {expectedShareToBeBurnt} {vaultShareMetadataQuery.data?.symbol}
+              {stringUtils.truncateDecimals(expectedShareToBeBurnt)}{" "}
+              {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
             <img
               src={vaultShareMetadataQuery.data?.icon || undefined}
@@ -597,18 +585,10 @@ const WithdrawalTab = () => {
       <div className="flex gap-3 pt-5">
         <ConfirmButton
           isLoading={withdrawFromVaultMutation.isPending}
-          disabled={withdrawFromVaultMutation.isPending}
+          disabled={withdrawFromVaultMutation.isPending || !canDeposit}
           onClick={() => {
             if (!withdrawFromVaultMutation.isPending) {
-              if (
-                nearAddress &&
-                selectedWithdrawAsset &&
-                exchangeRateForAsset &&
-                vaultShareMetadataQuery.data &&
-                vaultContractId &&
-                connectedWalletAddress &&
-                assetDecimals !== null
-              ) {
+              if (canDeposit) {
                 const storeContext = vaultActionStore.store.get().context;
                 withdrawFromVaultMutation.mutate({
                   nearAddress: nearAddress,
@@ -650,6 +630,20 @@ export default function LeftPanel() {
     autoplay: true,
     stateMachines: "State Machine 1",
   });
+  const [searchParams] = useSearchParams({
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
+  });
+
+  const vaultContractId = searchParams.get("vaultContractId");
+
+  const vaultApyQuery = useQuery({
+    ...vaultQueries.getVaultApyQueryOptions({
+      variant: "1",
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
   return (
     <div className="w-full h-full lg:w-1/3 sticky top-5 lg:order-2 order-1 ">
       {/* Stats */}
@@ -799,6 +793,26 @@ export default function LeftPanel() {
         </div> */}
       </Motion>
 
+      {/* Stats */}
+      <div className="grid grid-cols-2 mt-3 gap-4">
+        <Motion direction="left" duration={0.6} delay={0.5}>
+          <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color ">
+            <p className="text-sm text-gray">Net APY</p>
+            <p className="text-2xl font-semibold text-green">
+              <CountUp
+                from={0}
+                to={parseFloat(vaultApyQuery.data || "0") * 100}
+                separator=","
+                direction="up"
+                duration={0.1}
+                className="count-up-text"
+              />
+              %
+            </p>
+          </div>
+        </Motion>
+        <MyPosition />
+      </div>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import Big from "big.js";
+
 function omitText(text: string, keepAmount: number = 16): string {
   if (keepAmount >= text.length) {
     return text;
@@ -11,6 +13,14 @@ function omitText(text: string, keepAmount: number = 16): string {
   return `${start}...${end}`;
 }
 
+function truncateDecimals(number?: string | number) {
+  if(!number){
+    return "0"
+  }
+  return Big(number).round(6, Big.roundDown).toFixed()
+}
+
 export const stringUtils = {
   omitText,
+  truncateDecimals
 };

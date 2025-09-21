@@ -2,7 +2,7 @@ import axios from "axios";
 
 const axiosInstance = axios.create({
   baseURL:
-    "https://meteor-leding-dev-276870342533.europe-southwest1.run.app/dew-account",
+    "https://meteor-leding-dev-276870342533.europe-southwest1.run.app",
   headers: {
     "Content-Type": "application/json",
   },
@@ -14,7 +14,7 @@ const createDewAccount = (data: {
   signature: string;
   deadline: string;
 }) => {
-  return axiosInstance.post("create-account", data);
+  return axiosInstance.post("/dew-account/create-account", data);
 };
 
 const signTransaction = (data: {
@@ -27,15 +27,51 @@ const signTransaction = (data: {
     transaction: any;
   };
 }) => {
-  return axiosInstance.post("sponsor-sign", data);
+  return axiosInstance.post("/dew-account/sponsor-sign", data);
 };
 
 const storageDeposit = (data: { account_id: string; vault_id: string }) => {
-  return axiosInstance.post("sponsor-storage-deposit", data);
+  return axiosInstance.post("/dew-account/sponsor-storage-deposit", data);
+};
+
+const getVaultApy = (data: {
+  variant: "1" | "7" | "30";
+  vaultContractId: string;
+}) => {
+  return axiosInstance.get<string>("/dew-vault/vault-apy", {
+    params: data
+  });
+};
+const getHistoricalSharePrice = (data: {
+  numberOf30MinsInterval: "1"
+  vaultContractId: string;
+  limit: number
+}) => {
+  return axiosInstance.get<{
+    bucket: string;
+    price_in_base_asset: string
+  }[]>("/dew-vault/vault-historical-share-price", {
+    params: data
+  });
+};
+const getHistoricalBalance = (data: {
+  numberOf30MinsInterval: "1"
+  vaultContractId: string;
+  limit: number
+}) => {
+  return axiosInstance.get<{
+    bucket: string;
+    balance_in_base_asset: string
+  }[]>("/dew-vault/vault-historical-balance", {
+    params: data
+  });
 };
 
 export const DewAccountBackend = {
   createDewAccount,
   signTransaction,
   storageDeposit,
+  getVaultApy,
+  getHistoricalSharePrice,
+  getHistoricalBalance
 };

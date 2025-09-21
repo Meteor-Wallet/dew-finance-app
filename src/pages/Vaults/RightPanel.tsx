@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import Arb from "../../assets/arb.png";
 import Btc from "../../assets/btc.png";
 import Dai from "../../assets/dai-full.svg";
@@ -17,42 +17,17 @@ import { ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import TransactionTable from "../../components/sample/TransactionTable";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
-
-// const roles = [
-//   {
-//     title: "Access Manager",
-//     addresses: ["0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5"],
-//   },
-//   {
-//     title: "Withdraw Manager",
-//     addresses: ["0x12C34EfA4CBD9bE1A5447BC69f6a451C7F7EAa123"],
-//   },
-//   {
-//     title: "Price Oracle",
-//     addresses: ["0xAB28EFa4CBD9bE1A5447BC69f6a451C7F7EAa456"],
-//   },
-//   {
-//     title: "Owner",
-//     addresses: ["0x40e609De1B52511B0B1aCccDB0B565803b0605E3"],
-//   },
-//   {
-//     title: "Atomist",
-//     addresses: [
-//       "0xbF28EFa4CBD9bE1A5447BC69f6a451C7F7EAa8a5",
-//       "0x40e609De1B52511B0B1aCccDB0B565803b0605E3",
-//     ],
-//   },
-//   {
-//     title: "Alpha",
-//     addresses: ["0x9A28EFa4CBD9bE1A5447BC69f6a451C7F7EAa789"],
-//   },
-// ];
+import clsx from "clsx";
+import { vaultUtils } from "../../utils/vaultUtils";
+import { assetUtils } from "../../utils/assetUtils";
+import { stringUtils } from "../../utils/stringUtils";
+import Big from "big.js";
 
 const RightPanel = memo(() => {
   const [searchParams] = useSearchParams({
-    vaultContractId: "stable-test-1.dew-finance.near",
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
   const vaultContractId = searchParams.get("vaultContractId");
@@ -80,13 +55,138 @@ const RightPanel = memo(() => {
     }),
     enabled: vaultContractId !== null,
   });
-
-  const accountsWithRoleQuery = useQuery({
-    ...vaultQueries.getAccountsWithRoleQueryOptions({
+  const allRoleAssignmentsQuery = useQuery({
+    ...vaultQueries.getAllRoleAssignmentsQueryOptions({
       vaultContractId: vaultContractId!,
-      roleName: "owner"!,
     }),
     enabled: vaultContractId !== null,
+  });
+  const policyCountQuery = useQuery({
+    ...vaultQueries.getPolicyCountQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+  const allPoliciesQuery = useInfiniteQuery({
+    ...vaultQueries.getAllPoliciesInfiniteQueryOptions({
+      vaultContractId: vaultContractId!,
+      limit: 5,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const balanceDistributionQuery = useQuery({
+    ...vaultQueries.getVaultBalanceDistributionQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+    // to mock the pie chart data
+    // select: (data) => {
+    //   return data.map((v, idx) => {
+    //     return {
+    //       ...v,
+    //     amount: v.amount + idx * 100
+    //     }
+    //   })
+    // }
+  });
+
+  const historicalBalanceQuery = useQuery({
+    ...vaultQueries.getHistoricalBalanceQueryOptions({
+      vaultContractId: vaultContractId!,
+      limit: 10,
+      numberOf30MinsInterval: "1",
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const historicalSharePriceQuery = useQuery({
+    ...vaultQueries.getHistoricalSharePriceQueryOptions({
+      vaultContractId: vaultContractId!,
+      limit: 10,
+      numberOf30MinsInterval: "1",
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const allocationDonutDetails = useMemo(() => {
+    const filteredList = (balanceDistributionQuery.data || []).filter((v) => {
+      if (Number(v.amount) <= 0) {
+        return false;
+      }
+      return true;
+    });
+    const totalDistributionInBig = filteredList.reduce((prev, cur) => {
+      return prev.add(Big(cur.amount));
+    }, Big(0));
+    const donutFigures = filteredList
+      .map((v) => {
+        return {
+          name: v.assetSymbol,
+          value: Big(v.amount)
+            .div(totalDistributionInBig)
+            .mul(Big(100))
+            .toNumber(),
+        };
+      })
+      .filter((e) => e.value !== 0);
+
+    return {
+      donutFigures,
+      totalDistribution: totalDistributionInBig.toFixed(),
+    };
+  }, [balanceDistributionQuery.data]);
+
+  const sharePriceDetails = useMemo(() => {
+    let latestSharePrice = "0";
+    if (
+      historicalSharePriceQuery.data &&
+      historicalSharePriceQuery.data.length > 0
+    ) {
+      latestSharePrice = historicalSharePriceQuery.data[0].price_in_base_asset;
+    }
+    const chart = (historicalSharePriceQuery.data || []).map((v) => {
+      return {
+        date: new Date(v.bucket).toLocaleString(),
+        value: Number(v.price_in_base_asset),
+      };
+    }).reverse()
+
+    return {
+      latestSharePrice,
+      chart,
+    };
+  }, [historicalSharePriceQuery.data]);
+
+  const balanceDetails = useMemo(() => {
+    let latestCurrentTotal = "0";
+    if (historicalBalanceQuery.data && historicalBalanceQuery.data.length > 0) {
+      latestCurrentTotal = historicalBalanceQuery.data[0].balance_in_base_asset;
+    }
+    const chart = (historicalBalanceQuery.data || [])
+      .map((v) => {
+        return {
+          date: new Date(v.bucket).toLocaleString(),
+          value: Number(v.balance_in_base_asset),
+        };
+      })
+      .reverse();
+
+    return {
+      latestCurrentTotal,
+      chart,
+    };
+  }, [historicalBalanceQuery.data]);
+
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data || null,
   });
 
   const managementFee = vaultConfigQuery.data?.management_fee_bps
@@ -97,37 +197,11 @@ const RightPanel = memo(() => {
     : 0;
   const totalFee = (managementFee + performanceFee).toFixed(3);
 
-  const roles = [
-    {
-      title: "Owner",
-      addresses: accountsWithRoleQuery.data ?? [],
-    },
-  ];
+  const roleData = allRoleAssignmentsQuery.data ?? [];
 
-  const allAssetDepositFeesQuery = useQuery({
-    ...vaultQueries.getAllAssetDepositFeesQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-  const protocolAllAssetDepositCutQuery = useQuery({
-    ...vaultQueries.getProtocolAllAssetDepositCutQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-  const allAssetWithdrawalFeesQuery = useQuery({
-    ...vaultQueries.getAllAssetWithdrawalFeesQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
-  const protocolAllAssetWithdrawalCutQuery = useQuery({
-    ...vaultQueries.getProtocolAllAssetWithdrawalCutQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-  });
+  const totalPolicy = policyCountQuery.data ?? 0;
+
+  const policies = allPoliciesQuery.data?.pages.flat() ?? [];
 
   return (
     <div className="w-[calc(100%+_10vw)] ml-[-5vw] lg:ml-0 h-full lg:w-2/3 lg:order-1 order-2 ">
@@ -218,11 +292,15 @@ const RightPanel = memo(() => {
                           Benchmark Assets
                         </p>
                         <div className="flex gap-1.5 items-center ">
-                          <img src={Near} alt={"NEAR"} className="w-6 h-6" />{" "}
-                          <p className="text-base text-gray">NEAR </p>
+                          <img
+                            src={assetIcon}
+                            alt={assetSymbol}
+                            className="w-6 h-6"
+                          />{" "}
+                          <p className="text-base text-gray">{assetSymbol}</p>
                         </div>
                       </div>
-                      <div>
+                      {/* <div>
                         <p className="text-base text-white mb-2">Rewards</p>
                         <div className="flex gap-1.5 items-center ">
                           <img src={Near} alt={"NEAR"} className="w-6 h-6" />
@@ -242,7 +320,7 @@ const RightPanel = memo(() => {
                             className="w-6 h-6 ml-[-10px]"
                           />
                         </div>
-                      </div>
+                      </div> */}
                     </div>
 
                     <hr className="border-t border-border-color mt-9 mb-9" />
@@ -257,18 +335,21 @@ const RightPanel = memo(() => {
                           <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
-                                src={Near}
-                                alt={"NEAR"}
+                                src={assetIcon}
+                                alt={assetSymbol}
                                 className="w-12 h-12"
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 near{" "}
+                                  {stringUtils.truncateDecimals(
+                                    balanceDetails.latestCurrentTotal
+                                  )}{" "}
+                                  {assetSymbol}{" "}
                                 </h3>
-                                <p className="text-sm text-gray">$51,737,237</p>
+                                {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
-                            <div className="flex gap-2 text-xs">
+                            {/* <div className="flex gap-2 text-xs">
                               {["1D", "1W", "1M", "1Y"].map((range) => (
                                 <button
                                   key={range}
@@ -283,10 +364,10 @@ const RightPanel = memo(() => {
                               >
                                 {"ALL"}
                               </button>
-                            </div>
+                            </div> */}
                           </div>
                           <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <DewChart />
+                            <DewChart data={balanceDetails.chart} />
                           </div>
                         </div>
                       </div>
@@ -304,18 +385,21 @@ const RightPanel = memo(() => {
                           <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
-                                src={Near}
-                                alt={"NEAR"}
+                                src={assetIcon}
+                                alt={assetSymbol}
                                 className="w-12 h-12"
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 near{" "}
+                                  {stringUtils.truncateDecimals(
+                                    allocationDonutDetails.totalDistribution
+                                  )}{" "}
+                                  {assetSymbol}{" "}
                                 </h3>
-                                <p className="text-sm text-gray">$51,737,237</p>
+                                {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
-                            <div className="flex gap-2 text-xs">
+                            {/* <div className="flex gap-2 text-xs">
                               {["1D", "1W", "1M", "1Y"].map((range) => (
                                 <button
                                   key={range}
@@ -330,11 +414,15 @@ const RightPanel = memo(() => {
                               >
                                 {"ALL"}
                               </button>
+                            </div> */}
+                          </div>
+                          {allocationDonutDetails.totalDistribution !== "0" && (
+                            <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
+                              <AllocationDonut
+                                data={allocationDonutDetails.donutFigures}
+                              />
                             </div>
-                          </div>
-                          <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <AllocationDonut />
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -343,7 +431,7 @@ const RightPanel = memo(() => {
 
                     {/* APY History Graph  */}
                     <p className="text-base text-white mb-4">
-                      APY History Overview
+                      Share Price History Overview
                     </p>
                     <div className="relative w-full h-full rounded-lg overflow-hidden">
                       <div className=" p-4 rounded-lg">
@@ -351,18 +439,19 @@ const RightPanel = memo(() => {
                           <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
                             <div className="flex gap-3 items-center">
                               <img
-                                src={Near}
-                                alt={"NEAR"}
+                                src={assetIcon}
+                                alt={assetSymbol}
                                 className="w-12 h-12"
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  11,714.13 near{" "}
+                                  {sharePriceDetails.latestSharePrice}{" "}
+                                  {assetSymbol}{" "}
                                 </h3>
-                                <p className="text-sm text-gray">$51,737,237</p>
+                                {/* <p className="text-sm text-gray">$51,737,237</p> */}
                               </div>
                             </div>
-                            <div className="flex gap-2 text-xs">
+                            {/* <div className="flex gap-2 text-xs">
                               {["1D", "1W", "1M", "1Y"].map((range) => (
                                 <button
                                   key={range}
@@ -377,10 +466,10 @@ const RightPanel = memo(() => {
                               >
                                 {"ALL"}
                               </button>
-                            </div>
+                            </div> */}
                           </div>
                           <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <DewChart2 />
+                            <DewChart2 data={sharePriceDetails.chart} />
                           </div>
                         </div>
                       </div>
@@ -451,14 +540,15 @@ const RightPanel = memo(() => {
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-base text-white ">Roles</p>
                       <p className="text-sm text-gray">
-                        Total {roles.length}{" "}
-                        {roles.length > 1 ? "Roles" : "Role"}
+                        Total {roleData.length}{" "}
+                        {roleData.length > 1 ? "Roles" : "Role"}
                       </p>
                     </div>
                     <div className="space-y-2">
-                      {roles.map((role, i) => {
+                      {roleData.map((role, i) => {
                         const isFirst = i === 0;
-                        const isLast = i === roles.length - 1;
+                        const isLast = i === roleData.length - 1;
+
                         return (
                           <div
                             key={i}
@@ -471,8 +561,11 @@ const RightPanel = memo(() => {
                               }`}
                           >
                             <div>
-                              <p className="text-sm font-medium">
-                                {role.title}
+                              <p
+                                className="text-sm font-medium"
+                                style={{ textTransform: "capitalize" }}
+                              >
+                                {role.role}
                               </p>
                             </div>
                             <div className="text-right space-y-1">
@@ -517,53 +610,37 @@ const RightPanel = memo(() => {
                     {/* Policy Content  */}
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-base text-white ">Policy</p>
-                      <p className="text-sm text-gray">Total 381 Policies</p>
+                      <p className="text-sm text-gray">
+                        Total {totalPolicy} Policies
+                      </p>
                     </div>
-                    <Link to="/policy">
-                      <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
-                        <div>
-                          <p className="text-base font-semibold">
-                            transfer_sepolia_usdc
-                          </p>
-                          <p className="text-sm  text-gray">
-                            Policy for transferring usdc
-                          </p>
+                    {policies.map((policy, idx) => (
+                      <Link to="/policy">
+                        <div
+                          key={idx}
+                          className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background"
+                        >
+                          <div>
+                            <p className="text-base font-semibold">
+                              {policy.id}
+                            </p>
+                            <p className="text-sm  text-gray">
+                              {policy.description}
+                            </p>
+                          </div>
+                          <span
+                            className={clsx(
+                              "px-2 py-1 text-xs font-semibold rounded-full",
+                              policy.policy_status === "Active"
+                                ? "text-green-800 bg-green-200"
+                                : "text-red-800 bg-red-200"
+                            )}
+                          >
+                            {policy.policy_status}
+                          </span>
                         </div>
-                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
-                          Active
-                        </span>
-                      </div>
-                    </Link>
-                    <Link to="/policy">
-                      <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
-                        <div>
-                          <p className="text-base font-semibold">
-                            transfer_sepolia_usdc
-                          </p>
-                          <p className="text-sm  text-gray">
-                            Policy for transferring usdc
-                          </p>
-                        </div>
-                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
-                          Active
-                        </span>
-                      </div>
-                    </Link>
-                    <Link to="/policy">
-                      <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background">
-                        <div>
-                          <p className="text-base font-semibold">
-                            transfer_sepolia_usdc
-                          </p>
-                          <p className="text-sm  text-gray">
-                            Policy for transferring usdc
-                          </p>
-                        </div>
-                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">
-                          Active
-                        </span>
-                      </div>
-                    </Link>
+                      </Link>
+                    ))}
                     <Link to="/policy">
                       <div className="flex justify-end items-center gap-2 mt-4 group">
                         <button className="text-sm text-primary group-hover:opacity-70">

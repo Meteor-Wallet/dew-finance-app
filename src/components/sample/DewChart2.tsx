@@ -22,7 +22,14 @@ const data = [
   { date: "Dec 16", value: 4.72 },
 ];
 
-export default function DewChart2() {
+export default function DewChart2({
+  data
+}: {
+  data: {
+    date: string;
+    value: number;
+  }[]
+}) {
   return (
     <div className="w-full h-96">
       <ResponsiveContainer>
@@ -35,7 +42,7 @@ export default function DewChart2() {
 
           {/* Y Axis */}
           <YAxis
-            domain={[1.0, 1.08]}
+            domain={["auto", "auto"]}
             tickFormatter={(v) => v.toFixed(4)}
             tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
           />
