@@ -7,6 +7,8 @@ export type TMode = "deposit" | "withdraw";
 
 const store = createStore({
   context: {
+    isDepositWalletModalOpen: false,
+    isRedeemWalletModalOpen: false,
     isSimulateModalOpen: false,
     mode: "deposit",
     selectedDepositAsset: null,
@@ -16,6 +18,8 @@ const store = createStore({
     selectedWithdrawAsset: null,
     withdrawAmount: "",
   } as {
+    isDepositWalletModalOpen: boolean;
+    isRedeemWalletModalOpen: boolean;
     isSimulateModalOpen: boolean;
     mode: TMode;
     selectedDepositAsset: TAsset | null;
@@ -26,6 +30,22 @@ const store = createStore({
     selectedWithdrawAsset: TAsset | null;
   },
   on: {
+    openRedeemWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isRedeemWalletModalOpen = true;
+      }),
+    closeRedeemWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isRedeemWalletModalOpen = false;
+      }),
+    openDepositWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isDepositWalletModalOpen = true;
+      }),
+    closeDepositWalletModal: (context) =>
+      produce(context, (draft) => {
+        draft.isDepositWalletModalOpen = false;
+      }),
     openSimulateModal: (context) =>
       produce(context, (draft) => {
         draft.isSimulateModalOpen = true;
@@ -47,6 +67,9 @@ const store = createStore({
           draft.selectedDepositAsset = null;
         }
       }),
+    changeDepositAsset: (context, event: {asset: TAsset}) => produce(context, draft => {
+      draft.selectedDepositAsset = event.asset
+    }),
     setInitialSelectedWithdrawAsset: (
       context,
       event: {
@@ -96,6 +119,14 @@ const store = createStore({
   },
 });
 
+const useIsRedeemWalletModalOpen = () => {
+  return useSelector(store, ({ context }) => context.isRedeemWalletModalOpen);
+};
+
+const useIsDepositWalletModalOpen = () => {
+  return useSelector(store, ({ context }) => context.isDepositWalletModalOpen);
+};
+
 const useIsSimulateModalOpen = () => {
   return useSelector(store, ({ context }) => context.isSimulateModalOpen);
 };
@@ -138,6 +169,8 @@ export const vaultActionStore = {
     useDepositSlippagePercent,
     selectedWithdrawAsset,
     useWithdrawSlippagePercent,
-    useWithdrawAmount
+    useWithdrawAmount,
+    useIsDepositWalletModalOpen,
+    useIsRedeemWalletModalOpen,
   },
 };

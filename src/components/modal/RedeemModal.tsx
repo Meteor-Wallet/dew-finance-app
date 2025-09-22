@@ -8,6 +8,7 @@ import { memo } from "react";
 import { walletStore } from "../../stores/wallet_store";
 import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
+import { vaultActionStore } from "../../stores/vault_action_store";
 
 
 const tokens = [
@@ -19,10 +20,10 @@ const tokens = [
 
 const RedeemModal = () => {
   const isRedeemWalletModalOpen =
-    walletStore.selectors.useIsRedeemWalletModalOpen();
+    vaultActionStore.selectors.useIsRedeemWalletModalOpen();
 
   const handleClose = () => {
-    walletStore.store.trigger.closeRedeemWalletModal();
+    vaultActionStore.store.trigger.closeRedeemWalletModal();
   };
 
   const [selected, setSelected] = useState(tokens[0]);

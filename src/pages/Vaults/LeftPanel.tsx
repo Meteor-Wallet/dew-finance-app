@@ -1,7 +1,6 @@
 import Motion from "../../components/utils/Motion";
-import Near from "../../assets/near.png";
-import { vaultActionStore, type TMode } from "../../stores/vault_action_store";
-import { motion, AnimatePresence } from "framer-motion";
+import { vaultActionStore} from "../../stores/vault_action_store";
+import { motion } from "framer-motion";
 import { accountQueries } from "../../queries/account";
 import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import { ArrowLeftRight } from "lucide-react";
@@ -23,7 +22,7 @@ import { vaultUtils } from "../../utils/vaultUtils";
 import { stringUtils } from "../../utils/stringUtils";
 import { assetUtils } from "../../utils/assetUtils";
 
-const MyPosition = () => {
+const MyPosition2 = () => {
   const [searchParams] = useSearchParams({
     vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
@@ -58,21 +57,22 @@ const MyPosition = () => {
   }, [vaultShareMetadataQuery.data, myPositionQuery.data]);
 
   return (
-    <Motion direction="right" duration={0.6} delay={0.4}>
-      <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md  border border-dark-border-color">
-        <p className="text-sm text-gray">My Position</p>
-        <div className="flex gap-1.5 items-center ">
-          <p className="text-2xl font-semibold">{myPosition} </p>
-          {vaultShareMetadataQuery.data?.icon && (
-            <img
-              src={vaultShareMetadataQuery.data?.icon || undefined}
-              alt={vaultShareMetadataQuery.data?.symbol}
-              className="w-7 h-7"
-            />
-          )}
-        </div>
+    <div className="flex justify-between items-center mt-3">
+      <div className="flex gap-2 items-center ">
+        {vaultShareMetadataQuery.data?.icon && (
+          <img
+            src={vaultShareMetadataQuery.data?.icon || undefined}
+            alt={vaultShareMetadataQuery.data?.symbol}
+            className="w-5 h-6"
+          />
+        )}
+        <p className="text-base font-normal text-gray">
+          {" "}
+          {vaultShareMetadataQuery.data?.symbol}
+        </p>
       </div>
-    </Motion>
+      <p className="text-base font-semibold">{myPosition}</p>
+    </div>
   );
 };
 
@@ -280,7 +280,13 @@ const DepositTab = () => {
   const availableTokens = useMemo(() => {
     return (
       allAcceptedTokensQuery.data?.filter((e) => {
-        // TODO: handle for FungibleToken
+        if ("FungibleToken" in e) {
+          // FungibleToken is definitely coming from NEAR
+          if (selectedChain === "near") {
+            return true;
+          }
+        }
+
         if ("MultiToken" in e) {
           const tokenInfo = FLAT_LIST_TOKENS.find(
             (token) => token.defuseAssetId === e.MultiToken.token_id
@@ -361,11 +367,13 @@ const DepositTab = () => {
               )}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
-            {vaultShareMetadataQuery.data?.icon && <img
-              src={vaultShareMetadataQuery.data?.icon || undefined}
-              alt={vaultShareMetadataQuery.data?.symbol}
-              className="w-4 h-4"
-            />}
+            {vaultShareMetadataQuery.data?.icon && (
+              <img
+                src={vaultShareMetadataQuery.data?.icon || undefined}
+                alt={vaultShareMetadataQuery.data?.symbol}
+                className="w-4 h-4"
+              />
+            )}
           </div>
         </div>
         <div className="flex justify-between text-sm">
@@ -569,11 +577,13 @@ const WithdrawalTab = () => {
               {stringUtils.truncateDecimals(expectedShareToBeBurnt)}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
-            {vaultShareMetadataQuery.data?.icon && <img
-              src={vaultShareMetadataQuery.data?.icon || undefined}
-              alt={vaultShareMetadataQuery.data?.symbol}
-              className="w-4 h-4"
-            />}
+            {vaultShareMetadataQuery.data?.icon && (
+              <img
+                src={vaultShareMetadataQuery.data?.icon || undefined}
+                alt={vaultShareMetadataQuery.data?.symbol}
+                className="w-4 h-4"
+              />
+            )}
           </div>
         </div>
         <div className="flex justify-between text-sm">
@@ -623,6 +633,75 @@ const WithdrawalTab = () => {
   );
 };
 
+const AvailableBalanceRow = ({ asset }: { asset: TAsset }) => {
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset: asset,
+  });
+
+  const balance = accountQueries.useAccountBalance({
+    asset: asset,
+  });
+
+  return (
+    <div className="flex justify-between items-center mt-3">
+      <div className="flex gap-2 items-center ">
+        <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
+        <p className="text-base font-normal text-gray">
+          {" "}
+          Available {assetSymbol}
+        </p>
+      </div>
+      <p className="text-base font-semibold">
+        {balance.data?.formatted ?? "0"}
+      </p>
+    </div>
+  );
+};
+
+const AvailableBalances = () => {
+  const [searchParams] = useSearchParams({
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
+  });
+
+  const vaultContractId = searchParams.get("vaultContractId");
+
+  const allAcceptedTokensQuery = useQuery({
+    ...vaultQueries.getAllAcceptedTokensQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const selectedChain = walletStore.selectors.useSelectedChain();
+
+  const availableTokens = useMemo(() => {
+    return (
+      allAcceptedTokensQuery.data?.filter((e) => {
+        if ("FungibleToken" in e) {
+          // FungibleToken is definitely coming from NEAR
+          if (selectedChain === "near") {
+            return true;
+          }
+        }
+
+        if ("MultiToken" in e) {
+          const tokenInfo = FLAT_LIST_TOKENS.find(
+            (token) => token.defuseAssetId === e.MultiToken.token_id
+          );
+          if (tokenInfo?.chainName === selectedChain) {
+            return true;
+          }
+        }
+        return false;
+      }) || []
+    );
+  }, [allAcceptedTokensQuery.data, selectedChain]);
+
+  return availableTokens.map((v) => {
+    return <AvailableBalanceRow asset={v} />;
+  });
+};
+
 export default function LeftPanel() {
   const actionMode = vaultActionStore.selectors.useMode();
 
@@ -635,7 +714,6 @@ export default function LeftPanel() {
     vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
-  
   const vaultContractId = searchParams.get("vaultContractId");
 
   const baseAssetQuery = useQuery({
@@ -645,7 +723,7 @@ export default function LeftPanel() {
     enabled: vaultContractId !== null,
   });
 
-   const { assetIcon } = assetUtils.useAssetSymbolAndIcon({
+  const { assetIcon } = assetUtils.useAssetSymbolAndIcon({
     asset: baseAssetQuery.data || null,
   });
 
@@ -664,9 +742,7 @@ export default function LeftPanel() {
           .mul(Big(100))
           .round(2, Big.roundDown)
           .toNumber();
-      } catch (err) {
-        
-      }
+      } catch (err) {}
     }
 
     return 0;
@@ -704,27 +780,15 @@ export default function LeftPanel() {
       <Motion direction="right" duration={0.6} delay={0.6}>
         <div className="w-full bg-[linear-gradient(139deg,#1a1c27,#0D0D0D,#0D0D0D)]  border border-border-color rounded-lg shadow-lg mt-5 p-6  lg:pb-6 pb-[60px]">
           <h2 className="font-semibold text-xl">Wallet Balance</h2>
-          <div className="flex justify-between items-center mt-3">
-            <div className="flex gap-2 items-center ">
-              <img src={Near} alt={"Dai"} className="w-6 h-6" />
-              <p className="text-base font-normal text-gray"> Available NEAR</p>
-            </div>
-            <p className="text-base font-semibold">0.00000</p>
-          </div>
-          <div className="flex justify-between items-center mt-3">
-            <div className="flex gap-2 items-center ">
-              <img src={Near} alt={"Dai"} className="w-6 h-6" />
-              <p className="text-base font-normal text-gray"> Available NEAR</p>
-            </div>
-            <p className="text-base font-semibold">0.00000</p>
-          </div>
+          <AvailableBalances />
+
           <div className="flex flex-col gap-3 pt-5 mt-2">
             {/* <ConfirmButton>
               Connect Wallet
             </ConfirmButton> */}
             <ConfirmButton
               onClick={() => {
-                walletStore.store.trigger.openDepositWalletModal();
+                vaultActionStore.store.trigger.openDepositWalletModal();
               }}
             >
               Deposit Into Vault
@@ -733,24 +797,12 @@ export default function LeftPanel() {
 
           <hr className="border-t border-border-color mt-6 mb-6" />
           <h2 className="font-semibold text-xl">My Position</h2>
-          {/* <div className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background mt-3 p-6 text-center flex-col">
-            <div className="md:w-[40px] md:h-[40px] lg:w-[60px] lg:h-[60px] w-[80px] h-[80px]">
-              <RiveComponent />
-            </div>
-            You currently have no positions. Deposit to start earning.
-          </div> */}
-          <div className="flex justify-between items-center mt-3">
-            <div className="flex gap-2 items-center ">
-              <img src={Near} alt={"Dai"} className="w-6 h-6" />
-              <p className="text-base font-normal text-gray"> NEAR</p>
-            </div>
-            <p className="text-base font-semibold">0.00000</p>
-          </div>
+          <MyPosition2 />
           <div className="flex gap-3 pt-5 mt-2">
             <button
               className="flex-1 bg-secondary transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-normal text-base"
               onClick={() => {
-                walletStore.store.trigger.openRedeemWalletModal();
+                vaultActionStore.store.trigger.openRedeemWalletModal();
               }}
             >
               Redeem
@@ -822,7 +874,6 @@ export default function LeftPanel() {
             </p>
           </div>
         </Motion> */}
-        <MyPosition />
       </div>
     </div>
   );
