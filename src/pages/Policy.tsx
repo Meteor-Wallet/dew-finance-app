@@ -11,6 +11,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TPolicy } from "../queries/vault";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { vaultUtils } from "../utils/vaultUtils";
+import { assetUtils } from "../utils/assetUtils";
 
 export default function Policy() {
   const [searchParams] = useSearchParams({
@@ -20,6 +21,17 @@ export default function Policy() {
   const vaultContractId = searchParams.get("vaultContractId");
 
   const [selectedPolicy, setSelectedPolicy] = useState<TPolicy | null>(null);
+
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const { assetIcon } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data || null,
+  });
 
   const policyCountQuery = useQuery({
     ...vaultQueries.getPolicyCountQueryOptions({
@@ -62,7 +74,7 @@ export default function Policy() {
             <div className="w-[55px] h-[55px] relative">
               <img src={vaultIcon} className="w-[55px] h-[55px]" />
               <img
-                src={Near}
+                src={assetIcon}
                 className="absolute bottom-[-5px] right-[-10px] w-[30px] h-[30px]"
               />
             </div>
@@ -100,9 +112,9 @@ export default function Policy() {
               <div
                 key={i}
                 className={`bg-[linear-gradient(139deg,#000000,#181822)] p-5 ${
-                  !vaultUtils.isChainSigTransaction(policy)
-                    ? "pb-[20px]"
-                    : "pb-[70px]"
+                  vaultUtils.isPolicyOfType("ChainSigTransaction", policy)
+                    ? "pb-[70px]"
+                    : "pb-[20px]"
                 } rounded-md relative border border-dark-border-color w-full h-full mx-auto`}
               >
                 <div className="flex justify-between items-center">
@@ -139,7 +151,7 @@ export default function Policy() {
                     <p className="text-right">{policy.activation_time}</p>
                   </div>
 
-                  {vaultUtils.isChainSigTransaction(policy) && (
+                  {vaultUtils.isPolicyOfType("ChainSigTransaction", policy) && (
                     <>
                       <div className="flex justify-between items-center w-full">
                         <p className="text-gray font-sm">Chain</p>
@@ -170,9 +182,45 @@ export default function Policy() {
                       </div>
                     </>
                   )}
+
+                  {vaultUtils.isPolicyOfType("ChainSigMessage", policy) && (
+                    <>
+                      <div className="flex justify-between items-center w-full">
+                        <p className="text-gray font-sm">Sign Method</p>
+                        <p className="text-right">
+                          {policy.policy_details.ChainSigMessage.sign_method}
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  {vaultUtils.isPolicyOfType(
+                    "NearNativeTransaction",
+                    policy
+                  ) && (
+                    <>
+                      <div className="flex justify-between items-center w-full">
+                        <p className="text-gray font-sm">Chain</p>
+                        <p className="text-right">
+                          {
+                            policy.policy_details.NearNativeTransaction
+                              .chain_environment
+                          }
+                        </p>
+                      </div>
+
+                      <div className="flex justify-between items-center w-full">
+                        <p className="text-gray font-sm">No. of Restrictions</p>
+                        <p className="text-right">
+                          {policy.policy_details.NearNativeTransaction
+                            .restrictions?.length ?? 0}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {vaultUtils.isChainSigTransaction(policy) && (
+                {vaultUtils.hasRestrictions(policy) && (
                   <div className="absolute bottom-0 left-0 w-full">
                     <button
                       onClick={() => setSelectedPolicy(policy)}
@@ -214,35 +262,33 @@ export default function Policy() {
         </button>
 
         {selectedPolicy &&
-          selectedPolicy.policy_type === "ChainSigTransaction" &&
-          selectedPolicy.policy_details.ChainSigTransaction.restrictions && (
-            <div className="relative ">
-              <div className="space-y-2 mt-4">
-                <h2 className="text-lg font-semibold text-white mb-0">
-                  Restrictions List for {selectedPolicy.id}
-                </h2>
-                <p className="mb-4 text-gray text-sm">
-                  {" "}
-                  Total{" "}
-                  {
-                    selectedPolicy.policy_details.ChainSigTransaction
-                      .restrictions.length
-                  }{" "}
-                  restrictions
-                </p>
-                <div className=" max-h-[70vh] overflow-y-auto space-y-4 pb-4">
-                  {selectedPolicy.policy_details.ChainSigTransaction.restrictions.map(
-                    (restriction, idx) => (
+          vaultUtils.withRestrictions(selectedPolicy) &&
+          (() => {
+            const { policy, restrictions } =
+              vaultUtils.withRestrictions(selectedPolicy)!;
+
+            return (
+              <div className="relative">
+                <div className="space-y-2 mt-4">
+                  <h2 className="text-lg font-semibold text-white mb-0">
+                    Restrictions List for {policy.id}
+                  </h2>
+                  <p className="mb-4 text-gray text-sm">
+                    Total {restrictions.length} restrictions
+                  </p>
+
+                  <div className="max-h-[70vh] overflow-y-auto space-y-4 pb-4">
+                    {restrictions.map((restriction, idxRestriction) => (
                       <div
-                        key={idx}
+                        key={idxRestriction}
                         className="p-3 bg-[#131319] rounded-md text-sm flex flex-col gap-4"
                       >
                         <div className="flex justify-between items-center">
-                          <p className=" text-gray">Method</p>
+                          <p className="text-gray">Method</p>
                           <p>{restriction.method}</p>
                         </div>
                         <div className="flex justify-between items-center">
-                          <p className=" text-gray">Contract</p>
+                          <p className="text-gray">Contract</p>
                           <p>{restriction.contract_id}</p>
                         </div>
                         <div className="flex justify-between gap-x-10">
@@ -254,21 +300,21 @@ export default function Policy() {
                         <div className="flex justify-between">
                           <p className="text-gray">Schema</p>
                           <div className="text-right">
-                            {restriction.schema.map((s, idx) => (
-                              <div key={idx} className="mb-2">
-                                {s.path} - {s.type}{" "}
-                                {s.lte ? `(max: ${s.lte})` : ""}
+                            {restriction.schema.map((schema, idxSchema) => (
+                              <div key={idxSchema} className="mb-2">
+                                {schema.path} - {schema.type}{" "}
+                                {schema.lte ? `(max: ${schema.lte})` : ""}
                               </div>
                             ))}
                           </div>
                         </div>
                       </div>
-                    )
-                  )}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
       </Modal>
     </div>
   );

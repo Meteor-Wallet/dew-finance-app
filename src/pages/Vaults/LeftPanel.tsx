@@ -361,11 +361,11 @@ const DepositTab = () => {
               )}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
-            <img
+            {vaultShareMetadataQuery.data?.icon && <img
               src={vaultShareMetadataQuery.data?.icon || undefined}
               alt={vaultShareMetadataQuery.data?.symbol}
               className="w-4 h-4"
-            />
+            />}
           </div>
         </div>
         <div className="flex justify-between text-sm">
@@ -569,11 +569,11 @@ const WithdrawalTab = () => {
               {stringUtils.truncateDecimals(expectedShareToBeBurnt)}{" "}
               {vaultShareMetadataQuery.data?.symbol}
             </span>{" "}
-            <img
+            {vaultShareMetadataQuery.data?.icon && <img
               src={vaultShareMetadataQuery.data?.icon || undefined}
               alt={vaultShareMetadataQuery.data?.symbol}
               className="w-4 h-4"
-            />
+            />}
           </div>
         </div>
         <div className="flex justify-between text-sm">
@@ -635,7 +635,19 @@ export default function LeftPanel() {
     vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
 
+  
   const vaultContractId = searchParams.get("vaultContractId");
+
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+   const { assetIcon } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data || null,
+  });
 
   const vaultApyQuery = useQuery({
     ...vaultQueries.getVaultApyQueryOptions({
@@ -800,7 +812,7 @@ export default function LeftPanel() {
             <p className="text-2xl font-semibold text-green">
               <CountUp
                 from={0}
-                to={parseFloat(vaultApyQuery.data || "0") * 100}
+                to={roundedAPY}
                 separator=","
                 direction="up"
                 duration={0.1}

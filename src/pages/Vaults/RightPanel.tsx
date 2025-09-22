@@ -70,7 +70,6 @@ const RightPanel = memo(() => {
   const allPoliciesQuery = useInfiniteQuery({
     ...vaultQueries.getAllPoliciesInfiniteQueryOptions({
       vaultContractId: vaultContractId!,
-      limit: 5,
     }),
     enabled: vaultContractId !== null,
   });
@@ -190,10 +189,10 @@ const RightPanel = memo(() => {
   });
 
   const managementFee = vaultConfigQuery.data?.management_fee_bps
-    ? vaultConfigQuery.data?.management_fee_bps / 10000
+    ? vaultConfigQuery.data?.management_fee_bps / 100
     : 0;
   const performanceFee = vaultConfigQuery.data?.performance_fee_bps
-    ? vaultConfigQuery.data?.performance_fee_bps / 10000
+    ? vaultConfigQuery.data?.performance_fee_bps / 100
     : 0;
   const totalFee = (managementFee + performanceFee).toFixed(3);
 
@@ -201,7 +200,10 @@ const RightPanel = memo(() => {
 
   const totalPolicy = policyCountQuery.data ?? 0;
 
-  const policies = allPoliciesQuery.data?.pages.flat() ?? [];
+  const policies = useMemo(() => {
+    const flatten = allPoliciesQuery.data?.pages.flat() ?? []
+    return flatten.slice(0, 5)
+  }, [allPoliciesQuery.data]);
 
   return (
     <div className="w-[calc(100%+_10vw)] ml-[-5vw] lg:ml-0 h-full lg:w-2/3 lg:order-1 order-2 ">
@@ -490,9 +492,6 @@ const RightPanel = memo(() => {
                     {/* Vault Fees Content  */}
                     <div className="flex justify-between items-center mb-2">
                       <p className="text-base text-white ">Vault Fee</p>
-                      <p className="text-sm text-gray">
-                        Total Fee : {totalFee}%
-                      </p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 mt-3">
                       <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-5 py-7 rounded-md border border-dark-border-color flex justify-between">
