@@ -376,9 +376,7 @@ export const zChainSigMessagePolicy = zPolicyBase.extend({
   policy_details: z.object({
     ChainSigMessage: z.object({
       derivation_path: z.string(),
-      sign_method: z.union([
-        z.literal("NearIntentsSwap")
-      ]),
+      sign_method: z.union([z.literal("NearIntentsSwap")]),
     }),
   }),
 });
@@ -397,13 +395,20 @@ const zPolicy = z.discriminatedUnion("policy_type", [
   zVaultConfigurationPolicy,
   zChainSigTransactionPolicy,
   zChainSigMessagePolicy,
-  zNearNativeTransactionPolicy
+  zNearNativeTransactionPolicy,
 ]);
 
 export type TPolicy = z.infer<typeof zPolicy>;
-export type TChainSigTransactionPolicy = z.infer<
-  typeof zChainSigTransactionPolicy
+export type TPolicyType = TPolicy["policy_type"];
+export type TRestrictions = z.infer<typeof zRestrictionSchema>[]
+
+type TNearNativeTransactionPolicy = z.infer<
+  typeof zNearNativeTransactionPolicy
 >;
+type TChainSigTransactionPolicy = z.infer<typeof zChainSigTransactionPolicy>;
+export type TRestrictionPolicy =
+  | TChainSigTransactionPolicy
+  | TNearNativeTransactionPolicy;
 
 const zAllPolicies = z.array(z.tuple([z.string(), zPolicy]));
 
@@ -425,62 +430,6 @@ const getAllPoliciesInfiniteQueryOptions = ({
           limit,
         }
       );
-
-      // const allPolicies = [
-      //   [
-      //     "morpho_blue_arb_usdc_approve",
-      //     {
-      //       id: "morpho_blue_arb_usdc_approve",
-      //       description:
-      //         "Policy for approving USDC for Morpho Blue vault operations on Arbitrum",
-      //       required_role: "strategist",
-      //       required_vote_count: 1,
-      //       policy_status: "Active",
-      //       policy_type: "ChainSigTransaction",
-      //       policy_details: {
-      //         ChainSigTransaction: {
-      //           derivation_path: "arbitrum,1",
-      //           chain_environment: "EVM",
-      //           restrictions: [
-      //             {
-      //               method: "approve",
-      //               contract_id: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-      //               schema: [
-      //                 {
-      //                   path: "$.spender",
-      //                   type: "String",
-      //                   eq: "0xa60643c90a542a95026c0f1dbdb0615ff42019cf",
-      //                   ne: null,
-      //                   gte: null,
-      //                   lte: null,
-      //                   gt: null,
-      //                   lt: null,
-      //                   nullable: null,
-      //                 },
-      //                 {
-      //                   path: "$.amount",
-      //                   type: "BigInt",
-      //                   eq: null,
-      //                   ne: null,
-      //                   gte: null,
-      //                   lte: "1000000000000",
-      //                   gt: null,
-      //                   lt: null,
-      //                   nullable: null,
-      //                 },
-      //               ],
-      //               interface:
-      //                 "W3siaW5wdXRzIjpbeyJpbnRlcm5hbFR5cGUiOiJhZGRyZXNzIiwibmFtZSI6InNwZW5kZXIiLCJ0eXBlIjoiYWRkcmVzcyJ9LHsiaW50ZXJuYWxUeXBlIjoidWludDI1NiIsIm5hbWUiOiJhbW91bnQiLCJ0eXBlIjoidWludDI1NiJ9XSwibmFtZSI6ImFwcHJvdmUiLCJvdXRwdXRzIjpbeyJpbnRlcm5hbFR5cGUiOiJib29sIiwibmFtZSI6IiIsInR5cGUiOiJib29sIn1dLCJzdGF0ZU11dGFiaWxpdHkiOiJub25wYXlhYmxlIiwidHlwZSI6ImZ1bmN0aW9uIn1d",
-      //               go_to_index_if_not_found: null,
-      //             },
-      //           ],
-      //         },
-      //       },
-      //       activation_time: "1758118352459930404",
-      //       proposal_expiry_time_nanosec: "86400000000000",
-      //     },
-      //   ],
-      // ];
 
       const policies = zAllPolicies
         .transform((items) => items.map(([_, policy]) => policy))
