@@ -63,10 +63,6 @@ const DepositModal = () => {
   const isDepositWalletModalOpen =
     vaultActionStore.selectors.useIsDepositWalletModalOpen();
 
-  const handleClose = () => {
-    vaultActionStore.store.trigger.closeDepositWalletModal();
-  };
-
   const [searchParams] = useSearchParams({
     vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
   });
@@ -113,15 +109,15 @@ const DepositModal = () => {
     });
   }, [availableTokens]);
 
-  const selectedDepositAsset =
+  const selectedAsset =
     vaultActionStore.selectors.useSelectedDepositAsset();
 
   const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
-    asset: selectedDepositAsset,
+    asset: selectedAsset,
   });
 
   const exchangeRateForSelectedAsset = assetUtils.useExchangeRateForAsset({
-    asset: selectedDepositAsset,
+    asset: selectedAsset,
     vaultContractId,
   });
 
@@ -136,7 +132,7 @@ const DepositModal = () => {
     vaultActionStore.selectors.useDepositSlippagePercent();
 
   const balance = accountQueries.useAccountBalance({
-    asset: selectedDepositAsset,
+    asset: selectedAsset,
   });
 
   const nearAddress = walletStore.selectors.useCurrentNearAccountId();
@@ -157,18 +153,25 @@ const DepositModal = () => {
   const canDeposit =
     intentsAddressQuery.data &&
     nearAddress &&
-    selectedDepositAsset &&
+    selectedAsset &&
     exchangeRateForSelectedAsset &&
     vaultShareMetadataQuery.data &&
     vaultContractId &&
     connectedWalletAddress &&
     depositAmount;
 
+  const handleClose = () => {
+    if (depositToVaultMutation.isPending) {
+      return;
+    }
+    vaultActionStore.store.trigger.closeDepositWalletModal();
+  };
+
   return (
     <Modal
       isOpen={isDepositWalletModalOpen}
       onRequestClose={handleClose}
-      shouldCloseOnOverlayClick
+      shouldCloseOnOverlayClick={!depositToVaultMutation.isPending}
       closeTimeoutMS={300}
       className={`
         absolute z-30 
@@ -274,7 +277,7 @@ const DepositModal = () => {
                 const storeContext = vaultActionStore.store.get().context;
                 depositToVaultMutation.mutate({
                   nearAddress: nearAddress,
-                  asset: selectedDepositAsset,
+                  asset: selectedAsset,
                   intentsDepositAddress: intentsAddressQuery.data.address,
                   amount: storeContext.depositAmount,
                   exchangeRate: exchangeRateForSelectedAsset.assetToShare,

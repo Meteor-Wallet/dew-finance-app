@@ -449,7 +449,7 @@ const WithdrawalTab = () => {
   });
 
   const selectedWithdrawAsset =
-    vaultActionStore.selectors.selectedWithdrawAsset();
+    vaultActionStore.selectors.useSelectedWithdrawAsset();
 
   const slippagePercent =
     vaultActionStore.selectors.useWithdrawSlippagePercent();

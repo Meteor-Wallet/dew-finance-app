@@ -70,6 +70,9 @@ const store = createStore({
     changeDepositAsset: (context, event: {asset: TAsset}) => produce(context, draft => {
       draft.selectedDepositAsset = event.asset
     }),
+    changeWithdrawAsset: (context, event: {asset: TAsset}) => produce(context, draft => {
+      draft.selectedWithdrawAsset = event.asset
+    }),
     setInitialSelectedWithdrawAsset: (
       context,
       event: {
@@ -139,7 +142,7 @@ const useSelectedDepositAsset = () => {
   return useSelector(store, ({ context }) => context.selectedDepositAsset);
 };
 
-const selectedWithdrawAsset = () => {
+const useSelectedWithdrawAsset = () => {
   return useSelector(store, ({ context }) => context.selectedWithdrawAsset);
 };
 
@@ -167,7 +170,7 @@ export const vaultActionStore = {
     useSelectedDepositAsset,
     useDepositAmount,
     useDepositSlippagePercent,
-    selectedWithdrawAsset,
+    useSelectedWithdrawAsset,
     useWithdrawSlippagePercent,
     useWithdrawAmount,
     useIsDepositWalletModalOpen,

@@ -34,7 +34,14 @@ const useDepositToVaultMutation = () => {
           address: params.blockchainAddress,
         }),
       });
+      queryClient.invalidateQueries(
+        vaultQueries.getMyPositionQueryOptions({
+          vaultContractId: params.vaultContractId,
+          nearAddress: params.nearAddress,
+        })
+      );
       vaultActionStore.store.trigger.updateDepositAmount({ amount: "" });
+      vaultActionStore.store.trigger.closeDepositWalletModal();
     },
     mutationFn: async ({
       intentsDepositAddress,
@@ -265,6 +272,7 @@ const useWithdrawFromVaultMutation = () => {
         })
       );
       vaultActionStore.store.trigger.updateWithdrawAmount({ amount: "" });
+      vaultActionStore.store.trigger.closeRedeemWalletModal();
     },
     mutationFn: async ({
       share,

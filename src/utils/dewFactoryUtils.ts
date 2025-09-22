@@ -10,6 +10,8 @@ const getBlockchainIdFromChainName = (chain: ChainName) => {
       return "ethereum";
     case "solana":
       return "solana";
+    case "near":
+      throw new Error("Near should use native wallet selector");
   }
 };
 
@@ -74,5 +76,5 @@ const getMessageForCreateAccount = async ({
 export const dewFactoryUtils = {
   getAccountDetailsFromAddressAndChain,
   getMessageForCreateAccount,
-  getBlockchainIdFromChainName
+  getBlockchainIdFromChainName,
 };

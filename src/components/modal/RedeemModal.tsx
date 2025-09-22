@@ -1,33 +1,197 @@
 import closeIcon from "../../assets/close.svg";
-import Sol from "../../assets/solana.svg";
-import Eth from "../../assets/eth-full.svg";
-import Btc from "../../assets/btc.png";
-import Near from "../../assets/near.png";
 import Modal from "react-modal";
-import { memo } from "react";
-import { walletStore } from "../../stores/wallet_store";
+import { memo, useEffect, useMemo } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { vaultActionStore } from "../../stores/vault_action_store";
+import { useSearchParams } from "react-router-dom";
+import { vaultUtils } from "../../utils/vaultUtils";
+import { walletStore } from "../../stores/wallet_store";
+import { useQuery } from "@tanstack/react-query";
+import { vaultQueries, type TAsset } from "../../queries/vault";
+import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
+import { assetUtils } from "../../utils/assetUtils";
+import Big from "big.js";
+import { vaultMutations } from "../../mutations/vault";
+import { CircularProgress } from "../utils/CircularProgress";
+import { stringUtils } from "../../utils/stringUtils";
 
+const Input = () => {
+  const depositAmount = vaultActionStore.selectors.useWithdrawAmount();
+  return (
+    <input
+      type="text"
+      placeholder="0.0"
+      className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
+      value={depositAmount}
+      onChange={(e) =>
+        vaultActionStore.store.trigger.updateWithdrawAmount({
+          amount: e.target.value,
+        })
+      }
+    />
+  );
+};
 
-const tokens = [
-  { symbol: "NEAR", icon: Near },
-  { symbol: "ETH", icon: Sol },
-  { symbol: "USDC", icon: Eth },
-  { symbol: "BTC", icon: Btc },
-];
+const Asset = ({
+  onClick,
+  asset,
+}: {
+  asset: TAsset;
+  onClick: (asset: TAsset) => any;
+}) => {
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset: asset,
+  });
+
+  return (
+    <div
+      onClick={() => {
+        onClick(asset);
+      }}
+      className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-input-focus"
+    >
+      <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
+      <span className="text-sm text-white">{assetSymbol}</span>
+    </div>
+  );
+};
 
 const RedeemModal = () => {
   const isRedeemWalletModalOpen =
     vaultActionStore.selectors.useIsRedeemWalletModalOpen();
 
+  const [searchParams] = useSearchParams({
+    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
+  });
+
+  const vaultContractId = searchParams.get("vaultContractId");
+
+  const [open, setOpen] = useState(false);
+
+  const selectedChain = walletStore.selectors.useSelectedChain();
+
+  const allAcceptedTokensQuery = useQuery({
+    ...vaultQueries.getAllAcceptedTokensQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const availableTokens = useMemo(() => {
+    return (
+      allAcceptedTokensQuery.data?.filter((e) => {
+        if ("FungibleToken" in e) {
+          // FungibleToken is definitely coming from NEAR
+          if (selectedChain === "near") {
+            return true;
+          }
+        }
+
+        if ("MultiToken" in e) {
+          const tokenInfo = FLAT_LIST_TOKENS.find(
+            (token) => token.defuseAssetId === e.MultiToken.token_id
+          );
+          if (tokenInfo?.chainName === selectedChain) {
+            return true;
+          }
+        }
+        return false;
+      }) || []
+    );
+  }, [allAcceptedTokensQuery.data, selectedChain]);
+
+  useEffect(() => {
+    vaultActionStore.store.trigger.setInitialSelectedWithdrawAsset({
+      assets: availableTokens,
+    });
+  }, [availableTokens]);
+
+  const selectedAsset = vaultActionStore.selectors.useSelectedWithdrawAsset();
+
+  const { assetIcon, assetSymbol, assetDecimals } =
+    assetUtils.useAssetSymbolAndIcon({
+      asset: selectedAsset,
+    });
+
+  const exchangeRateForAsset = assetUtils.useExchangeRateForAsset({
+    asset: selectedAsset,
+    vaultContractId,
+  });
+
+  const vaultShareMetadataQuery = useQuery({
+    ...vaultQueries.getVaultShareMetadataQueryOptions({
+      vaultContractId: vaultContractId!,
+    }),
+    enabled: vaultContractId !== null,
+  });
+
+  const slippagePercent =
+    vaultActionStore.selectors.useWithdrawSlippagePercent();
+
+  const connectedWalletAddress =
+    walletStore.selectors.useConnectedWalletAddress();
+
+  const nearAddress = walletStore.selectors.useCurrentNearAccountId();
+
+  const myPositionQuery = useQuery({
+    ...vaultQueries.getMyPositionQueryOptions({
+      vaultContractId: vaultContractId!,
+      nearAddress: nearAddress!,
+    }),
+    enabled: nearAddress !== null && vaultContractId !== null,
+  });
+
+  const myPosition = useMemo(() => {
+    if (vaultShareMetadataQuery.data && myPositionQuery.data) {
+      return Big(myPositionQuery.data)
+        .div(Big(10).pow(vaultShareMetadataQuery.data.decimals))
+        .toFixed();
+    }
+
+    return "0";
+  }, [vaultShareMetadataQuery.data, myPositionQuery.data]);
+
+  const withdrawAmount = vaultActionStore.selectors.useWithdrawAmount();
+
+  const expectedShareToBeBurnt = useMemo(() => {
+    if (exchangeRateForAsset) {
+      return Big(withdrawAmount || "0")
+        .mul(Big(exchangeRateForAsset.assetToShare))
+        .toFixed();
+    }
+    return "0";
+  }, [withdrawAmount, exchangeRateForAsset]);
+
+  const balanceInAsset = useMemo(() => {
+    if (exchangeRateForAsset && assetDecimals) {
+      return Big(myPosition)
+        .mul(exchangeRateForAsset.shareToAsset)
+        .round(assetDecimals, Big.roundDown)
+        .toFixed();
+    }
+    return "0";
+  }, [exchangeRateForAsset, myPosition, assetDecimals]);
+  
+  const withdrawFromVaultMutation =
+    vaultMutations.useWithdrawFromVaultMutation();
+
   const handleClose = () => {
+    if (withdrawFromVaultMutation.isPending) {
+      return;
+    }
     vaultActionStore.store.trigger.closeRedeemWalletModal();
   };
 
-  const [selected, setSelected] = useState(tokens[0]);
-  const [open, setOpen] = useState(false);
+  const canWithdraw =
+    nearAddress &&
+    selectedAsset &&
+    exchangeRateForAsset &&
+    vaultShareMetadataQuery.data &&
+    vaultContractId &&
+    connectedWalletAddress &&
+    assetDecimals !== null &&
+    withdrawAmount;
 
   return (
     <Modal
@@ -58,43 +222,44 @@ const RedeemModal = () => {
         <div className="flex  justify-between items-center mt-5  mb-1.5">
           <p className="text-sm font-base text-white">Amount </p>
           <p className="text-sm font-base text-gray">
-            Available: 0.0003
+            Available: {balanceInAsset}
           </p>
         </div>
 
         <div className="relative  md:max-w-md mt-1">
-          <input
-            type="text"
-            placeholder="0.0"
-            className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
-          />
+          <Input />
           <div
             id="dropdown"
             onClick={() => setOpen(!open)}
             className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none cursor-pointer rounded-l-sm min-w-[95px]"
           >
-            <img src={selected.icon} alt={selected.symbol} className="w-6 h-6" />
-            <span className="text-sm text-white font-semibold">{selected.symbol}</span>
+            <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
+            <span className="text-sm text-white font-semibold">
+              {assetSymbol}
+            </span>
           </div>
           <div
+            onClick={() => {
+              vaultActionStore.store.trigger.updateWithdrawAmount({
+                amount: balanceInAsset,
+              });
+            }}
             className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50"
           >
             Max
           </div>
           {open && (
             <div className="absolute left-0 top-full mt-1 w-40 bg-input-inner-background rounded-md shadow-lg z-10">
-              {tokens.map((token) => (
-                <div
-                  key={token.symbol}
-                  onClick={() => {
-                    setSelected(token);
+              {availableTokens.map((asset) => (
+                <Asset
+                  asset={asset}
+                  onClick={(asset) => {
+                    vaultActionStore.store.trigger.changeWithdrawAsset({
+                      asset,
+                    });
                     setOpen(false);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-input-focus"
-                >
-                  <img src={token.icon} alt={token.symbol} className="w-5 h-5" />
-                  <span className="text-sm text-white">{token.symbol}</span>
-                </div>
+                />
               ))}
             </div>
           )}
@@ -104,20 +269,60 @@ const RedeemModal = () => {
           <div className="flex justify-between text-sm">
             <span className="text-gray">Share</span>
             <div className="flex gap-1.5 items-center justify-center">
-              <span>1 NEAR</span>{" "}
-              <img src={Near} alt={"NEAR"} className="w-5 h-5" />
+              <span>1 {assetSymbol}</span>{" "}
+              <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
               <ArrowLeftRight className="text-gray" size={12} />
-              <span>1 NEAR</span>{" "}
-              <img src={Near} alt={"NEAR"} className="w-5 h-5" />
+              <span>
+                {stringUtils.truncateDecimals(
+                  exchangeRateForAsset?.assetToShare
+                )}{" "}
+                {vaultShareMetadataQuery.data?.symbol}
+              </span>{" "}
+              {vaultShareMetadataQuery.data?.icon && (
+                <img
+                  src={vaultShareMetadataQuery.data?.icon || undefined}
+                  alt={vaultShareMetadataQuery.data?.symbol}
+                  className="w-5 h-5"
+                />
+              )}
             </div>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray">Slippage Tolerance</span>
-            <span>12%</span>
+            <span>{slippagePercent}%</span>
           </div>
         </div>
-        <button className="w-full mt-10 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative px-6 mt-4 mb-4">
-          Redeem
+        <button
+          onClick={() => {
+            if (!withdrawFromVaultMutation.isPending) {
+              if (canWithdraw) {
+                const storeContext = vaultActionStore.store.get().context;
+                withdrawFromVaultMutation.mutate({
+                  nearAddress: nearAddress,
+                  asset: selectedAsset,
+                  share: expectedShareToBeBurnt,
+                  exchangeRate: exchangeRateForAsset.shareToAsset,
+                  shareDecimals: vaultShareMetadataQuery.data?.decimals,
+                  vaultContractId: vaultContractId,
+                  slippagePercent: storeContext.withdrawSlippagePercent,
+                  chain: selectedChain,
+                  blockchainAddress: connectedWalletAddress.address,
+                  assetDecimals,
+                  withdrawToAddress: connectedWalletAddress.address,
+                });
+              }
+            }
+          }}
+          disabled={withdrawFromVaultMutation.isPending || !canWithdraw}
+          className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative px-6 mt-10 mb-4"
+        >
+          {withdrawFromVaultMutation.isPending ? (
+            <div className="mr-1">
+              <CircularProgress size="small" />
+            </div>
+          ) : (
+            "Redeem"
+          )}
         </button>
         <button
           onClick={handleClose}

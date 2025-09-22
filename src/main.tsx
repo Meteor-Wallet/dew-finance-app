@@ -17,6 +17,9 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import "@solana/wallet-adapter-react-ui/styles.css";
+import Big from "big.js";
+
+Big.DP = 26
 
 const endpoint = `https://backend-v2-dev.meteorwallet.app/rpc/solana`;
 
