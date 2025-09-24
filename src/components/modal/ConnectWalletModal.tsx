@@ -17,6 +17,15 @@ const ConnectWalletModal = () => {
     walletStore.store.trigger.closeConnectWalletModal();
   };
 
+  const connectedWallets = walletStore.selectors.useConnectedWallets();
+
+  const isEvmConnected = connectedWallets.find((e) =>
+    e.supportedChains.includes("arbitrum")
+  );
+  const isSolConnected = connectedWallets.find((e) =>
+    e.supportedChains.includes("solana")
+  );
+
   return (
     <Modal
       isOpen={isConnectWalletModalOpen}
@@ -45,7 +54,7 @@ const ConnectWalletModal = () => {
           Please select network and wallet to connect.
         </p>
         <ul className="mb-8">
-          <Motion direction="left" duration={0.4} delay={0.1}>
+          {/* <Motion direction="left" duration={0.4} delay={0.1}>
             <li
               className="connect-wallet-list-items"
               onClick={() => {
@@ -57,34 +66,39 @@ const ConnectWalletModal = () => {
               </div>
               NEAR
             </li>
-          </Motion>
-          <Motion direction="left" duration={0.4} delay={0.3}>
-            <li
-              className="connect-wallet-list-items"
-              onClick={async () => {
-                walletStore.store.trigger.closeConnectWalletModal();
-                signIn("evm")
-              }}
-            >
-              <div className="list-logo eth-logo">
-                <img src={ethLogo} />{" "}
-              </div>
-              EVM{" "}
-            </li>
-          </Motion>
-          <Motion direction="left" duration={0.4} delay={0.5}>
-            <li
-              className="connect-wallet-list-items"
-              onClick={() => {
-                walletStore.store.trigger.closeConnectWalletModal();
-              }}
-            >
-              <div className="list-logo solana-logo">
-                <img src={solanaLogo} />{" "}
-              </div>
-              Solana
-            </li>
-          </Motion>
+          </Motion> */}
+          {!isEvmConnected && (
+            <Motion direction="left" duration={0.4} delay={0.3}>
+              <li
+                className="connect-wallet-list-items"
+                onClick={async () => {
+                  walletStore.store.trigger.closeConnectWalletModal();
+                  signIn("evm");
+                }}
+              >
+                <div className="list-logo eth-logo">
+                  <img src={ethLogo} />{" "}
+                </div>
+                EVM{" "}
+              </li>
+            </Motion>
+          )}
+          {!isSolConnected && (
+            <Motion direction="left" duration={0.4} delay={0.5}>
+              <li
+                className="connect-wallet-list-items"
+                onClick={() => {
+                  walletStore.store.trigger.closeConnectWalletModal();
+                  signIn("sol");
+                }}
+              >
+                <div className="list-logo solana-logo">
+                  <img src={solanaLogo} />{" "}
+                </div>
+                Solana
+              </li>
+            </Motion>
+          )}
         </ul>
         <button
           onClick={handleClose}

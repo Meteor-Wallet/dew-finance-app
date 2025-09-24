@@ -27,6 +27,9 @@ export default function Navbar() {
   const { signIn } = useWalletSelector();
   const connectedWalletAddress =
     walletStore.selectors.useConnectedWalletAddress();
+
+  const connectedWallets = walletStore.selectors.useConnectedWallets();
+
   const selectedChain = walletStore.selectors.useSelectedChain();
 
   const closeWalletDrawer = () => {
@@ -82,36 +85,38 @@ export default function Navbar() {
         <div className="flex gap-4 items-center justify-end relative">
           <Motion direction="right" duration={1} delay={0.6} zIndex={1}>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  walletStore.store.trigger.openSwitchNetworkModal();
-                }}
-                className="flex items-center gap-1.5 md:gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
-              >
-                <img
-                  className="w-[25px] md:w-[30px]"
-                  src={
-                    selectedChain ? chain_image_map[selectedChain] : undefined
-                  }
-                  alt="near-logo"
-                />
-                {selectedChain?.toUpperCase()}
-              </button>
+              {connectedWallets.length > 0 && (
+                <button
+                  onClick={() => {
+                    walletStore.store.trigger.openSwitchNetworkModal();
+                  }}
+                  className="flex items-center gap-1.5 md:gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
+                >
+                  <img
+                    className="w-[25px] md:w-[30px]"
+                    src={
+                      selectedChain ? chain_image_map[selectedChain] : undefined
+                    }
+                    alt="near-logo"
+                  />
+                  {selectedChain?.toUpperCase()}
+                </button>
+              )}
               {!connectedWalletAddress ? (
                 <div className="relative md:block">
                   <button
                     onClick={() => {
-                      // walletStore.store.trigger.openConnectWalletModal();
-                      const selectedChain =
-                        walletStore.store.get().context.selectedChain;
-                      if (
-                        selectedChain === "arbitrum" ||
-                        selectedChain === "eth"
-                      ) {
-                        signIn("evm");
-                      } else if (selectedChain === "solana") {
-                        signIn("sol");
-                      }
+                      walletStore.store.trigger.openConnectWalletModal();
+                      // const selectedChain =
+                      //   walletStore.store.get().context.selectedChain;
+                      // if (
+                      //   selectedChain === "arbitrum" ||
+                      //   selectedChain === "eth"
+                      // ) {
+                      //   signIn("evm");
+                      // } else if (selectedChain === "solana") {
+                      //   signIn("sol");
+                      // }
                     }}
                     className="bg-primary text-black px-3 py-3 md:px-6 md:py-3 rounded-md font-bold primary-button-shadow text-base"
                   >

@@ -93,11 +93,13 @@ const store = createStore({
         if (context.connectedWallets.find((e) => e.address === event.address)) {
           return;
         }
+        if (context.connectedWallets.length === 0) {
+          draft.selectedChain = event.selectedChain;
+        }
         draft.connectedWallets.push({
           address: event.address,
           supportedChains: event.supportedChains,
         });
-        // draft.selectedChain = event.selectedChain;
       }),
     disconnectSelectedChainWallet: (context) =>
       produce(context, (draft) => {
@@ -181,6 +183,10 @@ const useCurrentNearAccountId = () => {
   return useSelector(store, ({ context }) => context.nearAccountId);
 };
 
+const useConnectedWallets = () => {
+  return useSelector(store, ({ context }) => context.connectedWallets);
+};
+
 export const walletStore = {
   store,
   selectors: {
@@ -190,5 +196,6 @@ export const walletStore = {
     useSelectedChain,
     useConnectedWalletAddress,
     useCurrentNearAccountId,
+    useConnectedWallets,
   },
 };
