@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useWalletSelector } from "../walletSelector";
 import type { TAsset } from "./vault";
-import { walletStore, type ChainName } from "../stores/wallet_store";
+import { useWalletStore, useConnectedWalletAddress, type ChainName } from "../stores/wallet_store";
 
 const accountBalanceQueryKey = ({
   asset,
@@ -26,9 +26,8 @@ const accountBalanceQueryKey = ({
 
 const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
   const { getBalance } = useWalletSelector();
-  const selectedChain = walletStore.selectors.useSelectedChain();
-  const connectedWalletAddress =
-    walletStore.selectors.useConnectedWalletAddress();
+  const selectedChain = useWalletStore((s) => s.selectedChain);
+  const connectedWalletAddress = useConnectedWalletAddress();
 
   return useQuery({
     queryKey: accountBalanceQueryKey({
@@ -50,6 +49,6 @@ const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
 export const accountQueries = {
   useAccountBalance,
   queryKey: {
-    accountBalanceQueryKey
-  }
+    accountBalanceQueryKey,
+  },
 };

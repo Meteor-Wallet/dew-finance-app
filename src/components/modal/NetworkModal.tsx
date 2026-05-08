@@ -1,20 +1,19 @@
 import closeIcon from "../../assets/close.svg";
-import nearLogo from "../../assets/near.svg";
 import ethLogo from "../../assets/eth.svg";
 import arbLogo from "../../assets/arb.png";
 import solanaLogo from "../../assets/solana.svg";
 import Motion from "../utils/Motion";
 import Modal from "react-modal";
 import { memo } from "react";
-import { walletStore } from "../../stores/wallet_store";
+import { useWalletStore } from "../../stores/wallet_store";
 
 const NetworkModal = () => {
-  const isSwitchNetworkModalOpen =
-    walletStore.selectors.useIsSwitchNetworkModalOpen();
+  const isSwitchNetworkModalOpen = useWalletStore(
+    (s) => s.isSwitchNetworkModalOpen
+  );
 
-  const handleClose = () => {
-    walletStore.store.trigger.closeSwitchNetworkModal();
-  };
+  const handleClose = () =>
+    useWalletStore.getState().closeSwitchNetworkModal();
 
   return (
     <Modal
@@ -23,14 +22,14 @@ const NetworkModal = () => {
       shouldCloseOnOverlayClick
       closeTimeoutMS={300}
       className={`
-        absolute z-30 
-        bottom-0  md:-translate-x-1/2 
+        absolute z-30
+        bottom-0  md:-translate-x-1/2
         w-full max-w-full
         bg-[linear-gradient(139deg,#000000,#0C0C0C)] md:border-t md:border-card-border shadow-xl
-        rounded-t-2xl 
+        rounded-t-2xl
         transition-all duration-300
-        animate-drawer-slide-up 
-        md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-y-1/2 md:w-[420px] 
+        animate-drawer-slide-up
+        md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-y-1/2 md:w-[420px]
         md:rounded-2xl md:border md:animate-none
     `}
       overlayClassName={`
@@ -48,40 +47,34 @@ const NetworkModal = () => {
           <Motion direction="left" duration={0.4} delay={0.1}>
             <li
               className="connect-wallet-list-items"
-              onClick={() => {
-                walletStore.store.trigger.switchChain({
-                  chain: "eth",
-                });
-              }}
+              onClick={() =>
+                useWalletStore.getState().switchChain({ chain: "eth" })
+              }
             >
               <div className="list-logo near-logo">
-                <img src={ethLogo} />{" "}
+                <img src={ethLogo} />
               </div>
               Ethereum
             </li>
             <li
               className="connect-wallet-list-items"
-              onClick={() => {
-                walletStore.store.trigger.switchChain({
-                  chain: "arbitrum",
-                });
-              }}
+              onClick={() =>
+                useWalletStore.getState().switchChain({ chain: "arbitrum" })
+              }
             >
               <div className="list-logo near-logo">
-                <img src={arbLogo} />{" "}
+                <img src={arbLogo} />
               </div>
               Arbitrum
             </li>
             <li
               className="connect-wallet-list-items"
-              onClick={() => {
-                walletStore.store.trigger.switchChain({
-                  chain: "solana",
-                });
-              }}
+              onClick={() =>
+                useWalletStore.getState().switchChain({ chain: "solana" })
+              }
             >
               <div className="list-logo near-logo">
-                <img src={solanaLogo} />{" "}
+                <img src={solanaLogo} />
               </div>
               Solana
             </li>

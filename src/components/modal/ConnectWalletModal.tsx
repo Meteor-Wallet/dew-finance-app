@@ -1,23 +1,21 @@
 import closeIcon from "../../assets/close.svg";
-import nearLogo from "../../assets/near.svg";
 import ethLogo from "../../assets/eth.svg";
 import solanaLogo from "../../assets/solana.svg";
 import Modal from "react-modal";
 import Motion from "../utils/Motion";
 import { memo } from "react";
-import { walletStore } from "../../stores/wallet_store";
+import { useWalletStore } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
 
 const ConnectWalletModal = () => {
   const { signIn } = useWalletSelector();
-  const isConnectWalletModalOpen =
-    walletStore.selectors.useIsConnectWalletModalOpen();
+  const isConnectWalletModalOpen = useWalletStore(
+    (s) => s.isConnectWalletModalOpen
+  );
+  const connectedWallets = useWalletStore((s) => s.connectedWallets);
 
-  const handleClose = () => {
-    walletStore.store.trigger.closeConnectWalletModal();
-  };
-
-  const connectedWallets = walletStore.selectors.useConnectedWallets();
+  const handleClose = () =>
+    useWalletStore.getState().closeConnectWalletModal();
 
   const isEvmConnected = connectedWallets.find((e) =>
     e.supportedChains.includes("arbitrum")
@@ -33,14 +31,14 @@ const ConnectWalletModal = () => {
       shouldCloseOnOverlayClick
       closeTimeoutMS={300}
       className={`
-        absolute z-30 
-        bottom-0  md:-translate-x-1/2 
+        absolute z-30
+        bottom-0  md:-translate-x-1/2
         w-full max-w-full
         bg-[linear-gradient(139deg,#000000,#0C0C0C)] md:border-t md:border-card-border shadow-xl
-        rounded-t-2xl 
+        rounded-t-2xl
         transition-all duration-300
-        animate-drawer-slide-up 
-        md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-y-1/2 md:w-[380px] 
+        animate-drawer-slide-up
+        md:top-1/2 md:bottom-auto md:left-1/2 md:-translate-y-1/2 md:w-[380px]
         md:rounded-2xl md:border md:animate-none
     `}
       overlayClassName={`
@@ -54,32 +52,19 @@ const ConnectWalletModal = () => {
           Please select network and wallet to connect.
         </p>
         <ul className="mb-8">
-          {/* <Motion direction="left" duration={0.4} delay={0.1}>
-            <li
-              className="connect-wallet-list-items"
-              onClick={() => {
-                walletStore.store.trigger.closeConnectWalletModal();
-              }}
-            >
-              <div className="list-logo near-logo">
-                <img src={nearLogo} />{" "}
-              </div>
-              NEAR
-            </li>
-          </Motion> */}
           {!isEvmConnected && (
             <Motion direction="left" duration={0.4} delay={0.3}>
               <li
                 className="connect-wallet-list-items"
                 onClick={async () => {
-                  walletStore.store.trigger.closeConnectWalletModal();
+                  useWalletStore.getState().closeConnectWalletModal();
                   signIn("evm");
                 }}
               >
                 <div className="list-logo eth-logo">
-                  <img src={ethLogo} />{" "}
+                  <img src={ethLogo} />
                 </div>
-                EVM{" "}
+                EVM
               </li>
             </Motion>
           )}
@@ -88,12 +73,12 @@ const ConnectWalletModal = () => {
               <li
                 className="connect-wallet-list-items"
                 onClick={() => {
-                  walletStore.store.trigger.closeConnectWalletModal();
+                  useWalletStore.getState().closeConnectWalletModal();
                   signIn("sol");
                 }}
               >
                 <div className="list-logo solana-logo">
-                  <img src={solanaLogo} />{" "}
+                  <img src={solanaLogo} />
                 </div>
                 Solana
               </li>

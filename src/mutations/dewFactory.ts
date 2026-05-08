@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { walletStore } from "../stores/wallet_store";
+import { useWalletStore, useConnectedWalletAddress } from "../stores/wallet_store";
 import { dewFactoryUtils } from "../utils/dewFactoryUtils";
 import { useWalletSelector } from "../walletSelector";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
@@ -8,10 +8,8 @@ import { toast } from "sonner";
 import { useRef } from "react";
 
 const useAuthorizeWalletMutation = () => {
-  const connectedWallet = walletStore.selectors.useConnectedWalletAddress();
-
+  const connectedWallet = useConnectedWalletAddress();
   const { signMessage } = useWalletSelector();
-
   const toastIdRef = useRef<number | string>(undefined);
 
   return useMutation({
@@ -22,19 +20,19 @@ const useAuthorizeWalletMutation = () => {
         });
         const { message, blockchainId, deadline, nearAddress } =
           await dewFactoryUtils.getMessageForCreateAccount({
-            chain: walletStore.store.get().context.selectedChain,
+            chain: useWalletStore.getState().selectedChain,
             blockchainAddress: connectedWallet.address,
           });
 
         toast.loading("Authorizing", {
           description: "Request wallet selector to sign message",
-          id: toastIdRef.current
+          id: toastIdRef.current,
         });
         const signature = await signMessage(message);
 
         toast.loading("Authorizing", {
           description: "Creating your abstracted account",
-          id: toastIdRef.current
+          id: toastIdRef.current,
         });
         await DewAccountBackend.createDewAccount({
           blockchain_address: connectedWallet.address,
@@ -45,7 +43,7 @@ const useAuthorizeWalletMutation = () => {
 
         toast.loading("Authorizing", {
           description: "Making sure the abstracted account is created",
-          id: toastIdRef.current
+          id: toastIdRef.current,
         });
         const accountExists = await nearUtils.provider
           .viewAccount(nearAddress)
@@ -55,21 +53,21 @@ const useAuthorizeWalletMutation = () => {
         if (accountExists) {
           toast.success("Authorizing", {
             description: "Abstracted account authorized successfully",
-            id: toastIdRef.current
+            id: toastIdRef.current,
           });
-          walletStore.store.trigger.setCurrentNearAccountId({
-            nearAccountId: nearAddress,
-          });
-          walletStore.store.trigger.closeOnboardModal();
-        }else{
-          throw new Error("Fail to create abstracted account")
+          useWalletStore
+            .getState()
+            .setCurrentNearAccountId({ nearAccountId: nearAddress });
+          useWalletStore.getState().closeOnboardModal();
+        } else {
+          throw new Error("Fail to create abstracted account");
         }
       }
     },
     onError: (error) => {
       toast.error("Something went wrong", {
         description: error.message,
-        id: toastIdRef.current
+        id: toastIdRef.current,
       });
     },
   });

@@ -2,8 +2,7 @@ import Modal from "react-modal";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRive } from "@rive-app/react-canvas";
 import DotGrid from "../utils/DotGrid";
-import { walletStore } from "../../stores/wallet_store";
-import _ from "lodash";
+import { useWalletStore } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
 import { dewFactoryMutations } from "../../mutations/dewFactory";
 import { CircularProgress } from "../utils/CircularProgress";
@@ -17,13 +16,10 @@ export default function OnboardingModal() {
     stateMachines: "State Machine 1",
   });
 
-  const isOnboardModalOpen = walletStore.selectors.useIsOnboardModalOpen();
-
+  const isOnboardModalOpen = useWalletStore((s) => s.isOnboardModalOpen);
   const { signOut } = useWalletSelector();
-
   const authorizeWalletMutation =
     dewFactoryMutations.useAuthorizeWalletMutation();
-
   const isPending = authorizeWalletMutation.isPending;
 
   return (
@@ -43,12 +39,7 @@ export default function OnboardingModal() {
         >
           <div className="w-full flex justify-end bg-[linear-gradient(139deg,#13141A,#191b23)] h-[50vh] md:h-[300px] rounded-xl mb-6 items-end relatve">
             <div className="h-[250px] md:h-[280px] w-full relative overflow-hidden">
-              <DotGrid
-                dotSize={3}
-                gap={30}
-                baseColor="#2c333da7"
-                proximity={0}
-              />
+              <DotGrid dotSize={3} gap={30} baseColor="#2c333da7" proximity={0} />
               <div className="absolute top-0 left-0 w-full h-full z-3">
                 <RiveComponent />
               </div>
@@ -56,28 +47,26 @@ export default function OnboardingModal() {
             </div>
           </div>
 
-          <div className=" mb-8 ">
+          <div className="mb-8">
             <h2 className="text-2xl md:text-xl font-bold text-white mb-1">
               Welcome to Dew Finance
             </h2>
             <p className="text-gray text-base md:text-sm leading-relaxed">
               Manage your digital assets with secure vaults, flexible policies,
-              and seamless cross-chain access.Easily grow, protect, and control
-              your crypto—all in one place.Connect your wallet, explore vaults,
+              and seamless cross-chain access. Easily grow, protect, and control
+              your crypto—all in one place. Connect your wallet, explore vaults,
               and take control of your decentralized finance experience.
             </p>
           </div>
         </motion.div>
       </AnimatePresence>
       <div className="flex justify-end items-center w-full mt-4">
-        <div className="flex gap-4  md:flex-row flex-col md:w-fit w-full md:mb-0 mb-3">
+        <div className="flex gap-4 md:flex-row flex-col md:w-fit w-full md:mb-0 mb-3">
           <button
             onClick={() => {
-              if (isPending) {
-                return;
-              }
+              if (isPending) return;
               signOut();
-              walletStore.store.trigger.closeOnboardModal();
+              useWalletStore.getState().closeOnboardModal();
             }}
             className="text-gray hover:text-white text-base md:order-1 order-2 w-full md:w-fit"
           >
@@ -87,15 +76,11 @@ export default function OnboardingModal() {
             className={twMerge([
               "flex justify-center items-center",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              clsx({
-                "cursor-progress disabled:cursor-progress": isPending,
-              }),
+              clsx({ "cursor-progress disabled:cursor-progress": isPending }),
               "text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200 md:order-2 order-1 w-full md:w-fit",
             ])}
-            onClick={async () => {
-              if (!isPending) {
-                authorizeWalletMutation.mutate();
-              }
+            onClick={() => {
+              if (!isPending) authorizeWalletMutation.mutate();
             }}
             disabled={isPending}
           >

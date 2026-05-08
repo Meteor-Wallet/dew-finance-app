@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Copy, LogOut, X, Menu } from "lucide-react";
+import { ChevronDown, Copy, LogOut, X } from "lucide-react";
 import Motion from "../utils/Motion";
 import ethLogo from "../../assets/eth.svg";
 import arbLogo from "../../assets/arb.png";
 import solanaLogo from "../../assets/solana.svg";
 import { toast } from "sonner";
 import { useRive } from "@rive-app/react-canvas";
-import { walletStore, type ChainName } from "../../stores/wallet_store";
+import nearLogo from "../../assets/near.svg";
+import { useWalletStore, useConnectedWalletAddress, type ChainName } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
 import { stringUtils } from "../../utils/stringUtils";
 
-const chain_image_map: {
-  [key in ChainName]: string;
-} = {
+const chain_image_map: { [key in ChainName]: string } = {
   arbitrum: arbLogo,
   eth: ethLogo,
   solana: solanaLogo,
+  near: nearLogo,
 };
 
 export default function Navbar() {
@@ -24,13 +24,9 @@ export default function Navbar() {
   const [walletDrawerClosing, setWalletDrawerClosing] = useState(false);
   const [menuDrawerClosing, setMenuDrawerClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const { signIn } = useWalletSelector();
-  const connectedWalletAddress =
-    walletStore.selectors.useConnectedWalletAddress();
-
-  const connectedWallets = walletStore.selectors.useConnectedWallets();
-
-  const selectedChain = walletStore.selectors.useSelectedChain();
+  const connectedWalletAddress = useConnectedWalletAddress();
+  const connectedWallets = useWalletStore((s) => s.connectedWallets);
+  const selectedChain = useWalletStore((s) => s.selectedChain);
 
   const closeWalletDrawer = () => {
     setWalletDrawerClosing(true);
@@ -87,9 +83,9 @@ export default function Navbar() {
             <div className="flex items-center gap-3">
               {connectedWallets.length > 0 && (
                 <button
-                  onClick={() => {
-                    walletStore.store.trigger.openSwitchNetworkModal();
-                  }}
+                  onClick={() =>
+                    useWalletStore.getState().openSwitchNetworkModal()
+                  }
                   className="flex items-center gap-1.5 md:gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
                 >
                   <img
@@ -105,19 +101,9 @@ export default function Navbar() {
               {!connectedWalletAddress ? (
                 <div className="relative md:block">
                   <button
-                    onClick={() => {
-                      walletStore.store.trigger.openConnectWalletModal();
-                      // const selectedChain =
-                      //   walletStore.store.get().context.selectedChain;
-                      // if (
-                      //   selectedChain === "arbitrum" ||
-                      //   selectedChain === "eth"
-                      // ) {
-                      //   signIn("evm");
-                      // } else if (selectedChain === "solana") {
-                      //   signIn("sol");
-                      // }
-                    }}
+                    onClick={() =>
+                      useWalletStore.getState().openConnectWalletModal()
+                    }
                     className="bg-primary text-black px-3 py-3 md:px-6 md:py-3 rounded-md font-bold primary-button-shadow text-base"
                   >
                     Connect Wallet
@@ -156,12 +142,6 @@ export default function Navbar() {
               )}
             </div>
           </Motion>
-          {/* <button
-            className="md:hidden text-white text-xl"
-            onClick={() => setMenuOpen(true)}
-          >
-            <Menu />
-          </button> */}
         </div>
       </nav>
 
@@ -188,16 +168,12 @@ export default function Navbar() {
           </div>
           <div
             className={`
-                            fixed z-9998 top-0 left-0 w-full h-full max-w-screen
-                            bg-black/10 backdrop-blur-md
-                            transition-all duration-300
-                            ${
-                              walletDrawerClosing
-                                ? "animate-fade-out"
-                                : "animate-fade-in"
-                            }
-                            md:hidden
-                        `}
+              fixed z-9998 top-0 left-0 w-full h-full max-w-screen
+              bg-black/10 backdrop-blur-md
+              transition-all duration-300
+              ${menuDrawerClosing ? "animate-fade-out" : "animate-fade-in"}
+              md:hidden
+            `}
             onClick={closeMenuDrawer}
           ></div>
         </>
@@ -223,16 +199,12 @@ export default function Navbar() {
           </div>
           <div
             className={`
-                            fixed z-9999 top-0 left-0 w-full h-full max-w-screen
-                            bg-black/10 backdrop-blur-md
-                            transition-all duration-300
-                            ${
-                              walletDrawerClosing
-                                ? "animate-fade-out"
-                                : "animate-fade-in"
-                            }
-                            md:hidden
-                        `}
+              fixed z-9999 top-0 left-0 w-full h-full max-w-screen
+              bg-black/10 backdrop-blur-md
+              transition-all duration-300
+              ${walletDrawerClosing ? "animate-fade-out" : "animate-fade-in"}
+              md:hidden
+            `}
             onClick={closeWalletDrawer}
           ></div>
         </>
@@ -242,12 +214,9 @@ export default function Navbar() {
 }
 
 function WalletDropdownContent({ onClose }: { onClose: () => void }) {
-  const connectedWalletAddress =
-    walletStore.selectors.useConnectedWalletAddress();
-
-  const selectedChain = walletStore.selectors.useSelectedChain();
-  const currentNearAccountId = walletStore.selectors.useCurrentNearAccountId();
-
+  const connectedWalletAddress = useConnectedWalletAddress();
+  const selectedChain = useWalletStore((s) => s.selectedChain);
+  const currentNearAccountId = useWalletStore((s) => s.nearAccountId);
   const { signOut } = useWalletSelector();
 
   return (

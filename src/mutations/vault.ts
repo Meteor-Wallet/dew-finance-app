@@ -10,7 +10,7 @@ import { dewAccountUtils } from "../utils/dewAccountUtils";
 import { type ChainName } from "../stores/wallet_store";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
 import { toast } from "sonner";
-import { vaultActionStore } from "../stores/vault_action_store";
+import { useVaultActionStore } from "../stores/vault_action_store";
 import { useRef } from "react";
 import { accountQueries } from "../queries/account";
 
@@ -40,8 +40,8 @@ const useDepositToVaultMutation = () => {
           nearAddress: params.nearAddress,
         })
       );
-      vaultActionStore.store.trigger.updateDepositAmount({ amount: "" });
-      vaultActionStore.store.trigger.closeDepositWalletModal();
+      useVaultActionStore.getState().updateDepositAmount({ amount: "" });
+      useVaultActionStore.getState().closeDepositWalletModal();
     },
     mutationFn: async ({
       intentsDepositAddress,
@@ -56,8 +56,6 @@ const useDepositToVaultMutation = () => {
       chain,
     }: {
       intentsDepositAddress: string;
-      // this is prettier amount
-      // we need to calculate the amount without decimals internally
       nearAddress: string;
       amount: string;
       asset: TAsset;
@@ -164,8 +162,6 @@ const useDepositToVaultMutation = () => {
         description: "Awaiting funds to be detected (This may take a minute)",
         id: toastIdRef.current,
       });
-      // only MultiToken need this check
-      // FungibleToken is immediate
       if ("MultiToken" in asset) {
         let fundsDetectedInIntents = false;
         while (!fundsDetectedInIntents) {
@@ -271,8 +267,8 @@ const useWithdrawFromVaultMutation = () => {
           nearAddress: params.nearAddress,
         })
       );
-      vaultActionStore.store.trigger.updateWithdrawAmount({ amount: "" });
-      vaultActionStore.store.trigger.closeRedeemWalletModal();
+      useVaultActionStore.getState().updateWithdrawAmount({ amount: "" });
+      useVaultActionStore.getState().closeRedeemWalletModal();
     },
     mutationFn: async ({
       share,
@@ -299,14 +295,6 @@ const useWithdrawFromVaultMutation = () => {
       blockchainAddress: string;
       chain: ChainName;
     }) => {
-      // withdraw now
-      // user must've gone through deposit before
-      // so their account's storage for the vault should be deposited
-      // we skip the storage deposit check here
-
-      // make sure the intents token is starting with nep141:
-      // nep245: is not supported yet
-
       if ("MultiToken" in asset) {
         if (!asset.MultiToken.token_id.startsWith("nep141:")) {
           throw new Error(
@@ -342,7 +330,6 @@ const useWithdrawFromVaultMutation = () => {
           );
         }
 
-        // add both of these to make sure withdrawal is not exhausted
         const withdrawalCost = Big(tokenInfo.min_withdrawal_amount).add(
           Big(tokenInfo.withdrawal_fee)
         );
@@ -449,7 +436,7 @@ const useWithdrawFromVaultMutation = () => {
           ],
         };
 
-        const { message: withdrawMessage, blockchainId } =
+        const { message: withdrawMessage, blockchainId: withdrawBlockchainId } =
           await dewAccountUtils.getMessageForSigningTransaction({
             nearAddress,
             transaction: withdrawTransaction,
@@ -472,7 +459,7 @@ const useWithdrawFromVaultMutation = () => {
           receiverId: nearAddress,
           args: {
             blockchain_address: blockchainAddress,
-            blockchain_id: blockchainId,
+            blockchain_id: withdrawBlockchainId,
             signature: withdrawSignature,
             transaction: withdrawTransaction,
           },
