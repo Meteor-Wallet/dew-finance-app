@@ -1,165 +1,121 @@
-import { createStore } from "@xstate/store";
-import { useSelector } from "@xstate/store/react";
-import { produce } from "immer";
+import { create } from "zustand";
 import type { TAsset } from "../queries/vault";
 
 export type TMode = "deposit" | "withdraw";
 
-const store = createStore({
-  context: {
-    isDepositWalletModalOpen: false,
-    isRedeemWalletModalOpen: false,
-    isSimulateModalOpen: false,
-    mode: "deposit",
-    selectedDepositAsset: null,
-    depositAmount: "",
-    depositSlippagePercent: "1",
-    withdrawSlippagePercent: "1",
-    selectedWithdrawAsset: null,
-    withdrawAmount: "",
-  } as {
-    isDepositWalletModalOpen: boolean;
-    isRedeemWalletModalOpen: boolean;
-    isSimulateModalOpen: boolean;
-    mode: TMode;
-    selectedDepositAsset: TAsset | null;
-    depositAmount: string;
-    depositSlippagePercent: string;
-    withdrawSlippagePercent: string;
-    withdrawAmount: string;
-    selectedWithdrawAsset: TAsset | null;
+interface VaultActionState {
+  isDepositWalletModalOpen: boolean;
+  isRedeemWalletModalOpen: boolean;
+  isSimulateModalOpen: boolean;
+  mode: TMode;
+  selectedDepositAsset: TAsset | null;
+  depositAmount: string;
+  depositSlippagePercent: string;
+  withdrawSlippagePercent: string;
+  selectedWithdrawAsset: TAsset | null;
+  withdrawAmount: string;
+  openRedeemWalletModal: () => void;
+  closeRedeemWalletModal: () => void;
+  openDepositWalletModal: () => void;
+  closeDepositWalletModal: () => void;
+  openSimulateModal: () => void;
+  closeSimulateModal: () => void;
+  setInitialSelectedDepositAsset: (event: { assets: TAsset[] }) => void;
+  changeDepositAsset: (event: { asset: TAsset }) => void;
+  changeWithdrawAsset: (event: { asset: TAsset }) => void;
+  setInitialSelectedWithdrawAsset: (event: { assets: TAsset[] }) => void;
+  changeMode: (event: { mode: TMode }) => void;
+  updateDepositAmount: (event: { amount: string }) => void;
+  updateWithdrawAmount: (event: { amount: string }) => void;
+}
+
+const useVaultActionStore = create<VaultActionState>()((set) => ({
+  isDepositWalletModalOpen: false,
+  isRedeemWalletModalOpen: false,
+  isSimulateModalOpen: false,
+  mode: "deposit",
+  selectedDepositAsset: null,
+  depositAmount: "",
+  depositSlippagePercent: "1",
+  withdrawSlippagePercent: "1",
+  selectedWithdrawAsset: null,
+  withdrawAmount: "",
+
+  openRedeemWalletModal: () => set({ isRedeemWalletModalOpen: true }),
+  closeRedeemWalletModal: () => set({ isRedeemWalletModalOpen: false }),
+  openDepositWalletModal: () => set({ isDepositWalletModalOpen: true }),
+  closeDepositWalletModal: () => set({ isDepositWalletModalOpen: false }),
+  openSimulateModal: () => set({ isSimulateModalOpen: true }),
+  closeSimulateModal: () => set({ isSimulateModalOpen: false }),
+
+  setInitialSelectedDepositAsset: ({ assets }) =>
+    set({ selectedDepositAsset: assets.length > 0 ? assets[0] : null }),
+
+  changeDepositAsset: ({ asset }) => set({ selectedDepositAsset: asset }),
+  changeWithdrawAsset: ({ asset }) => set({ selectedWithdrawAsset: asset }),
+
+  setInitialSelectedWithdrawAsset: ({ assets }) =>
+    set({ selectedWithdrawAsset: assets.length > 0 ? assets[0] : null }),
+
+  changeMode: ({ mode }) =>
+    set(mode === "deposit" ? { mode, depositAmount: "" } : { mode, withdrawAmount: "" }),
+
+  updateDepositAmount: ({ amount }) => {
+    if (!isNaN(Number(amount))) set({ depositAmount: amount });
   },
-  on: {
-    openRedeemWalletModal: (context) =>
-      produce(context, (draft) => {
-        draft.isRedeemWalletModalOpen = true;
-      }),
-    closeRedeemWalletModal: (context) =>
-      produce(context, (draft) => {
-        draft.isRedeemWalletModalOpen = false;
-      }),
-    openDepositWalletModal: (context) =>
-      produce(context, (draft) => {
-        draft.isDepositWalletModalOpen = true;
-      }),
-    closeDepositWalletModal: (context) =>
-      produce(context, (draft) => {
-        draft.isDepositWalletModalOpen = false;
-      }),
-    openSimulateModal: (context) =>
-      produce(context, (draft) => {
-        draft.isSimulateModalOpen = true;
-      }),
-    closeSimulateModal: (context) =>
-      produce(context, (draft) => {
-        draft.isSimulateModalOpen = false;
-      }),
-    setInitialSelectedDepositAsset: (
-      context,
-      event: {
-        assets: TAsset[];
-      }
-    ) =>
-      produce(context, (draft) => {
-        if (event.assets.length > 0) {
-          draft.selectedDepositAsset = event.assets[0];
-        } else {
-          draft.selectedDepositAsset = null;
-        }
-      }),
-    changeDepositAsset: (context, event: {asset: TAsset}) => produce(context, draft => {
-      draft.selectedDepositAsset = event.asset
-    }),
-    changeWithdrawAsset: (context, event: {asset: TAsset}) => produce(context, draft => {
-      draft.selectedWithdrawAsset = event.asset
-    }),
-    setInitialSelectedWithdrawAsset: (
-      context,
-      event: {
-        assets: TAsset[];
-      }
-    ) =>
-      produce(context, (draft) => {
-        if (event.assets.length > 0) {
-          draft.selectedWithdrawAsset = event.assets[0];
-        } else {
-          draft.selectedWithdrawAsset = null;
-        }
-      }),
-    changeMode: (context, event: { mode: TMode }) =>
-      produce(context, (draft) => {
-        draft.mode = event.mode;
-        if (event.mode === "deposit") {
-          draft.depositAmount = "";
-        } else {
-          draft.withdrawAmount = "";
-        }
-      }),
-    updateDepositAmount: (context, event: { amount: string }) =>
-      produce(context, (draft) => {
-        try {
-          const number = Number(event.amount);
-          if (isNaN(number)) {
-            throw new Error("Input is not a number");
-          }
-          draft.depositAmount = event.amount;
-        } catch (err) {
-          // ignore if fail
-        }
-      }),
-    updateWithdrawAmount: (context, event: { amount: string }) =>
-      produce(context, (draft) => {
-        try {
-          const number = Number(event.amount);
-          if (isNaN(number)) {
-            throw new Error("Input is not a number");
-          }
-          draft.withdrawAmount = event.amount;
-        } catch (err) {
-          // ignore if fail
-        }
-      }),
+
+  updateWithdrawAmount: ({ amount }) => {
+    if (!isNaN(Number(amount))) set({ withdrawAmount: amount });
   },
-});
+}));
 
-const useIsRedeemWalletModalOpen = () => {
-  return useSelector(store, ({ context }) => context.isRedeemWalletModalOpen);
-};
+const useIsRedeemWalletModalOpen = () =>
+  useVaultActionStore((s) => s.isRedeemWalletModalOpen);
+const useIsDepositWalletModalOpen = () =>
+  useVaultActionStore((s) => s.isDepositWalletModalOpen);
+const useIsSimulateModalOpen = () =>
+  useVaultActionStore((s) => s.isSimulateModalOpen);
+const useMode = () => useVaultActionStore((s) => s.mode);
+const useSelectedDepositAsset = () =>
+  useVaultActionStore((s) => s.selectedDepositAsset);
+const useSelectedWithdrawAsset = () =>
+  useVaultActionStore((s) => s.selectedWithdrawAsset);
+const useDepositAmount = () => useVaultActionStore((s) => s.depositAmount);
+const useWithdrawAmount = () => useVaultActionStore((s) => s.withdrawAmount);
+const useDepositSlippagePercent = () =>
+  useVaultActionStore((s) => s.depositSlippagePercent);
+const useWithdrawSlippagePercent = () =>
+  useVaultActionStore((s) => s.withdrawSlippagePercent);
 
-const useIsDepositWalletModalOpen = () => {
-  return useSelector(store, ({ context }) => context.isDepositWalletModalOpen);
-};
-
-const useIsSimulateModalOpen = () => {
-  return useSelector(store, ({ context }) => context.isSimulateModalOpen);
-};
-
-const useMode = () => {
-  return useSelector(store, ({ context }) => context.mode);
-};
-
-const useSelectedDepositAsset = () => {
-  return useSelector(store, ({ context }) => context.selectedDepositAsset);
-};
-
-const useSelectedWithdrawAsset = () => {
-  return useSelector(store, ({ context }) => context.selectedWithdrawAsset);
-};
-
-const useDepositAmount = () => {
-  return useSelector(store, ({ context }) => context.depositAmount);
-};
-
-const useWithdrawAmount = () => {
-  return useSelector(store, ({ context }) => context.withdrawAmount);
-};
-
-const useDepositSlippagePercent = () => {
-  return useSelector(store, ({ context }) => context.depositSlippagePercent);
-};
-
-const useWithdrawSlippagePercent = () => {
-  return useSelector(store, ({ context }) => context.withdrawSlippagePercent);
+const store = {
+  trigger: {
+    openRedeemWalletModal: () =>
+      useVaultActionStore.getState().openRedeemWalletModal(),
+    closeRedeemWalletModal: () =>
+      useVaultActionStore.getState().closeRedeemWalletModal(),
+    openDepositWalletModal: () =>
+      useVaultActionStore.getState().openDepositWalletModal(),
+    closeDepositWalletModal: () =>
+      useVaultActionStore.getState().closeDepositWalletModal(),
+    openSimulateModal: () => useVaultActionStore.getState().openSimulateModal(),
+    closeSimulateModal: () =>
+      useVaultActionStore.getState().closeSimulateModal(),
+    setInitialSelectedDepositAsset: (e: { assets: TAsset[] }) =>
+      useVaultActionStore.getState().setInitialSelectedDepositAsset(e),
+    changeDepositAsset: (e: { asset: TAsset }) =>
+      useVaultActionStore.getState().changeDepositAsset(e),
+    changeWithdrawAsset: (e: { asset: TAsset }) =>
+      useVaultActionStore.getState().changeWithdrawAsset(e),
+    setInitialSelectedWithdrawAsset: (e: { assets: TAsset[] }) =>
+      useVaultActionStore.getState().setInitialSelectedWithdrawAsset(e),
+    changeMode: (e: { mode: TMode }) =>
+      useVaultActionStore.getState().changeMode(e),
+    updateDepositAmount: (e: { amount: string }) =>
+      useVaultActionStore.getState().updateDepositAmount(e),
+    updateWithdrawAmount: (e: { amount: string }) =>
+      useVaultActionStore.getState().updateWithdrawAmount(e),
+  },
+  get: () => ({ context: useVaultActionStore.getState() }),
 };
 
 export const vaultActionStore = {
