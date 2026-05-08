@@ -15,10 +15,6 @@
     "@reown/appkit": "^1.8.6",
     "@reown/appkit-adapter-wagmi": "^1.8.6",
     "@rive-app/react-canvas": "^4.23.3",
-    "@solana/spl-token": "^0.4.14",
-    "@solana/wallet-adapter-react": "^0.15.39",
-    "@solana/wallet-adapter-react-ui": "^0.9.39",
-    "@solana/web3.js": "^1.98.4",
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-query": "^5.89.0",
     "@xstate/store": "^3.9.2",
@@ -42,7 +38,6 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.2.4",
     "usehooks-ts": "^3.1.1",
-    "wagmi": "^2.16.9",
     "zod": "^4.1.9"
   },
   "devDependencies": {

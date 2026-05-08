@@ -1,44 +1,24 @@
-import { StrictMode, type ReactNode } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { WagmiProvider } from "wagmi";
 import { QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import App from "./App.tsx";
-import { wagmiAdapter } from "./walletSelector/useWagmiSelector.tsx";
 import { queryClient } from "./queryClient.ts";
 import _ from "lodash";
 import { walletStore } from "./stores/wallet_store.ts";
 import { dewFactoryUtils } from "./utils/dewFactoryUtils.ts";
 import { nearUtils } from "./utils/nearUtils.ts";
 import { toast } from "sonner";
-import {
-  ConnectionProvider,
-  WalletProvider,
-} from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import "@solana/wallet-adapter-react-ui/styles.css";
 import Big from "big.js";
 
-Big.DP = 26
-
-const endpoint = `https://backend-v2-dev.meteorwallet.app/rpc/solana`;
-
-const SolanaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={[]} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
-  );
-};
+Big.DP = 26;
 
 const connectedWalletSelector = walletStore.store.select(
   (ctx) =>
     ctx.connectedWallets.find((e) =>
-      e.supportedChains.includes(ctx.selectedChain)
+      e.supportedChains.includes(ctx.selectedChain),
     ) || null,
-  _.isEqual
+  _.isEqual,
 );
 
 connectedWalletSelector.subscribe(async (wallet) => {
@@ -97,12 +77,8 @@ connectedWalletSelector.subscribe(async (wallet) => {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <SolanaProvider>
-      <WagmiProvider config={wagmiAdapter.wagmiConfig}>
-        <QueryClientProvider client={queryClient}>
-          <App />
-        </QueryClientProvider>
-      </WagmiProvider>
-    </SolanaProvider>
-  </StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </StrictMode>,
 );
