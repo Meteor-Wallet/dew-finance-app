@@ -124,13 +124,13 @@ const DepositModal = () => {
       chain: selectedChain,
       nearAddress: nearAddress!,
     }),
-    enabled: nearAddress !== null,
+    enabled: nearAddress !== null && selectedChain !== "near",
   });
 
   const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
 
   const canDeposit =
-    intentsAddressQuery.data &&
+    (selectedChain === "near" || intentsAddressQuery.data) &&
     nearAddress &&
     selectedAsset &&
     exchangeRateForSelectedAsset &&
@@ -254,7 +254,7 @@ const DepositModal = () => {
               depositToVaultMutation.mutate({
                 nearAddress,
                 asset: selectedAsset,
-                intentsDepositAddress: intentsAddressQuery.data.address,
+                intentsDepositAddress: intentsAddressQuery.data?.address,
                 amount,
                 exchangeRate: exchangeRateForSelectedAsset.assetToShare,
                 sharesDecimals: vaultShareMetadataQuery.data.decimals,

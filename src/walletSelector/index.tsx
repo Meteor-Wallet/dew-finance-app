@@ -1,14 +1,9 @@
 import { useCallback } from "react";
 import { useWalletStore } from "../stores/wallet_store";
+import { nearConnector } from "../nearConnector";
 import type { TAsset } from "../queries/vault";
 
 export const useWalletSelector = () => {
-  const signMessage = useCallback<(message: string) => Promise<string>>(
-    async () => {
-      throw new Error("Not implemented");
-    },
-    []
-  );
 
   const requestDeposit = useCallback<
     (args: {
@@ -23,25 +18,27 @@ export const useWalletSelector = () => {
     []
   );
 
-  const signIn = useCallback<(adapterType: "evm" | "sol") => Promise<void>>(
-    async () => {
+  const signIn = useCallback<(adapterType: "evm" | "sol" | "near") => Promise<void>>(
+    async (adapterType) => {
+      if (adapterType === "near") {
+        await nearConnector.connect();
+        return;
+      }
       throw new Error("Not implemented");
     },
     []
   );
 
   const signOut = useCallback(async () => {
+    const selectedChain = useWalletStore.getState().selectedChain;
+    if (selectedChain === "near") {
+      const result = await nearConnector.getConnectedWallet().catch(() => null);
+      if (result) await nearConnector.disconnect(result.wallet);
+      else useWalletStore.getState().disconnectSelectedChainWallet();
+      return;
+    }
     useWalletStore.getState().disconnectSelectedChainWallet();
   }, []);
 
-  const getBalance = useCallback<
-    (args: { asset: TAsset; address: string }) => Promise<{ formatted: string }>
-  >(
-    async () => {
-      throw new Error("Not implemented");
-    },
-    []
-  );
-
-  return { signMessage, requestDeposit, signIn, getBalance, signOut };
+  return { requestDeposit, signIn, signOut };
 };

@@ -3,11 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRive } from "@rive-app/react-canvas";
 import DotGrid from "../utils/DotGrid";
 import { useWalletStore } from "../../stores/wallet_store";
-import { useWalletSelector } from "../../walletSelector";
-import { dewFactoryMutations } from "../../mutations/dewFactory";
-import { CircularProgress } from "../utils/CircularProgress";
-import { twMerge } from "tailwind-merge";
-import clsx from "clsx";
 
 export default function OnboardingModal() {
   const { RiveComponent } = useRive({
@@ -17,10 +12,6 @@ export default function OnboardingModal() {
   });
 
   const isOnboardModalOpen = useWalletStore((s) => s.isOnboardModalOpen);
-  const { signOut } = useWalletSelector();
-  const authorizeWalletMutation =
-    dewFactoryMutations.useAuthorizeWalletMutation();
-  const isPending = authorizeWalletMutation.isPending;
 
   return (
     <Modal
@@ -64,33 +55,11 @@ export default function OnboardingModal() {
         <div className="flex gap-4 md:flex-row flex-col md:w-fit w-full md:mb-0 mb-3">
           <button
             onClick={() => {
-              if (isPending) return;
-              signOut();
               useWalletStore.getState().closeOnboardModal();
             }}
             className="text-gray hover:text-white text-base md:order-1 order-2 w-full md:w-fit"
           >
-            Cancel
-          </button>
-          <button
-            className={twMerge([
-              "flex justify-center items-center",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              clsx({ "cursor-progress disabled:cursor-progress": isPending }),
-              "text-base bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] confirm-button-shadow relative ml-2 text-black px-5 py-3 rounded-lg font-bold hover:opacity-[0.5] transition-all duration-200 md:order-2 order-1 w-full md:w-fit",
-            ])}
-            onClick={() => {
-              if (!isPending) authorizeWalletMutation.mutate();
-            }}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <div className="mr-1">
-                <CircularProgress size="small" />
-              </div>
-            ) : (
-              "Authorize Wallet"
-            )}
+            Okay
           </button>
         </div>
       </div>

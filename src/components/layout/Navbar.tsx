@@ -1,22 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, Copy, LogOut, X } from "lucide-react";
 import Motion from "../utils/Motion";
-import ethLogo from "../../assets/eth.svg";
-import arbLogo from "../../assets/arb.png";
-import solanaLogo from "../../assets/solana.svg";
 import { toast } from "sonner";
 import { useRive } from "@rive-app/react-canvas";
-import nearLogo from "../../assets/near.svg";
-import { useWalletStore, useConnectedWalletAddress, type ChainName } from "../../stores/wallet_store";
+import { useWalletStore, useConnectedWalletAddress } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
 import { stringUtils } from "../../utils/stringUtils";
-
-const chain_image_map: { [key in ChainName]: string } = {
-  arbitrum: arbLogo,
-  eth: ethLogo,
-  solana: solanaLogo,
-  near: nearLogo,
-};
+import nearLogo from "../../assets/near.svg";
+import { nearConnector } from "../../nearConnector";
 
 export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -25,8 +16,6 @@ export default function Navbar() {
   const [menuDrawerClosing, setMenuDrawerClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const connectedWalletAddress = useConnectedWalletAddress();
-  const connectedWallets = useWalletStore((s) => s.connectedWallets);
-  const selectedChain = useWalletStore((s) => s.selectedChain);
 
   const closeWalletDrawer = () => {
     setWalletDrawerClosing(true);
@@ -81,29 +70,10 @@ export default function Navbar() {
         <div className="flex gap-4 items-center justify-end relative">
           <Motion direction="right" duration={1} delay={0.6} zIndex={1}>
             <div className="flex items-center gap-3">
-              {connectedWallets.length > 0 && (
-                <button
-                  onClick={() =>
-                    useWalletStore.getState().openSwitchNetworkModal()
-                  }
-                  className="flex items-center gap-1.5 md:gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-95 hover:opacity-60"
-                >
-                  <img
-                    className="w-[25px] md:w-[30px]"
-                    src={
-                      selectedChain ? chain_image_map[selectedChain] : undefined
-                    }
-                    alt="near-logo"
-                  />
-                  {selectedChain?.toUpperCase()}
-                </button>
-              )}
               {!connectedWalletAddress ? (
                 <div className="relative md:block">
                   <button
-                    onClick={() =>
-                      useWalletStore.getState().openConnectWalletModal()
-                    }
+                    onClick={() => nearConnector.connect()}
                     className="bg-primary text-black px-3 py-3 md:px-6 md:py-3 rounded-md font-bold primary-button-shadow text-base"
                   >
                     Connect Wallet
@@ -215,7 +185,6 @@ export default function Navbar() {
 
 function WalletDropdownContent({ onClose }: { onClose: () => void }) {
   const connectedWalletAddress = useConnectedWalletAddress();
-  const selectedChain = useWalletStore((s) => s.selectedChain);
   const currentNearAccountId = useWalletStore((s) => s.nearAccountId);
   const { signOut } = useWalletSelector();
 
@@ -227,7 +196,7 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
             <div className="near-logo w-[80px] h-[80px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center md:mb-1 mb-2">
               <img
                 className="w-full"
-                src={selectedChain ? chain_image_map[selectedChain] : undefined}
+                src={nearLogo}
                 alt="near-logo"
               />
             </div>

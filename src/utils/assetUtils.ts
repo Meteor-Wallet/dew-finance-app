@@ -4,8 +4,31 @@ import { vaultQueries, type TAsset } from "../queries/vault";
 import { useMemo } from "react";
 import { isEqual } from "es-toolkit";
 import Big from "big.js";
+import { nearUtils } from "./nearUtils";
+
+type FtMetadata = {
+  spec: string;
+  name: string;
+  symbol: string;
+  icon: string | null;
+  decimals: number;
+};
 
 const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
+  const fungibleTokenId =
+    asset && "FungibleToken" in asset ? asset.FungibleToken : null;
+
+  const ftMetadataQuery = useQuery({
+    queryKey: ["ft_metadata", fungibleTokenId],
+    queryFn: async () =>
+      nearUtils.provider.callFunction(
+        fungibleTokenId!,
+        "ft_metadata",
+        {}
+      ) as Promise<FtMetadata>,
+    enabled: fungibleTokenId !== null,
+  });
+
   let assetSymbol = "";
   let assetIcon = "";
   let assetDecimals: null | number = null;
@@ -15,16 +38,17 @@ const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
       const tokenInfo = FLAT_LIST_TOKENS.find(
         (e) => e.defuseAssetId === asset.MultiToken.token_id
       );
-
       if (tokenInfo) {
         assetSymbol = tokenInfo.symbolWithoutChain;
         assetIcon = tokenInfo.icon;
         assetDecimals = tokenInfo.decimals;
       }
+    } else if ("FungibleToken" in asset && ftMetadataQuery.data) {
+      assetSymbol = ftMetadataQuery.data.symbol;
+      assetIcon = ftMetadataQuery.data.icon ?? "";
+      assetDecimals = ftMetadataQuery.data.decimals;
     }
   }
-
-  // TODO: Handle for FungibleToken
 
   return {
     assetSymbol,

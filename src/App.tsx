@@ -10,8 +10,6 @@ import Policy from "./pages/Policy";
 import Vaults from "./pages/Vaults/index";
 import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
-import NetworkModal from "./components/modal/NetworkModal";
-import ConnectWalletModal from "./components/modal/ConnectWalletModal";
 import DepositModal from "./components/modal/DepositModal";
 import RedeemModal from "./components/modal/RedeemModal";
 import SimulateModal from "./components/modal/SimulateModal";
@@ -29,11 +27,9 @@ export default function App() {
       <div className="relative">
         <Navbar />
         <OnboardingModal />
-        <NetworkModal />
         <SimulateModal />
         <DepositModal />
         <RedeemModal />
-        <ConnectWalletModal />
         <Routes>
           <Route path="/" element={<Vaults />} />
           <Route path="/policy" element={<Policy />} />
