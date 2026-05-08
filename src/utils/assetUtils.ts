@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FLAT_LIST_TOKENS } from "../intents/constants/tokens";
 import { vaultQueries, type TAsset } from "../queries/vault";
 import { useMemo } from "react";
-import _ from 'lodash'
+import { isEqual } from "es-toolkit";
 import Big from "big.js";
 
 const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
@@ -58,7 +58,7 @@ const useExchangeRateForAsset = ({
     if (vaultConfigQuery.data && exchangeRatesQuery.data) {
       const selectedExchangeRateRaw = exchangeRatesQuery.data?.find((e) => {
         const [assetInExchangeRate] = e;
-        if (_.isEqual(assetInExchangeRate, asset)) {
+        if (isEqual(assetInExchangeRate, asset)) {
           return true;
         }
       });
