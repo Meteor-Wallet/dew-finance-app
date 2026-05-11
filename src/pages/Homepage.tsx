@@ -7,27 +7,49 @@ import TVL from "../assets/fee_icon3.svg";
 import vaultIcon from "../assets/vault-icon.png";
 import { vaultUtils } from "../utils/vaultUtils";
 import { vaultQueries } from "../queries/vault";
+import { rheaQueries } from "../queries/rhea";
 import { assetUtils } from "../utils/assetUtils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 import Big from "big.js";
+import type { TAsset } from "../queries/vault";
 
 type TVaultConfig = (typeof vaultUtils.vaults)[number];
+type TTokenPrices = Record<string, { price: string; symbol: string; decimal: number }>;
 
-function formatTvl(raw: string, decimals: number): string {
-  const n = Big(raw).div(Big(10).pow(decimals)).toNumber();
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(2)}K`;
-  return n.toFixed(2);
+function formatUsd(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
+  return `$${value.toFixed(2)}`;
+}
+
+function getContractId(asset: TAsset): string {
+  if ("FungibleToken" in asset) return asset.FungibleToken.contract_id;
+  return asset.MultiToken.contract_id;
+}
+
+function computeUsdTvl(
+  rawBalance: string,
+  asset: TAsset,
+  sharePriceDecimals: number,
+  tokenPrices: TTokenPrices,
+): number | null {
+  const contractId = getContractId(asset);
+  const priceInfo = tokenPrices[contractId];
+  if (!priceInfo) return null;
+  return Big(rawBalance)
+    .div(Big(10).pow(sharePriceDecimals))
+    .mul(Big(priceInfo.price))
+    .toNumber();
 }
 
 const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
   const navigate = useNavigate();
+  const tokenPricesQuery = useQuery(rheaQueries.getTokenPrices());
 
   const baseAssetQuery = useQuery({
-    ...vaultQueries.getVaultBaseAssetQueryOptions({
-      vaultContractId: vault.vault_id,
-    }),
+    ...vaultQueries.getVaultBaseAssetQueryOptions({ vaultContractId: vault.vault_id }),
   });
 
   const balanceQuery = useQuery({
@@ -42,16 +64,22 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
     asset: baseAssetQuery.data ?? null,
   });
 
-  const tvlDisplay = balanceQuery.data
-    ? `${formatTvl(balanceQuery.data, vault.share_price_decimals)} ${assetSymbol}`
-    : "—";
+  const tvlUsdDisplay = useMemo(() => {
+    if (!balanceQuery.data || !tokenPricesQuery.data || !baseAssetQuery.data) return "—";
+    const usd = computeUsdTvl(
+      balanceQuery.data,
+      baseAssetQuery.data,
+      vault.share_price_decimals,
+      tokenPricesQuery.data,
+    );
+    return usd !== null ? formatUsd(usd) : "—";
+  }, [balanceQuery.data, tokenPricesQuery.data, baseAssetQuery.data, vault.share_price_decimals]);
 
   return (
     <tr
       onClick={() => navigate(`/${vault.vault_id}`)}
       className="hover:bg-[#1A1A1A] transition text-base cursor-pointer"
     >
-      {/* Vault Info */}
       <td className="px-6 py-4">
         <div className="flex items-center gap-4">
           <div className="w-[40px] h-[40px] relative">
@@ -64,14 +92,11 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
           </div>
           <div>
             <p className="font-normal text-base">{vault.name}</p>
-            <p className="text-xs text-gray font-normal">
-              Curated by {vault.curated_by}
-            </p>
+            <p className="text-xs text-gray font-normal">Curated by {vault.curated_by}</p>
           </div>
         </div>
       </td>
 
-      {/* Benchmark Asset */}
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
           <img src={assetIcon} className="w-[25px] h-[25px]" alt={assetSymbol} />
@@ -79,13 +104,10 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
         </div>
       </td>
 
-      {/* APY */}
       <td className="px-6 py-4 font-medium text-green text-base">1%</td>
 
-      {/* TVL */}
-      <td className="px-6 py-4 text-base font-normal">{tvlDisplay}</td>
+      <td className="px-6 py-4 text-base font-normal">{tvlUsdDisplay}</td>
 
-      {/* Arrow */}
       <td className="px-6 py-4">
         <button className="bg-[#1A1E22] rounded-full w-[25px] h-[25px] flex justify-center items-center">
           <ChevronRight className="text-gray-400" size={15} />
@@ -96,16 +118,42 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
 };
 
 export default function Homepage() {
+  const tokenPricesQuery = useQuery(rheaQueries.getTokenPrices());
+
+  const baseAssetQueries = useQueries({
+    queries: vaultUtils.vaults.map((v) =>
+      vaultQueries.getVaultBaseAssetQueryOptions({ vaultContractId: v.vault_id }),
+    ),
+  });
+
+  const balanceQueries = useQueries({
+    queries: vaultUtils.vaults.map((v, i) => ({
+      ...vaultQueries.getHistoricalBalanceQueryOptions({
+        vaultContractId: v.vault_id,
+        asset: baseAssetQueries[i].data!,
+      }),
+      enabled: baseAssetQueries[i].data !== undefined,
+    })),
+  });
+
+  const totalTvlUsd = useMemo(() => {
+    if (!tokenPricesQuery.data) return undefined;
+    let total = Big(0);
+    for (let i = 0; i < vaultUtils.vaults.length; i++) {
+      const vault = vaultUtils.vaults[i];
+      const balance = balanceQueries[i].data;
+      const asset = baseAssetQueries[i].data;
+      if (!balance || !asset) continue;
+      const usd = computeUsdTvl(balance, asset, vault.share_price_decimals, tokenPricesQuery.data);
+      if (usd !== null) total = total.add(usd);
+    }
+    return total.toNumber();
+  }, [tokenPricesQuery.data, baseAssetQueries, balanceQueries]);
+
   return (
     <div className="min-h-screen mt-[50px]">
-      <img
-        src={Dew2}
-        className="absolute top-[50vh] left-[-80px] w-[30px] dew-float"
-      />
-      <img
-        src={Dew1}
-        className="absolute top-[90vh] right-[-40px] w-[10px] dew-float2"
-      />
+      <img src={Dew2} className="absolute top-[50vh] left-[-80px] w-[30px] dew-float" />
+      <img src={Dew1} className="absolute top-[90vh] right-[-40px] w-[10px] dew-float2" />
 
       {/* Hero Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -136,7 +184,9 @@ export default function Homepage() {
           <div className="bg-[linear-gradient(139deg,#000000,#181822)] p-6 py-8 rounded-md border border-dark-border-color flex justify-between">
             <div>
               <p className="text-lg text-gray">Total Value Locked</p>
-              <p className="text-4xl font-semibold">$134M</p>
+              <p className="text-4xl font-semibold">
+                {totalTvlUsd !== undefined ? formatUsd(totalTvlUsd) : "—"}
+              </p>
             </div>
             <img src={TVL} className="h-[65px]" />
           </div>

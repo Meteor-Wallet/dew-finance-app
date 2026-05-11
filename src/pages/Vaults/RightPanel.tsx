@@ -199,6 +199,8 @@ const RightPanel = memo(() => {
     ? vaultConfigQuery.data?.performance_fee_bps / 100
     : 0;
 
+  const vaultMeta = vaultUtils.vaults.find((v) => v.vault_id === vaultContractId);
+
   const roleData = allRoleAssignmentsQuery.data ?? [];
 
   const totalPolicy = policyCountQuery.data ?? 0;
@@ -281,10 +283,10 @@ const RightPanel = memo(() => {
                       </div>
                       <div>
                         <h2 className="font-semibold text-2xl">
-                          Vault Name or Strategy Name
+                          {vaultMeta?.name ?? "—"}
                         </h2>
                         <p className="text-base text-gray font-light mt-[-2px]">
-                          Curated by Dew Finance
+                          Curated by {vaultMeta?.curated_by ?? "—"}
                         </p>
                       </div>
                     </div>

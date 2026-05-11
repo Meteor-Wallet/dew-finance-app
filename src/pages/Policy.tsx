@@ -44,7 +44,7 @@ export default function Policy() {
   const totalPolicy = policyCountQuery.data ?? 0;
 
   const policies = allPoliciesQuery.data?.pages.flat() ?? [];
-  console.log(allPoliciesQuery.error)
+
   return (
     <div className="min-h-screen mt-[40px]">
       <img src={Dew2} className="hidden md:block md:absolute top-[30vh] left-[-80px] w-[10px] dew-float" />
@@ -74,7 +74,9 @@ export default function Policy() {
               />
             </div>
             <div>
-              <h2 className="font-semibold text-2xl">Vault Name Policy</h2>
+              <h2 className="font-semibold text-2xl">
+                {vaultUtils.vaults.find((v) => v.vault_id === vaultContractId)?.name ?? "—"} Policy
+              </h2>
               <p className="text-sm text-gray font-light">
                 Total {totalPolicy} Policies
               </p>
