@@ -9,7 +9,7 @@ import DewChart from "../../components/sample/DewChart";
 import DewChart2 from "../../components/sample/DewChart2";
 import { ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import TransactionTable from "../../components/sample/TransactionTable";
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
@@ -22,7 +22,8 @@ const RightPanel = memo(() => {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
 
   const [hoverAddress, setHoverAddress] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rightTab = searchParams.get("tab") ?? "overview";
 
   useEffect(() => {
     const isLarge = window.matchMedia("(min-width: 1024px)").matches;
@@ -81,8 +82,7 @@ const RightPanel = memo(() => {
       (balanceIntervalInHours * 3600) / averageBlockTimeInSeconds,
     );
     if (latestBlockInfoQuery.data) {
-      const currentHeight =
-        Number(latestBlockInfoQuery.data.header.height);
+      const currentHeight = Number(latestBlockInfoQuery.data.header.height);
       const blockIds: number[] = [];
       for (let i = totalInterval; i > 0; i--) {
         const queryBlock = currentHeight - blockHeightInterval * i;
@@ -103,7 +103,8 @@ const RightPanel = memo(() => {
           vaultContractId: vaultContractId!,
           asset: baseAssetQuery.data!,
         }),
-        enabled: vaultContractId !== undefined && baseAssetQuery.data !== undefined,
+        enabled:
+          vaultContractId !== undefined && baseAssetQuery.data !== undefined,
       };
     }),
   });
@@ -152,7 +153,8 @@ const RightPanel = memo(() => {
           vaultContractId: vaultContractId!,
           asset: baseAssetQuery.data!,
         }),
-        enabled: vaultContractId !== undefined && baseAssetQuery.data !== undefined,
+        enabled:
+          vaultContractId !== undefined && baseAssetQuery.data !== undefined,
       };
     }),
   });
@@ -221,7 +223,12 @@ const RightPanel = memo(() => {
                 return (
                   <button
                     key={t}
-                    onClick={() => setRightTab(t)}
+                    onClick={() =>
+                      setSearchParams((prev) => {
+                        prev.set("tab", t);
+                        return prev;
+                      })
+                    }
                     className={`relative w-1/2 py-2.5 text-base capitalize font-medium  duration-300 hover:opacity-50 transition`}
                   >
                     {isRightActive && (
