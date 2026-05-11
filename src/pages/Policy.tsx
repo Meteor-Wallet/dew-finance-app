@@ -1,6 +1,5 @@
 import { ArrowLeft, Eye, Search, X } from "lucide-react";
 import vaultIcon from "../assets/vault-icon.png";
-import Near from "../assets/near.png";
 import { useState } from "react";
 import Modal from "react-modal";
 import Dew2 from "../assets/dew2.svg";
@@ -49,7 +48,7 @@ export default function Policy() {
   const totalPolicy = policyCountQuery.data ?? 0;
 
   const policies = allPoliciesQuery.data?.pages.flat() ?? [];
-
+  console.log(allPoliciesQuery.error)
   return (
     <div className="min-h-screen mt-[40px]">
       <img src={Dew2} className="hidden md:block md:absolute top-[30vh] left-[-80px] w-[10px] dew-float" />
@@ -108,6 +107,12 @@ export default function Policy() {
           className="space-y-4 mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-20"
         >
           {policies.map((policy, i) => {
+            const currentTime = new Date().getTime();
+            const activationTimeNanoSeconds = Number(policy.activation_time);
+            const activationTimeMilliSeconds = Math.floor(activationTimeNanoSeconds / 1e6);
+            
+            const isActive = activationTimeMilliSeconds <= currentTime;
+
             return (
               <div
                 key={i}
@@ -123,12 +128,12 @@ export default function Policy() {
                   </h3>
                   <span
                     className={`px-2 py-1 text-xs font-semibold rounded-full  ${
-                      policy.policy_status === "Active"
+                      isActive
                         ? "text-green-800 bg-green-200"
                         : "text-red-800 bg-red-200"
                     }`}
                   >
-                    {policy.policy_status}
+                    {isActive ? "Active" : "Inactive"}
                   </span>
                 </div>
                 <p className="text-sm text-gray mb-2">{policy.description}</p>
@@ -283,14 +288,10 @@ export default function Policy() {
                         key={idxRestriction}
                         className="p-3 bg-[#131319] rounded-md text-sm flex flex-col gap-4"
                       >
-                        <div className="flex justify-between items-center">
-                          <p className="text-gray">Method</p>
-                          <p>{restriction.method}</p>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <p className="text-gray">Contract</p>
-                          <p>{restriction.contract_id}</p>
-                        </div>
+                        {restriction.go_to_index_if_not_found && <div className="flex justify-between items-center">
+                          <p className="text-gray">Go to index if not found</p>
+                          <p>{restriction.go_to_index_if_not_found}</p>
+                        </div>}
                         <div className="flex justify-between gap-x-10">
                           <p className="text-gray">Interface</p>
                           <p>
@@ -300,12 +301,7 @@ export default function Policy() {
                         <div className="flex justify-between">
                           <p className="text-gray">Schema</p>
                           <div className="text-right">
-                            {restriction.schema.map((schema, idxSchema) => (
-                              <div key={idxSchema} className="mb-2">
-                                {schema.path} - {schema.type}{" "}
-                                {schema.lte ? `(max: ${schema.lte})` : ""}
-                              </div>
-                            ))}
+                            {restriction.schema}
                           </div>
                         </div>
                       </div>

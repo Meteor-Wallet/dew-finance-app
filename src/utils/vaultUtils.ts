@@ -61,7 +61,18 @@ function decodeInterface(base64: string): string {
   }
 }
 
-const DEFAULT_VAULT_CONTRACT_ID = "stable-test-2.dew-finance.near";
+const DEFAULT_VAULT_CONTRACT_ID = "usdt.meteor-vaults.near";
+
+const vaults = [
+  {
+    vault_id: "usdt.meteor-vaults.near",
+    kernel_id: "kernel-usdt.meteor-vaults.near",
+  },
+  {
+    vault_id: "usdc.meteor-vaults.near",
+    kernel_id: "kernel-usdc.meteor-vaults.near",
+  }
+]
 
 export const vaultUtils = {
   isPolicyOfType,
@@ -69,4 +80,5 @@ export const vaultUtils = {
   withRestrictions,
   decodeInterface,
   DEFAULT_VAULT_CONTRACT_ID,
+  vaults
 };

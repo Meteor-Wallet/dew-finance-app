@@ -78,22 +78,7 @@ const DepositModal = () => {
     enabled: vaultContractId !== null,
   });
 
-  const availableTokens = useMemo(() => {
-    return (
-      allAcceptedTokensQuery.data?.filter((e) => {
-        if ("FungibleToken" in e) {
-          if (selectedChain === "near") return true;
-        }
-        if ("MultiToken" in e) {
-          const tokenInfo = FLAT_LIST_TOKENS.find(
-            (token) => token.defuseAssetId === e.MultiToken.token_id
-          );
-          if (tokenInfo?.chainName === selectedChain) return true;
-        }
-        return false;
-      }) || []
-    );
-  }, [allAcceptedTokensQuery.data, selectedChain]);
+  const availableTokens = allAcceptedTokensQuery.data ?? []
 
   useEffect(() => {
     useVaultActionStore
@@ -254,13 +239,11 @@ const DepositModal = () => {
               depositToVaultMutation.mutate({
                 nearAddress,
                 asset: selectedAsset,
-                intentsDepositAddress: intentsAddressQuery.data?.address,
                 amount,
                 exchangeRate: exchangeRateForSelectedAsset.assetToShare,
                 sharesDecimals: vaultShareMetadataQuery.data.decimals,
                 vaultContractId,
                 slippagePercent: depositSlippagePercent,
-                chain: selectedChain,
                 blockchainAddress: connectedWalletAddress.address,
               });
             }

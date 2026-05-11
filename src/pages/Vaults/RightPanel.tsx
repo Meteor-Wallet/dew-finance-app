@@ -1,13 +1,8 @@
 import { memo, useEffect, useMemo, useState } from "react";
-import Arb from "../../assets/arb.png";
-import Btc from "../../assets/btc.png";
-import Dai from "../../assets/dai-full.svg";
 import Near from "../../assets/near.png";
 import Motion from "../../components/utils/Motion";
 import FeeIcon1 from "../../assets/fee_icon1.svg";
 import FeeIcon2 from "../../assets/fee_icon2.svg";
-import FeeIcon3 from "../../assets/fee_icon3.svg";
-import FeeIcon4 from "../../assets/fee_icon4.svg";
 import vaultIcon from "../../assets/vault-icon.png";
 import { motion, AnimatePresence } from "framer-motion";
 import DewChart from "../../components/sample/DewChart";
@@ -46,7 +41,6 @@ const RightPanel = memo(() => {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
-
   }, [rightTab]);
 
   const vaultConfigQuery = useQuery({
@@ -151,12 +145,14 @@ const RightPanel = memo(() => {
     ) {
       latestSharePrice = historicalSharePriceQuery.data[0].price_in_base_asset;
     }
-    const chart = (historicalSharePriceQuery.data || []).map((v) => {
-      return {
-        date: new Date(v.bucket).toLocaleString(),
-        value: Number(v.price_in_base_asset),
-      };
-    }).reverse()
+    const chart = (historicalSharePriceQuery.data || [])
+      .map((v) => {
+        return {
+          date: new Date(v.bucket).toLocaleString(),
+          value: Number(v.price_in_base_asset),
+        };
+      })
+      .reverse();
 
     return {
       latestSharePrice,
@@ -183,7 +179,7 @@ const RightPanel = memo(() => {
       chart,
     };
   }, [historicalBalanceQuery.data]);
-
+  console.log(baseAssetQuery.data, "baseAssetQueryData");
   const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
     asset: baseAssetQuery.data || null,
   });
@@ -194,21 +190,23 @@ const RightPanel = memo(() => {
   const performanceFee = vaultConfigQuery.data?.performance_fee_bps
     ? vaultConfigQuery.data?.performance_fee_bps / 100
     : 0;
-  const totalFee = (managementFee + performanceFee).toFixed(3);
 
   const roleData = allRoleAssignmentsQuery.data ?? [];
 
   const totalPolicy = policyCountQuery.data ?? 0;
 
   const policies = useMemo(() => {
-    const flatten = allPoliciesQuery.data?.pages.flat() ?? []
-    return flatten.slice(0, 5)
+    const flatten = allPoliciesQuery.data?.pages.flat() ?? [];
+    return flatten.slice(0, 5);
   }, [allPoliciesQuery.data]);
 
   return (
     <div className="w-[calc(100%+_10vw)] ml-[-5vw] lg:ml-0 h-full lg:w-2/3 lg:order-1 order-2 ">
       <Motion direction="left" duration={0.6} delay={0.3}>
-        <div className="w-full h-full bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-2xl shadow-lg space-y-6 border border-dark-border-color min-h-[90vh] mb-[100px]" id="leftPanelSection">
+        <div
+          className="w-full h-full bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-2xl shadow-lg space-y-6 border border-dark-border-color min-h-[90vh] mb-[100px]"
+          id="leftPanelSection"
+        >
           {/* Tabs */}
           <div className="p-6 pb-1 sticky top-0 z-9  bg-black/10 backdrop-blur-sm  rounded-2xl ">
             <div className="flex bg-tab-background rounded-sm mb-6 overflow-hidden ">
@@ -232,8 +230,9 @@ const RightPanel = memo(() => {
                       />
                     )}
                     <span
-                      className={`relative z-10 ${isRightActive ? "text-black font-bold" : "text-gray"
-                        }`}
+                      className={`relative z-10 ${
+                        isRightActive ? "text-black font-bold" : "text-gray"
+                      }`}
                     >
                       {t}
                     </span>
@@ -277,7 +276,7 @@ const RightPanel = memo(() => {
                       </div>
                     </div>
 
-                    <div className='mt-8'>
+                    <div className="mt-8">
                       <p className="text-base text-white mb-2">Description</p>
                       <p className="text-sm text-gray">
                         This vault provides leveraged exposure to yoUSD, earning
@@ -344,7 +343,7 @@ const RightPanel = memo(() => {
                               <div>
                                 <h3 className="text-3xl font-semibold">
                                   {stringUtils.truncateDecimals(
-                                    balanceDetails.latestCurrentTotal
+                                    balanceDetails.latestCurrentTotal,
                                   )}{" "}
                                   {assetSymbol}{" "}
                                 </h3>
@@ -371,60 +370,6 @@ const RightPanel = memo(() => {
                           <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
                             <DewChart data={balanceDetails.chart} />
                           </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <hr className="border-t border-border-color mt-9 mb-9" />
-
-                    {/* Allocation Graph  */}
-                    <p className="text-base text-white mb-4">
-                      Allocation Overview
-                    </p>
-                    <div className="relative w-full h-full rounded-lg overflow-hidden">
-                      <div className=" p-4 rounded-lg">
-                        <div className="">
-                          <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
-                            <div className="flex gap-3 items-center">
-                              <img
-                                src={assetIcon}
-                                alt={assetSymbol}
-                                className="w-12 h-12"
-                              />
-                              <div>
-                                <h3 className="text-3xl font-semibold">
-                                  {stringUtils.truncateDecimals(
-                                    allocationDonutDetails.totalDistribution
-                                  )}{" "}
-                                  {assetSymbol}{" "}
-                                </h3>
-                                {/* <p className="text-sm text-gray">$51,737,237</p> */}
-                              </div>
-                            </div>
-                            {/* <div className="flex gap-2 text-xs">
-                              {["1D", "1W", "1M", "1Y"].map((range) => (
-                                <button
-                                  key={range}
-                                  className="px-2 py-1 rounded hover:bg-gray-700"
-                                >
-                                  {range}
-                                </button>
-                              ))}
-                              <button
-                                key={"ALL"}
-                                className="px-2 py-1 bg-gray rounded hover:bg-gray-700"
-                              >
-                                {"ALL"}
-                              </button>
-                            </div> */}
-                          </div>
-                          {allocationDonutDetails.totalDistribution !== "0" && (
-                            <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                              <AllocationDonut
-                                data={allocationDonutDetails.donutFigures}
-                              />
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -553,11 +498,15 @@ const RightPanel = memo(() => {
                             key={i}
                             className={`flex justify-between p-4 border border-dark-border-color
                                                     bg-[#0b0b0d]  mb-0
-                                                    ${isFirst
-                                ? "rounded-t-md"
-                                : ""
-                              } ${isLast ? "rounded-b-md border-b-0" : ""
-                              }`}
+                                                    ${
+                                                      isFirst
+                                                        ? "rounded-t-md"
+                                                        : ""
+                                                    } ${
+                                                      isLast
+                                                        ? "rounded-b-md border-b-0"
+                                                        : ""
+                                                    }`}
                           >
                             <div>
                               <p
@@ -571,10 +520,11 @@ const RightPanel = memo(() => {
                               {role.addresses.map((addr, idx) => (
                                 <div
                                   key={idx}
-                                  className={`flex items-center justify-end space-x-2 cursor-pointer p-1 px-2 transition-colors duration-200 ${hoverAddress === addr
-                                    ? "bg-input-focus rounded "
-                                    : ""
-                                    }`}
+                                  className={`flex items-center justify-end space-x-2 cursor-pointer p-1 px-2 transition-colors duration-200 ${
+                                    hoverAddress === addr
+                                      ? "bg-input-focus rounded "
+                                      : ""
+                                  }`}
                                   onMouseEnter={() => setHoverAddress(addr)}
                                   onMouseLeave={() => setHoverAddress(null)}
                                 >
@@ -590,7 +540,7 @@ const RightPanel = memo(() => {
                                     className="cursor-pointer"
                                     onClick={() => {
                                       navigator.clipboard.writeText(
-                                        "0xa1...near"
+                                        "0xa1...near",
                                       );
                                       toast.success("Wallet Address copied!");
                                     }}
@@ -613,33 +563,45 @@ const RightPanel = memo(() => {
                         Total {totalPolicy} Policies
                       </p>
                     </div>
-                    {policies.map((policy, idx) => (
-                      <Link to="/policy">
-                        <div
-                          key={idx}
-                          className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background"
-                        >
-                          <div>
-                            <p className="text-base font-semibold">
-                              {policy.id}
-                            </p>
-                            <p className="text-sm  text-gray">
-                              {policy.description}
-                            </p>
-                          </div>
-                          <span
-                            className={clsx(
-                              "px-2 py-1 text-xs font-semibold rounded-full",
-                              policy.policy_status === "Active"
-                                ? "text-green-800 bg-green-200"
-                                : "text-red-800 bg-red-200"
-                            )}
+                    {policies.map((policy, idx) => {
+                      const currentTime = new Date().getTime();
+                      const activationTimeNanoSeconds = Number(
+                        policy.activation_time,
+                      );
+                      const activationTimeMilliSeconds = Math.floor(
+                        activationTimeNanoSeconds / 1e6,
+                      );
+
+                      const isActive =
+                        activationTimeMilliSeconds <= currentTime;
+                      return (
+                        <Link to="/policy">
+                          <div
+                            key={idx}
+                            className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background"
                           >
-                            {policy.policy_status}
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
+                            <div>
+                              <p className="text-base font-semibold">
+                                {policy.id}
+                              </p>
+                              <p className="text-sm  text-gray">
+                                {policy.description}
+                              </p>
+                            </div>
+                            <span
+                              className={clsx(
+                                "px-2 py-1 text-xs font-semibold rounded-full",
+                                isActive
+                                  ? "text-green-800 bg-green-200"
+                                  : "text-red-800 bg-red-200",
+                              )}
+                            >
+                              {isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    })}
                     <Link to="/policy">
                       <div className="flex justify-end items-center gap-2 mt-4 group">
                         <button className="text-sm text-primary group-hover:opacity-70">

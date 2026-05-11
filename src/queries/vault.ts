@@ -3,6 +3,7 @@ import { nearUtils } from "../utils/nearUtils";
 import z from "zod";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
 import { DewAgentBackend } from "../backend/DewAgentBackend";
+import { vaultUtils } from "../utils/vaultUtils";
 
 const zAsset = z.union([
   z.object({
@@ -12,7 +13,9 @@ const zAsset = z.union([
     }),
   }),
   z.object({
-    FungibleToken: z.string(),
+    FungibleToken: z.object({
+      contract_id: z.string(),
+    }),
   }),
 ]);
 
@@ -31,7 +34,7 @@ const getAllExchangeRatesQueryOptions = ({
     queryFn: async () => {
       const exchangeRates = await nearUtils.provider.callFunction(
         vaultContractId,
-        "get_all_exchange_rates",
+        "get_all_share_prices",
         {}
       );
 
@@ -54,7 +57,7 @@ const getAllAcceptedTokensQueryOptions = ({
 };
 
 const zVaultConfig = z.object({
-  exchange_rate_decimals: z.number(),
+  share_price_decimals: z.number(),
   management_fee_bps: z.number(),
   performance_fee_bps: z.number(),
 });
@@ -67,13 +70,13 @@ const getVaultConfigQueryOptions = ({
   return queryOptions({
     queryKey: ["vault", "vaultConfigs", vaultContractId],
     queryFn: async () => {
-      const exchangeRates = await nearUtils.provider.callFunction(
+      const vaultConfig = await nearUtils.provider.callFunction(
         vaultContractId,
         "get_vault_config",
         {}
       );
 
-      return zVaultConfig.parse(exchangeRates);
+      return zVaultConfig.parse(vaultConfig);
     },
   });
 };
@@ -163,12 +166,16 @@ const getAccountsWithRoleQueryOptions = ({
 }: {
   vaultContractId: string;
   roleName: string;
-}) => {
+}) => {  
   return queryOptions({
     queryKey: ["vault", "accountsWithRole", { vaultContractId, roleName }],
     queryFn: async () => {
+      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      if (!vaultInfo) {
+        throw new Error("Vault not found");
+      }
       const accountsWithRole = (await nearUtils.provider.callFunction(
-        vaultContractId,
+        vaultInfo.kernel_id,
         "get_accounts_with_role",
         {
           role_name: roleName,
@@ -198,8 +205,12 @@ const getAllRoleAssignmentsQueryOptions = ({
   return queryOptions({
     queryKey: ["vault", "allRoleAssignments", { vaultContractId }],
     queryFn: async () => {
+      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      if (!vaultInfo) {
+        throw new Error("Vault not found");
+      }
       const allRoleAssignments = await nearUtils.provider.callFunction(
-        vaultContractId,
+        vaultInfo.kernel_id,
         "get_all_role_assignments",
         {}
       );
@@ -225,87 +236,6 @@ const getAllRoleAssignmentsQueryOptions = ({
   });
 };
 
-const zAllAssetDepositFees = z.array(z.tuple([zAsset, z.number()]));
-const zProtocolAllAssetDepositCut = z.array(z.tuple([zAsset, z.number()]));
-const zAllAssetWithdrawalFees = z.array(z.tuple([zAsset, z.number()]));
-const zProtocolAllAssetWithdrawalCut = z.array(z.tuple([zAsset, z.number()]));
-
-const getAllAssetDepositFeesQueryOptions = ({
-  vaultContractId,
-}: {
-  vaultContractId: string;
-}) => {
-  return queryOptions({
-    queryKey: ["vault", "allAssetDepositFees", { vaultContractId }],
-    queryFn: async () => {
-      const allAssetDepositFees = await nearUtils.provider.callFunction(
-        vaultContractId,
-        "get_all_asset_deposit_fees",
-        {}
-      );
-
-      return zAllAssetDepositFees.parse(allAssetDepositFees);
-    },
-  });
-};
-
-const getProtocolAllAssetDepositCutQueryOptions = ({
-  vaultContractId,
-}: {
-  vaultContractId: string;
-}) => {
-  return queryOptions({
-    queryKey: ["vault", "protocolAllAssetDepositCut", { vaultContractId }],
-    queryFn: async () => {
-      const allAssetDepositCut = await nearUtils.provider.callFunction(
-        vaultContractId,
-        "protocol_get_all_asset_deposit_cut",
-        {}
-      );
-
-      return zProtocolAllAssetDepositCut.parse(allAssetDepositCut);
-    },
-  });
-};
-
-const getAllAssetWithdrawalFeesQueryOptions = ({
-  vaultContractId,
-}: {
-  vaultContractId: string;
-}) => {
-  return queryOptions({
-    queryKey: ["vault", "allAssetWithdrawalFees", { vaultContractId }],
-    queryFn: async () => {
-      const allAssetWithdrawalFees = await nearUtils.provider.callFunction(
-        vaultContractId,
-        "get_all_asset_withdrawal_fees",
-        {}
-      );
-
-      return zAllAssetWithdrawalFees.parse(allAssetWithdrawalFees);
-    },
-  });
-};
-
-const getProtocolAllAssetWithdrawalCutQueryOptions = ({
-  vaultContractId,
-}: {
-  vaultContractId: string;
-}) => {
-  return queryOptions({
-    queryKey: ["vault", "protocolAllAssetWithdrawalCut", { vaultContractId }],
-    queryFn: async () => {
-      const allAssetWithdrawalCut = await nearUtils.provider.callFunction(
-        vaultContractId,
-        "protocol_get_all_asset_withdrawal_cut",
-        {}
-      );
-
-      return zProtocolAllAssetWithdrawalCut.parse(allAssetWithdrawalCut);
-    },
-  });
-};
-
 const getPolicyCountQueryOptions = ({
   vaultContractId,
 }: {
@@ -314,8 +244,12 @@ const getPolicyCountQueryOptions = ({
   return queryOptions({
     queryKey: ["vault", "policyCount", { vaultContractId }],
     queryFn: async () => {
+      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      if (!vaultInfo) {
+        throw new Error("Vault not found");
+      }
       const policyCount = (await nearUtils.provider.callFunction(
-        vaultContractId,
+        vaultInfo.kernel_id,
         "get_policy_count",
         {}
       )) as number;
@@ -338,9 +272,8 @@ export const zConditionSchema = z.object({
 });
 
 const zRestrictionSchema = z.object({
-  method: z.string(),
-  contract_id: z.string(),
-  schema: z.array(zConditionSchema),
+  go_to_index_if_not_found: z.number().nullable(),
+  schema: z.string(),
   interface: z.string(),
 });
 
@@ -352,13 +285,16 @@ const zPolicyBase = z.object({
     z.number(),
     z.string().regex(/^\d+$/).transform(Number),
   ]),
-  policy_status: z.enum(["Active", "Inactive"]),
   activation_time: z.string(),
 });
 
 const zVaultConfigurationPolicy = zPolicyBase.extend({
   policy_type: z.literal("VaultConfiguration"),
   policy_details: z.literal("VaultConfiguration"),
+});
+const zKernelConfigurationPolicy = zPolicyBase.extend({
+  policy_type: z.literal("KernelConfiguration"),
+  policy_details: z.literal("KernelConfiguration"),
 });
 export const zChainSigTransactionPolicy = zPolicyBase.extend({
   policy_type: z.literal("ChainSigTransaction"),
@@ -396,6 +332,7 @@ const zPolicy = z.discriminatedUnion("policy_type", [
   zChainSigTransactionPolicy,
   zChainSigMessagePolicy,
   zNearNativeTransactionPolicy,
+  zKernelConfigurationPolicy
 ]);
 
 export type TPolicy = z.infer<typeof zPolicy>;
@@ -422,14 +359,20 @@ const getAllPoliciesInfiniteQueryOptions = ({
   return infiniteQueryOptions({
     queryKey: ["vault", "allPolicies", { vaultContractId }],
     queryFn: async ({ pageParam }) => {
+      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      if (!vaultInfo) {
+        throw new Error("Vault not found");
+      }
       const allPolicies = await nearUtils.provider.callFunction(
-        vaultContractId,
+        vaultInfo.kernel_id,
         "get_all_policies",
         {
           from_index: pageParam ?? 0,
           limit,
         }
       );
+
+      console.log(allPolicies, "allPolicies");
 
       const policies = zAllPolicies
         .transform((items) => items.map(([_, policy]) => policy))
@@ -453,6 +396,7 @@ const getAllPoliciesInfiniteQueryOptions = ({
   });
 };
 
+// TODO: UPDATE TO BACKEND
 const getVaultApyQueryOptions = ({
   vaultContractId,
   variant,
@@ -490,7 +434,7 @@ const getVaultBaseAssetQueryOptions = ({
     queryFn: async () => {
       const data = (await nearUtils.provider.callFunction(
         vaultContractId,
-        "asset",
+        "get_base_asset",
         {}
       )) as TAsset;
 
@@ -499,6 +443,7 @@ const getVaultBaseAssetQueryOptions = ({
   });
 };
 
+// TODO: REMOVE
 const getVaultBalanceDistributionQueryOptions = ({
   vaultContractId,
 }: {
@@ -513,6 +458,7 @@ const getVaultBalanceDistributionQueryOptions = ({
   });
 };
 
+// TODO: use archival node
 const getHistoricalSharePriceQueryOptions = ({
   vaultContractId,
   limit,
@@ -539,6 +485,7 @@ const getHistoricalSharePriceQueryOptions = ({
   });
 };
 
+// TODO: use archival node
 const getHistoricalBalanceQueryOptions = ({
   vaultContractId,
   limit,
@@ -574,10 +521,6 @@ export const vaultQueries = {
   getMyPositionQueryOptions,
   getAccountsWithRoleQueryOptions,
   getAllRoleAssignmentsQueryOptions,
-  getAllAssetDepositFeesQueryOptions,
-  getProtocolAllAssetDepositCutQueryOptions,
-  getAllAssetWithdrawalFeesQueryOptions,
-  getProtocolAllAssetWithdrawalCutQueryOptions,
   getPolicyCountQueryOptions,
   getAllPoliciesInfiniteQueryOptions,
   getVaultApyQueryOptions,

@@ -276,10 +276,7 @@ const RedeemModal = () => {
                 shareDecimals: vaultShareMetadataQuery.data.decimals,
                 vaultContractId,
                 slippagePercent: withdrawSlippagePercent,
-                chain: selectedChain,
-                blockchainAddress: connectedWalletAddress.address,
                 assetDecimals,
-                withdrawToAddress: connectedWalletAddress.address,
               });
             }
           }}

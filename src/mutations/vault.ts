@@ -2,7 +2,6 @@ import { useMutation } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../queries/vault";
 import Big from "big.js";
 import { queryClient } from "../queryClient";
-import { type ChainName } from "../stores/wallet_store";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
 import { toast } from "sonner";
 import { useVaultActionStore } from "../stores/vault_action_store";
@@ -25,7 +24,6 @@ const ftCall = (
 });
 
 const useDepositToVaultMutation = () => {
-
   const toastIdRef = useRef<number | string>(undefined);
 
   return useMutation({
@@ -39,7 +37,6 @@ const useDepositToVaultMutation = () => {
       queryClient.invalidateQueries({
         queryKey: accountQueries.queryKey.accountBalanceQueryKey({
           asset: params.asset,
-          selectedChain: params.chain,
           address: params.blockchainAddress,
         }),
       });
@@ -69,7 +66,6 @@ const useDepositToVaultMutation = () => {
       sharesDecimals: number;
       slippagePercent: string;
       blockchainAddress: string;
-      chain: ChainName;
     }) => {
       toastIdRef.current = toast.loading("Depositing", {
         description: "Making sure deposit amount is valid",
@@ -99,7 +95,7 @@ const useDepositToVaultMutation = () => {
       }
 
       if ("FungibleToken" in asset) {
-        const contractId = asset.FungibleToken;
+        const contractId = asset.FungibleToken.contract_id;
         const { decimals } = (await nearUtils.provider.callFunction(
           contractId,
           "ft_metadata",

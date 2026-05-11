@@ -1,16 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { useWalletSelector } from "../walletSelector";
-import type { TAsset } from "./vault";
-import { useWalletStore, useConnectedWalletAddress, type ChainName } from "../stores/wallet_store";
+import { vaultQueries, type TAsset } from "./vault";
+import { useConnectedWalletAddress } from "../stores/wallet_store";
+import { nearUtils } from "../utils/nearUtils";
+import Big from "big.js";
 
 const accountBalanceQueryKey = ({
   asset,
   address,
-  selectedChain,
 }: {
   asset: TAsset | null;
   address?: string;
-  selectedChain: ChainName;
 }) => {
   return [
     "account",
@@ -18,29 +17,51 @@ const accountBalanceQueryKey = ({
     {
       asset,
       address: address,
-      // required to refresh when changing between EVM networks
-      selectedChain,
     },
   ];
 };
 
 const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
-  const { getBalance } = useWalletSelector();
-  const selectedChain = useWalletStore((s) => s.selectedChain);
   const connectedWalletAddress = useConnectedWalletAddress();
+
+  console.log("Fetching balance for asset:", asset);
+      console.log("Connected wallet address:", connectedWalletAddress);
 
   return useQuery({
     queryKey: accountBalanceQueryKey({
       asset,
       address: connectedWalletAddress?.address,
-      // required to refresh when changing between EVM networks
-      selectedChain,
     }),
-    queryFn: async () => {
-      return getBalance({
-        address: connectedWalletAddress?.address!,
-        asset: asset!,
-      });
+    queryFn: async ({ client }) => {
+      console.log("Fetching balance for asset:", asset);
+      console.log("Connected wallet address:", connectedWalletAddress);
+      if (asset && "FungibleToken" in asset) {
+        const balance = await nearUtils.provider.callFunction<string>(
+          asset.FungibleToken.contract_id,
+          "ft_balance_of",
+          {
+            account_id: connectedWalletAddress?.address,
+          },
+        );
+
+        if (!balance) {
+          throw new Error("Failed to fetch ft balance");
+        }
+
+        const ftMetadata = await client.fetchQuery(
+          vaultQueries.getVaultShareMetadataQueryOptions({
+            vaultContractId: asset.FungibleToken.contract_id,
+          }),
+        );
+
+        return {
+          balance,
+          decimals: ftMetadata.decimals,
+          formatted: Big(balance)
+            .div(Big(10).pow(ftMetadata.decimals))
+            .toString(),
+        };
+      }
     },
     enabled: connectedWalletAddress !== null && asset !== null,
   });

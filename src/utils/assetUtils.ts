@@ -16,7 +16,7 @@ type FtMetadata = {
 
 const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
   const fungibleTokenId =
-    asset && "FungibleToken" in asset ? asset.FungibleToken : null;
+    asset && "FungibleToken" in asset ? asset.FungibleToken.contract_id : null;
 
   const ftMetadataQuery = useQuery({
     queryKey: ["ft_metadata", fungibleTokenId],
@@ -87,7 +87,7 @@ const useExchangeRateForAsset = ({
         }
       });
 
-      const rateDecimals = vaultConfigQuery.data.exchange_rate_decimals;
+      const rateDecimals = vaultConfigQuery.data.share_price_decimals;
 
       if (selectedExchangeRateRaw) {
         const shareToAsset = Big(selectedExchangeRateRaw[1]).div(
