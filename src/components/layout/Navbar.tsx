@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { ChevronDown, Copy, LogOut, X } from "lucide-react";
 import Motion from "../utils/Motion";
 import { toast } from "sonner";
@@ -57,14 +58,14 @@ export default function Navbar() {
     <>
       <nav className="transition-transform duration-300  py-3 pt-5 flex justify-between items-center flex-wrap relative z-10">
         <Motion direction="left" duration={0.6}>
-          <div className="text-white flex gap-3 text-[1.4rem] items-center">
+          <Link to="/" className="text-white flex gap-3 text-[1.4rem] items-center">
             <div className="relative">
               <div className="w-[30px] h-[30px] md:w-[40px] md:h-[40px]">
                 <RiveComponent />
               </div>
             </div>
             <span className="font-medium hidden md:inline">Dew Finance</span>
-          </div>
+          </Link>
         </Motion>
 
         <div className="flex gap-4 items-center justify-end relative">
