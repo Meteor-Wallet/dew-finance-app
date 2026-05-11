@@ -12,15 +12,6 @@ import {
   ReferenceLine,
 } from "recharts";
 
-const data = [
-  { date: "Dec 9", value: 0.0 },
-  { date: "Mar 13", value: 3.024 },
-  { date: "Jun 14", value: 1.048 },
-  { date: "Sep 15", value: 2.072 },
-  { date: "Sep 30", value: 1.072 },
-  { date: "Dec 15", value: 4.072 },
-  { date: "Dec 16", value: 5.72 },
-];
 
 export default function DewChart({
   data
@@ -38,13 +29,29 @@ export default function DewChart({
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
 
           {/* X Axis */}
-          <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }} />
+          <XAxis
+            dataKey="date"
+            tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11 }}
+            tickFormatter={(v: string) => {
+              const [datePart, timePart] = v.split(", ");
+              if (!timePart) return v;
+              const [month, day] = datePart.split("/");
+              const timeShort = timePart.replace(/:00 /, " ");
+              return `${month}/${day} ${timeShort}`;
+            }}
+            interval="preserveStartEnd"
+          />
 
           {/* Y Axis */}
           <YAxis
             domain={["auto", "auto"]}
-            tickFormatter={(v) => v.toFixed(4)}
-            tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 12 }}
+            width={80}
+            tickFormatter={(v: number) => {
+              if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`;
+              if (v >= 1_000) return `${(v / 1_000).toFixed(2)}K`;
+              return v.toFixed(4);
+            }}
+            tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11 }}
           />
 
           <Tooltip

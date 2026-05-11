@@ -340,7 +340,7 @@ const RightPanel = memo(() => {
                     <p className="text-base text-white mb-4">
                       Total Value Locked Overview
                     </p>
-                    <div className="relative w-full h-full rounded-lg overflow-hidden">
+                    <div className="relative w-full h-full rounded-lg">
                       <div className=" p-4 rounded-lg">
                         <div className="">
                           <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
@@ -390,7 +390,7 @@ const RightPanel = memo(() => {
                     <p className="text-base text-white mb-4">
                       Share Price History Overview
                     </p>
-                    <div className="relative w-full h-full rounded-lg overflow-hidden">
+                    <div className="relative w-full h-full rounded-lg">
                       <div className=" p-4 rounded-lg">
                         <div className="">
                           <div className="flex lg:flex-row flex-col justify-between lg:gap-0 gap-5 lg:items-center mb-2">
@@ -636,7 +636,7 @@ const RightPanel = memo(() => {
                   className="space-y-6"
                 >
                   <div className="space-y-6">
-                    <div className="relative w-full h-full rounded-lg overflow-hidden">
+                    <div className="relative w-full h-full rounded-lg">
                       {/* All Activity - Coming soon */}
                       <div className="blur-sm">
                         <TransactionTable />
