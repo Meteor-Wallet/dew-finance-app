@@ -4,7 +4,7 @@ import { useState } from "react";
 import Modal from "react-modal";
 import Dew2 from "../assets/dew2.svg";
 import Dew3 from "../assets/dew3.svg";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import Motion from "../components/utils/Motion";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TPolicy } from "../queries/vault";
@@ -13,11 +13,7 @@ import { vaultUtils } from "../utils/vaultUtils";
 import { assetUtils } from "../utils/assetUtils";
 
 export default function Policy() {
-  const [searchParams] = useSearchParams({
-    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
-  });
-
-  const vaultContractId = searchParams.get("vaultContractId");
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
 
   const [selectedPolicy, setSelectedPolicy] = useState<TPolicy | null>(null);
 
@@ -25,7 +21,7 @@ export default function Policy() {
     ...vaultQueries.getVaultBaseAssetQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const { assetIcon } = assetUtils.useAssetSymbolAndIcon({
@@ -36,13 +32,13 @@ export default function Policy() {
     ...vaultQueries.getPolicyCountQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
   const allPoliciesQuery = useInfiniteQuery({
     ...vaultQueries.getAllPoliciesInfiniteQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const totalPolicy = policyCountQuery.data ?? 0;
@@ -56,7 +52,7 @@ export default function Policy() {
 
       {/* Back */}
       <Motion direction="left" duration={0.6}>
-        <Link to="/" className="w-fit flex">
+        <Link to={`/${vaultContractId}`} className="w-fit flex">
           <div className="flex gap-3 transition-opacity hover:opacity-50 items-center cursor-pointer w-fit">
             <div className="flex justify-center items-center bg-[#161616] w-8 h-8 rounded-full">
               <ArrowLeft size={16} className="text-gray" />

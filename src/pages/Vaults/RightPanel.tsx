@@ -9,7 +9,7 @@ import DewChart from "../../components/sample/DewChart";
 import DewChart2 from "../../components/sample/DewChart2";
 import { ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import TransactionTable from "../../components/sample/TransactionTable";
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
@@ -19,11 +19,7 @@ import { assetUtils } from "../../utils/assetUtils";
 import { stringUtils } from "../../utils/stringUtils";
 import Big from "big.js";
 const RightPanel = memo(() => {
-  const [searchParams] = useSearchParams({
-    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
-  });
-
-  const vaultContractId = searchParams.get("vaultContractId");
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
 
   const [hoverAddress, setHoverAddress] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState("overview");
@@ -45,32 +41,32 @@ const RightPanel = memo(() => {
     ...vaultQueries.getVaultConfigQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
   const allRoleAssignmentsQuery = useQuery({
     ...vaultQueries.getAllRoleAssignmentsQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
   const policyCountQuery = useQuery({
     ...vaultQueries.getPolicyCountQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
   const allPoliciesQuery = useInfiniteQuery({
     ...vaultQueries.getAllPoliciesInfiniteQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const baseAssetQuery = useQuery({
     ...vaultQueries.getVaultBaseAssetQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const latestBlockInfoQuery = useQuery({
@@ -107,7 +103,7 @@ const RightPanel = memo(() => {
           vaultContractId: vaultContractId!,
           asset: baseAssetQuery.data!,
         }),
-        enabled: vaultContractId !== null && baseAssetQuery.data !== undefined,
+        enabled: vaultContractId !== undefined && baseAssetQuery.data !== undefined,
       };
     }),
   });
@@ -156,7 +152,7 @@ const RightPanel = memo(() => {
           vaultContractId: vaultContractId!,
           asset: baseAssetQuery.data!,
         }),
-        enabled: vaultContractId !== null && baseAssetQuery.data !== undefined,
+        enabled: vaultContractId !== undefined && baseAssetQuery.data !== undefined,
       };
     }),
   });
@@ -585,7 +581,7 @@ const RightPanel = memo(() => {
                       const isActive =
                         activationTimeMilliSeconds <= currentTime;
                       return (
-                        <Link to="/policy">
+                        <Link to={`/${vaultContractId}/policy`}>
                           <div
                             key={idx}
                             className="bg-[#0b0b0d] p-4 py-5 rounded-md border border-dark-border-color mb-3 flex justify-between items-center cursor-pointer transition-all duration-200 hover:bg-input-background"
@@ -612,7 +608,7 @@ const RightPanel = memo(() => {
                         </Link>
                       );
                     })}
-                    <Link to="/policy">
+                    <Link to={`/${vaultContractId}/policy`}>
                       <div className="flex justify-end items-center gap-2 mt-4 group">
                         <button className="text-sm text-primary group-hover:opacity-70">
                           View All Policies

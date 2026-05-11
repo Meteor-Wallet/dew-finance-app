@@ -5,8 +5,7 @@ import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { useVaultActionStore } from "../../stores/vault_action_store";
 import { useWalletStore, useConnectedWalletAddress } from "../../stores/wallet_store";
-import { useSearchParams } from "react-router-dom";
-import { vaultUtils } from "../../utils/vaultUtils";
+import { useParams } from "react-router-dom";
 import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../../queries/vault";
@@ -57,10 +56,7 @@ const DepositModal = () => {
   const isDepositWalletModalOpen = useVaultActionStore(
     (s) => s.isDepositWalletModalOpen
   );
-  const [searchParams] = useSearchParams({
-    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
-  });
-  const vaultContractId = searchParams.get("vaultContractId");
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const [open, setOpen] = useState(false);
 
   const selectedChain = useWalletStore((s) => s.selectedChain);
@@ -75,10 +71,10 @@ const DepositModal = () => {
     ...vaultQueries.getAllAcceptedTokensQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
-  const availableTokens = allAcceptedTokensQuery.data ?? []
+  const availableTokens = useMemo(() => allAcceptedTokensQuery.data ?? [], [allAcceptedTokensQuery.data]);
 
   useEffect(() => {
     useVaultActionStore
@@ -92,14 +88,14 @@ const DepositModal = () => {
 
   const exchangeRateForSelectedAsset = assetUtils.useExchangeRateForAsset({
     asset: selectedAsset,
-    vaultContractId,
+    vaultContractId: vaultContractId ?? null,
   });
 
   const vaultShareMetadataQuery = useQuery({
     ...vaultQueries.getFtMetadataQueryOptions({
       tokenId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const balance = accountQueries.useAccountBalance({ asset: selectedAsset });

@@ -3,7 +3,7 @@ import { useVaultActionStore } from "../../stores/vault_action_store";
 import { accountQueries } from "../../queries/account";
 import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import CountUp from "../../components/utils/CountUp";
-import { useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useWalletStore } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../../queries/vault";
@@ -12,29 +12,25 @@ import Big from "big.js";
 import { CircularProgress } from "../../components/utils/CircularProgress";
 import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
-import { vaultUtils } from "../../utils/vaultUtils";
 import { assetUtils } from "../../utils/assetUtils";
 
 const MyPosition2 = () => {
-  const [searchParams] = useSearchParams({
-    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
-  });
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const nearAddress = useWalletStore((s) => s.nearAccountId);
-  const vaultContractId = searchParams.get("vaultContractId");
 
   const myPositionQuery = useQuery({
     ...vaultQueries.getMyPositionQueryOptions({
       vaultContractId: vaultContractId!,
       nearAddress: nearAddress!,
     }),
-    enabled: nearAddress !== null && vaultContractId !== null,
+    enabled: nearAddress !== null && vaultContractId !== undefined,
   });
 
   const vaultShareMetadataQuery = useQuery({
     ...vaultQueries.getFtMetadataQueryOptions({
       tokenId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const myPosition = useMemo(() => {
@@ -113,17 +109,14 @@ const AvailableBalanceRow = ({ asset }: { asset: TAsset }) => {
 };
 
 const AvailableBalances = () => {
-  const [searchParams] = useSearchParams({
-    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
-  });
-  const vaultContractId = searchParams.get("vaultContractId");
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const selectedChain = useWalletStore((s) => s.selectedChain);
 
   const allAcceptedTokensQuery = useQuery({
     ...vaultQueries.getAllAcceptedTokensQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const availableTokens = useMemo(() => {
@@ -145,17 +138,14 @@ const AvailableBalances = () => {
 };
 
 export default function LeftPanel() {
-  const [searchParams] = useSearchParams({
-    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
-  });
-  const vaultContractId = searchParams.get("vaultContractId");
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
 
   const vaultApyQuery = useQuery({
     ...vaultQueries.getVaultApyQueryOptions({
       variant: "1",
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const roundedAPY = useMemo(() => {

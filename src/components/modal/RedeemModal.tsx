@@ -4,8 +4,7 @@ import { memo, useEffect, useMemo } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { useVaultActionStore } from "../../stores/vault_action_store";
-import { useSearchParams } from "react-router-dom";
-import { vaultUtils } from "../../utils/vaultUtils";
+import { useParams } from "react-router-dom";
 import { useWalletStore, useConnectedWalletAddress } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../../queries/vault";
@@ -56,10 +55,7 @@ const RedeemModal = () => {
   const isRedeemWalletModalOpen = useVaultActionStore(
     (s) => s.isRedeemWalletModalOpen
   );
-  const [searchParams] = useSearchParams({
-    vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
-  });
-  const vaultContractId = searchParams.get("vaultContractId");
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const [open, setOpen] = useState(false);
 
   const selectedChain = useWalletStore((s) => s.selectedChain);
@@ -74,7 +70,7 @@ const RedeemModal = () => {
     ...vaultQueries.getAllAcceptedTokensQueryOptions({
       vaultContractId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const availableTokens = useMemo(() => {
@@ -105,14 +101,14 @@ const RedeemModal = () => {
 
   const exchangeRateForAsset = assetUtils.useExchangeRateForAsset({
     asset: selectedAsset,
-    vaultContractId,
+    vaultContractId: vaultContractId ?? null,
   });
 
   const vaultShareMetadataQuery = useQuery({
     ...vaultQueries.getFtMetadataQueryOptions({
       tokenId: vaultContractId!,
     }),
-    enabled: vaultContractId !== null,
+    enabled: vaultContractId !== undefined,
   });
 
   const myPositionQuery = useQuery({
@@ -120,7 +116,7 @@ const RedeemModal = () => {
       vaultContractId: vaultContractId!,
       nearAddress: nearAddress!,
     }),
-    enabled: nearAddress !== null && vaultContractId !== null,
+    enabled: nearAddress !== null && vaultContractId !== undefined,
   });
 
   const myPosition = useMemo(() => {

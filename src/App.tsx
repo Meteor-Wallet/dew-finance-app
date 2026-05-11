@@ -8,6 +8,7 @@ import {
 import Homepage from "./pages/Homepage";
 import Policy from "./pages/Policy";
 import Vaults from "./pages/Vaults/index";
+import { vaultUtils } from "./utils/vaultUtils";
 import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
 import DepositModal from "./components/modal/DepositModal";
@@ -31,10 +32,10 @@ export default function App() {
         <DepositModal />
         <RedeemModal />
         <Routes>
-          <Route path="/" element={<Vaults />} />
-          <Route path="/policy" element={<Policy />} />
-          <Route path="/home" element={<Homepage />} />
-          <Route path="*" element={<Navigate replace to="/vaults" />} />
+          <Route path="/" element={<Homepage />} />
+          <Route path="/:vaultContractId" element={<Vaults />} />
+          <Route path="/:vaultContractId/policy" element={<Policy />} />
+          <Route path="*" element={<Navigate replace to="/" />} />
         </Routes>
 
         {/* Background Animation */}
