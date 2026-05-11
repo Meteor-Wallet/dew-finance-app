@@ -489,7 +489,7 @@ const getHistoricalSharePriceQueryOptions = ({
   asset,
 }: {
   vaultContractId: string;
-  blockId: number;
+  blockId?: number;
   asset: TAsset;
 }) => {
   return queryOptions({
@@ -503,9 +503,7 @@ const getHistoricalSharePriceQueryOptions = ({
         vaultContractId,
         "get_all_share_prices",
         {},
-        {
-          blockId,
-        },
+        blockId ? { blockId } : undefined,
       );
 
       const rates = zExchangeRate.parse(data);
@@ -534,7 +532,7 @@ const getHistoricalBalanceQueryOptions = ({
   asset,
 }: {
   vaultContractId: string;
-  blockId: number;
+  blockId?: number;
   asset: TAsset;
 }) => {
   return queryOptions({
@@ -558,9 +556,7 @@ const getHistoricalBalanceQueryOptions = ({
         {
           asset,
         },
-        {
-          blockId,
-        },
+        blockId ? { blockId } : undefined,
       );
 
       const vaultConfig = vaultUtils.vaults.find(

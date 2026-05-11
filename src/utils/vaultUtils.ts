@@ -69,14 +69,18 @@ const vaults = [
     kernel_id: "kernel-usdt.meteor-vaults.near",
     share_price_decimals: 8,
     share_deciamls: 18,
-    base_asset_decimals: 6
+    base_asset_decimals: 6,
+    curated_by: "Dew Finance",
+    name: "USDT Vault"
   },
   {
     vault_id: "usdc.meteor-vaults.near",
     kernel_id: "kernel-usdc.meteor-vaults.near",
     share_price_decimals: 8,
     share_deciamls: 18,
-    base_asset_decimals: 6
+    base_asset_decimals: 6,
+    curated_by: "Dew Finance",
+    name: "USDC Vault"
   }
 ]
 
