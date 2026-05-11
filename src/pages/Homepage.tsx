@@ -151,13 +151,13 @@ export default function Homepage() {
   }, [tokenPricesQuery.data, baseAssetQueries, balanceQueries]);
 
   return (
-    <div className="min-h-screen mt-[50px]">
+    <div className="mt-[50px]">
       <img src={Dew2} className="absolute top-[50vh] left-[-80px] w-[30px] dew-float" />
       <img src={Dew1} className="absolute top-[90vh] right-[-40px] w-[10px] dew-float2" />
 
       {/* Hero Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-2 bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-lg shadow-lg border border-dark-border-color relative flex flex-col justify-between overflow-hidden">
+        <div className="col-span-2 bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-lg shadow-lg border border-dark-border-color relative flex flex-col justify-between overflow-hidden min-h-[300px]">
           <div>
             <div className="absolute w-full h-full left-0 top-0 z-1 p-10">
               <h1 className="text-3xl font-medium mb-2 max-w-[60%]">

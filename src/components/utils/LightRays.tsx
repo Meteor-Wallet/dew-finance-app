@@ -117,6 +117,7 @@ const LightRays: React.FC<LightRaysProps> = ({
       const gl = renderer.gl;
       gl.canvas.style.width = "100%";
       gl.canvas.style.height = "100%";
+      gl.canvas.style.display = "block";
       containerRef.current.innerHTML = "";
       containerRef.current.appendChild(gl.canvas);
 
@@ -319,7 +320,7 @@ void main() {
     }
   }, [followMouse]);
 
-  return <div ref={containerRef} className={`light-rays-container ${className}`.trim()} />;
+  return <div ref={containerRef} className={`light-rays-container absolute inset-0 ${className}`.trim()} />;
 };
 
 export default LightRays;
