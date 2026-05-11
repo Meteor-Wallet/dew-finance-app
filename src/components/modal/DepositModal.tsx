@@ -96,8 +96,8 @@ const DepositModal = () => {
   });
 
   const vaultShareMetadataQuery = useQuery({
-    ...vaultQueries.getVaultShareMetadataQueryOptions({
-      vaultContractId: vaultContractId!,
+    ...vaultQueries.getFtMetadataQueryOptions({
+      tokenId: vaultContractId!,
     }),
     enabled: vaultContractId !== null,
   });

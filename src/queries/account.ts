@@ -49,8 +49,8 @@ const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
         }
 
         const ftMetadata = await client.fetchQuery(
-          vaultQueries.getVaultShareMetadataQueryOptions({
-            vaultContractId: asset.FungibleToken.contract_id,
+          vaultQueries.getFtMetadataQueryOptions({
+            tokenId: asset.FungibleToken.contract_id,
           }),
         );
 

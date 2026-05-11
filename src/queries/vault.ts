@@ -4,6 +4,7 @@ import z from "zod";
 import { DewAccountBackend } from "../backend/DewAccountBackend";
 import { DewAgentBackend } from "../backend/DewAgentBackend";
 import { vaultUtils } from "../utils/vaultUtils";
+import Big from "big.js";
 
 const zAsset = z.union([
   z.object({
@@ -35,7 +36,7 @@ const getAllExchangeRatesQueryOptions = ({
       const exchangeRates = await nearUtils.provider.callFunction(
         vaultContractId,
         "get_all_share_prices",
-        {}
+        {},
       );
 
       return zExchangeRate.parse(exchangeRates);
@@ -73,7 +74,7 @@ const getVaultConfigQueryOptions = ({
       const vaultConfig = await nearUtils.provider.callFunction(
         vaultContractId,
         "get_vault_config",
-        {}
+        {},
       );
 
       return zVaultConfig.parse(vaultConfig);
@@ -87,22 +88,19 @@ const zFtMetadata = z.object({
   decimals: z.number(),
 });
 
-const getVaultShareMetadataQueryOptions = ({
-  vaultContractId,
-}: {
-  vaultContractId: string;
-}) => {
+const getFtMetadataQueryOptions = ({ tokenId }: { tokenId: string }) => {
   return queryOptions({
-    queryKey: ["vault", "vaultFtMetadata", vaultContractId],
+    queryKey: ["ft_metadata", tokenId],
     queryFn: async () => {
       const ftMetadata = await nearUtils.provider.callFunction(
-        vaultContractId,
+        tokenId,
         "ft_metadata",
-        {}
+        {},
       );
 
       return zFtMetadata.parse(ftMetadata);
     },
+    staleTime: Infinity,
   });
 };
 
@@ -125,7 +123,7 @@ const getCheckIsStorageDepositedQueryOptions = ({
         "storage_balance_of",
         {
           account_id: nearAddress,
-        }
+        },
       )) as null | { total: string; available: string };
 
       if (storageBalanceOf?.available && storageBalanceOf.total) {
@@ -152,7 +150,7 @@ const getMyPositionQueryOptions = ({
         "ft_balance_of",
         {
           account_id: nearAddress,
-        }
+        },
       )) as string;
 
       return ftBalanceOf;
@@ -166,11 +164,13 @@ const getAccountsWithRoleQueryOptions = ({
 }: {
   vaultContractId: string;
   roleName: string;
-}) => {  
+}) => {
   return queryOptions({
     queryKey: ["vault", "accountsWithRole", { vaultContractId, roleName }],
     queryFn: async () => {
-      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      const vaultInfo = vaultUtils.vaults.find(
+        (e) => e.vault_id === vaultContractId,
+      );
       if (!vaultInfo) {
         throw new Error("Vault not found");
       }
@@ -179,7 +179,7 @@ const getAccountsWithRoleQueryOptions = ({
         "get_accounts_with_role",
         {
           role_name: roleName,
-        }
+        },
       )) as string[];
 
       return accountsWithRole;
@@ -194,7 +194,7 @@ const zAllRoleAssignments = z.array(
       z.object({ Codehash: z.string() }),
     ]),
     z.array(z.string()),
-  ])
+  ]),
 );
 
 const getAllRoleAssignmentsQueryOptions = ({
@@ -205,14 +205,16 @@ const getAllRoleAssignmentsQueryOptions = ({
   return queryOptions({
     queryKey: ["vault", "allRoleAssignments", { vaultContractId }],
     queryFn: async () => {
-      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      const vaultInfo = vaultUtils.vaults.find(
+        (e) => e.vault_id === vaultContractId,
+      );
       if (!vaultInfo) {
         throw new Error("Vault not found");
       }
       const allRoleAssignments = await nearUtils.provider.callFunction(
         vaultInfo.kernel_id,
         "get_all_role_assignments",
-        {}
+        {},
       );
 
       const rawData = zAllRoleAssignments.parse(allRoleAssignments);
@@ -244,14 +246,16 @@ const getPolicyCountQueryOptions = ({
   return queryOptions({
     queryKey: ["vault", "policyCount", { vaultContractId }],
     queryFn: async () => {
-      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      const vaultInfo = vaultUtils.vaults.find(
+        (e) => e.vault_id === vaultContractId,
+      );
       if (!vaultInfo) {
         throw new Error("Vault not found");
       }
       const policyCount = (await nearUtils.provider.callFunction(
         vaultInfo.kernel_id,
         "get_policy_count",
-        {}
+        {},
       )) as number;
 
       return policyCount;
@@ -332,12 +336,12 @@ const zPolicy = z.discriminatedUnion("policy_type", [
   zChainSigTransactionPolicy,
   zChainSigMessagePolicy,
   zNearNativeTransactionPolicy,
-  zKernelConfigurationPolicy
+  zKernelConfigurationPolicy,
 ]);
 
 export type TPolicy = z.infer<typeof zPolicy>;
 export type TPolicyType = TPolicy["policy_type"];
-export type TRestrictions = z.infer<typeof zRestrictionSchema>[]
+export type TRestrictions = z.infer<typeof zRestrictionSchema>[];
 
 type TNearNativeTransactionPolicy = z.infer<
   typeof zNearNativeTransactionPolicy
@@ -359,7 +363,9 @@ const getAllPoliciesInfiniteQueryOptions = ({
   return infiniteQueryOptions({
     queryKey: ["vault", "allPolicies", { vaultContractId }],
     queryFn: async ({ pageParam }) => {
-      const vaultInfo = vaultUtils.vaults.find(e => e.vault_id === vaultContractId);
+      const vaultInfo = vaultUtils.vaults.find(
+        (e) => e.vault_id === vaultContractId,
+      );
       if (!vaultInfo) {
         throw new Error("Vault not found");
       }
@@ -369,10 +375,8 @@ const getAllPoliciesInfiniteQueryOptions = ({
         {
           from_index: pageParam ?? 0,
           limit,
-        }
+        },
       );
-
-      console.log(allPolicies, "allPolicies");
 
       const policies = zAllPolicies
         .transform((items) => items.map(([_, policy]) => policy))
@@ -435,7 +439,7 @@ const getVaultBaseAssetQueryOptions = ({
       const data = (await nearUtils.provider.callFunction(
         vaultContractId,
         "get_base_asset",
-        {}
+        {},
       )) as TAsset;
 
       return data;
@@ -458,56 +462,121 @@ const getVaultBalanceDistributionQueryOptions = ({
   });
 };
 
-// TODO: use archival node
+const getLatestBlockinfoQueryOptions = () => {
+  return queryOptions({
+    queryKey: ["blockInfo", "latest"],
+    queryFn: async () => {
+      const blockInfo = await nearUtils.provider.block({ finality: "final" });
+      return blockInfo;
+    },
+  });
+};
+
+const getBlockinfoQueryOptions = (blockId: number) => {
+  return queryOptions({
+    queryKey: ["blockInfo", blockId],
+    queryFn: async () => {
+      const blockInfo = await nearUtils.provider.block({ blockId });
+      return blockInfo;
+    },
+    staleTime: Infinity,
+  });
+};
+
 const getHistoricalSharePriceQueryOptions = ({
   vaultContractId,
-  limit,
-  numberOf30MinsInterval,
+  blockId,
+  asset,
 }: {
   vaultContractId: string;
-  limit: number;
-  numberOf30MinsInterval: "1";
+  blockId: number;
+  asset: TAsset;
 }) => {
   return queryOptions({
     queryKey: [
       "vault",
       "historicalSharePrice",
-      { vaultContractId, limit, numberOf30MinsInterval },
+      { vaultContractId, blockId, asset },
     ],
     queryFn: async () => {
-      const { data } = await DewAccountBackend.getHistoricalSharePrice({
+      const data = await nearUtils.provider.callFunction(
         vaultContractId,
-        limit,
-        numberOf30MinsInterval,
+        "get_all_share_prices",
+        {},
+        {
+          blockId,
+        },
+      );
+
+      const rates = zExchangeRate.parse(data);
+      const targetRate = rates.find((rate) => {
+        const [rateAsset] = rate;
+        if (JSON.stringify(rateAsset) === JSON.stringify(asset)) {
+          return true;
+        }
+        return false;
       });
-      return data;
+
+      if (!targetRate) {
+        throw new Error(
+          "Share price for the asset not found at the given block",
+        );
+      }
+      return targetRate[1];
     },
+    staleTime: Infinity,
   });
 };
 
-// TODO: use archival node
 const getHistoricalBalanceQueryOptions = ({
   vaultContractId,
-  limit,
-  numberOf30MinsInterval,
+  blockId,
+  asset,
 }: {
   vaultContractId: string;
-  limit: number;
-  numberOf30MinsInterval: "1";
+  blockId: number;
+  asset: TAsset;
 }) => {
   return queryOptions({
     queryKey: [
       "vault",
       "historicalBalance",
-      { vaultContractId, limit, numberOf30MinsInterval },
+      { vaultContractId, blockId, asset },
     ],
-    queryFn: async () => {
-      const { data } = await DewAccountBackend.getHistoricalBalance({
+    queryFn: async ({ client }) => {
+      const sharePrice = await client.fetchQuery(
+        getHistoricalSharePriceQueryOptions({
+          vaultContractId,
+          blockId,
+          asset,
+        }),
+      );
+
+      const totalShares = await nearUtils.provider.callFunction<string>(
         vaultContractId,
-        limit,
-        numberOf30MinsInterval,
-      });
-      return data;
+        "ft_total_supply",
+        {
+          asset,
+        },
+        {
+          blockId,
+        },
+      );
+
+      const vaultConfig = vaultUtils.vaults.find(
+        (v) => v.vault_id === vaultContractId,
+      );
+      if (!vaultConfig) {
+        throw new Error("Vault config not found");
+      }
+
+      const shareDecimals = vaultConfig.share_deciamls;
+
+      const balance = Big(sharePrice)
+        .mul(Big(totalShares || "0").div(Big(10).pow(shareDecimals)))
+        .toString();
+
+      return balance;
     },
   });
 };
@@ -516,7 +585,7 @@ export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
   getVaultConfigQueryOptions,
-  getVaultShareMetadataQueryOptions,
+  getFtMetadataQueryOptions,
   getCheckIsStorageDepositedQueryOptions,
   getMyPositionQueryOptions,
   getAccountsWithRoleQueryOptions,
@@ -528,4 +597,6 @@ export const vaultQueries = {
   getVaultBalanceDistributionQueryOptions,
   getHistoricalSharePriceQueryOptions,
   getHistoricalBalanceQueryOptions,
+  getLatestBlockinfoQueryOptions,
+  getBlockinfoQueryOptions,
 };

@@ -6,20 +6,18 @@ import FeeIcon2 from "../../assets/fee_icon2.svg";
 import vaultIcon from "../../assets/vault-icon.png";
 import { motion, AnimatePresence } from "framer-motion";
 import DewChart from "../../components/sample/DewChart";
-import AllocationDonut from "../../components/sample/AllocationDonut";
 import DewChart2 from "../../components/sample/DewChart2";
 import { ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import TransactionTable from "../../components/sample/TransactionTable";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { vaultQueries } from "../../queries/vault";
 import clsx from "clsx";
 import { vaultUtils } from "../../utils/vaultUtils";
 import { assetUtils } from "../../utils/assetUtils";
 import { stringUtils } from "../../utils/stringUtils";
 import Big from "big.js";
-
 const RightPanel = memo(() => {
   const [searchParams] = useSearchParams({
     vaultContractId: vaultUtils.DEFAULT_VAULT_CONTRACT_ID,
@@ -75,110 +73,122 @@ const RightPanel = memo(() => {
     enabled: vaultContractId !== null,
   });
 
-  const balanceDistributionQuery = useQuery({
-    ...vaultQueries.getVaultBalanceDistributionQueryOptions({
-      vaultContractId: vaultContractId!,
-    }),
-    enabled: vaultContractId !== null,
-    // to mock the pie chart data
-    // select: (data) => {
-    //   return data.map((v, idx) => {
-    //     return {
-    //       ...v,
-    //     amount: v.amount + idx * 100
-    //     }
-    //   })
-    // }
+  const latestBlockInfoQuery = useQuery({
+    ...vaultQueries.getLatestBlockinfoQueryOptions(),
   });
 
-  const historicalBalanceQuery = useQuery({
-    ...vaultQueries.getHistoricalBalanceQueryOptions({
-      vaultContractId: vaultContractId!,
-      limit: 10,
-      numberOf30MinsInterval: "1",
-    }),
-    enabled: vaultContractId !== null,
-  });
-
-  const historicalSharePriceQuery = useQuery({
-    ...vaultQueries.getHistoricalSharePriceQueryOptions({
-      vaultContractId: vaultContractId!,
-      limit: 10,
-      numberOf30MinsInterval: "1",
-    }),
-    enabled: vaultContractId !== null,
-  });
-
-  const allocationDonutDetails = useMemo(() => {
-    const filteredList = (balanceDistributionQuery.data || []).filter((v) => {
-      if (Number(v.amount) <= 0) {
-        return false;
+  const blockIds = useMemo(() => {
+    const totalInterval = 5;
+    const balanceIntervalInHours = 0.5;
+    const averageBlockTimeInSeconds = 0.6;
+    const blockHeightInterval = Math.floor(
+      (balanceIntervalInHours * 3600) / averageBlockTimeInSeconds,
+    );
+    if (latestBlockInfoQuery.data) {
+      const currentHeight =
+        Number(latestBlockInfoQuery.data.header.height);
+      const blockIds: number[] = [];
+      for (let i = totalInterval; i > 0; i--) {
+        const queryBlock = currentHeight - blockHeightInterval * i;
+        blockIds.push(queryBlock);
       }
-      return true;
-    });
-    const totalDistributionInBig = filteredList.reduce((prev, cur) => {
-      return prev.add(Big(cur.amount));
-    }, Big(0));
-    const donutFigures = filteredList
-      .map((v) => {
-        return {
-          name: v.assetSymbol,
-          value: Big(v.amount)
-            .div(totalDistributionInBig)
-            .mul(Big(100))
-            .toNumber(),
-        };
-      })
-      .filter((e) => e.value !== 0);
 
-    return {
-      donutFigures,
-      totalDistribution: totalDistributionInBig.toFixed(),
-    };
-  }, [balanceDistributionQuery.data]);
+      return blockIds;
+    }
+
+    return [];
+  }, [latestBlockInfoQuery.data]);
+
+  const sharePricesByBlockIdsQuery = useQueries({
+    queries: blockIds.map((blockId) => {
+      return {
+        ...vaultQueries.getHistoricalSharePriceQueryOptions({
+          blockId,
+          vaultContractId: vaultContractId!,
+          asset: baseAssetQuery.data!,
+        }),
+        enabled: vaultContractId !== null && baseAssetQuery.data !== undefined,
+      };
+    }),
+  });
+
+  const blockIdInfoQuery = useQueries({
+    queries: blockIds.map((blockId) => {
+      return {
+        ...vaultQueries.getBlockinfoQueryOptions(blockId),
+      };
+    }),
+  });
 
   const sharePriceDetails = useMemo(() => {
-    let latestSharePrice = "0";
+    const vaultConfig = vaultUtils.vaults.find(
+      (e) => e.vault_id === vaultContractId,
+    );
+    if (!vaultConfig) return undefined;
     if (
-      historicalSharePriceQuery.data &&
-      historicalSharePriceQuery.data.length > 0
+      sharePricesByBlockIdsQuery.every((q) => q.data !== undefined) &&
+      blockIdInfoQuery.every((q) => q.data !== undefined)
     ) {
-      latestSharePrice = historicalSharePriceQuery.data[0].price_in_base_asset;
-    }
-    const chart = (historicalSharePriceQuery.data || [])
-      .map((v) => {
+      const chart = sharePricesByBlockIdsQuery.map((q, index) => {
+        const blockInfo = blockIdInfoQuery[index].data!;
         return {
-          date: new Date(v.bucket).toLocaleString(),
-          value: Number(v.price_in_base_asset),
+          date: new Date(blockInfo.header.timestamp / 1000000).toLocaleString(),
+          value: Big(q.data)
+            .div(Big(10).pow(vaultConfig.share_price_decimals))
+            .toNumber(),
         };
-      })
-      .reverse();
+      });
 
-    return {
-      latestSharePrice,
-      chart,
-    };
-  }, [historicalSharePriceQuery.data]);
+      const latestSharePrice =
+        chart.length !== 0 ? chart[chart.length - 1].value.toString() : "0";
+      return {
+        chart,
+        latestSharePrice,
+      };
+    }
+  }, [blockIdInfoQuery, sharePricesByBlockIdsQuery, vaultContractId]);
+
+  const balanceByBlockIdsQuery = useQueries({
+    queries: blockIds.map((blockId) => {
+      return {
+        ...vaultQueries.getHistoricalBalanceQueryOptions({
+          blockId,
+          vaultContractId: vaultContractId!,
+          asset: baseAssetQuery.data!,
+        }),
+        enabled: vaultContractId !== null && baseAssetQuery.data !== undefined,
+      };
+    }),
+  });
 
   const balanceDetails = useMemo(() => {
-    let latestCurrentTotal = "0";
-    if (historicalBalanceQuery.data && historicalBalanceQuery.data.length > 0) {
-      latestCurrentTotal = historicalBalanceQuery.data[0].balance_in_base_asset;
-    }
-    const chart = (historicalBalanceQuery.data || [])
-      .map((v) => {
+    const vaultConfig = vaultUtils.vaults.find(
+      (e) => e.vault_id === vaultContractId,
+    );
+    if (!vaultConfig) return undefined;
+    if (
+      balanceByBlockIdsQuery.every((q) => q.data !== undefined) &&
+      blockIdInfoQuery.every((q) => q.data !== undefined)
+    ) {
+      const chart = balanceByBlockIdsQuery.map((q, index) => {
+        const blockInfo = blockIdInfoQuery[index].data!;
         return {
-          date: new Date(v.bucket).toLocaleString(),
-          value: Number(v.balance_in_base_asset),
+          date: new Date(blockInfo.header.timestamp / 1000000).toLocaleString(),
+          value: Big(q.data)
+            .div(Big(10).pow(vaultConfig.share_price_decimals))
+            .toNumber(),
         };
-      })
-      .reverse();
+      });
 
-    return {
-      latestCurrentTotal,
-      chart,
-    };
-  }, [historicalBalanceQuery.data]);
+      const latestCurrentTotal =
+        chart.length !== 0 ? chart[chart.length - 1].value : 0;
+      return {
+        chart,
+        latestCurrentTotal,
+      };
+    }
+  }, [blockIdInfoQuery, balanceByBlockIdsQuery, vaultContractId]);
+
   console.log(baseAssetQuery.data, "baseAssetQueryData");
   const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
     asset: baseAssetQuery.data || null,
@@ -343,7 +353,7 @@ const RightPanel = memo(() => {
                               <div>
                                 <h3 className="text-3xl font-semibold">
                                   {stringUtils.truncateDecimals(
-                                    balanceDetails.latestCurrentTotal,
+                                    balanceDetails?.latestCurrentTotal,
                                   )}{" "}
                                   {assetSymbol}{" "}
                                 </h3>
@@ -368,7 +378,7 @@ const RightPanel = memo(() => {
                             </div> */}
                           </div>
                           <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <DewChart data={balanceDetails.chart} />
+                            <DewChart data={balanceDetails?.chart || []} />
                           </div>
                         </div>
                       </div>
@@ -392,7 +402,7 @@ const RightPanel = memo(() => {
                               />
                               <div>
                                 <h3 className="text-3xl font-semibold">
-                                  {sharePriceDetails.latestSharePrice}{" "}
+                                  {sharePriceDetails?.latestSharePrice}{" "}
                                   {assetSymbol}{" "}
                                 </h3>
                                 {/* <p className="text-sm text-gray">$51,737,237</p> */}
@@ -416,7 +426,7 @@ const RightPanel = memo(() => {
                             </div> */}
                           </div>
                           <div className="h-[400px] ml-[-6%] w-[108%]  to-transparent rounded">
-                            <DewChart2 data={sharePriceDetails.chart} />
+                            <DewChart2 data={sharePriceDetails?.chart || []} />
                           </div>
                         </div>
                       </div>
