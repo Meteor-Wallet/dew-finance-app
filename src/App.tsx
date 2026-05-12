@@ -11,8 +11,6 @@ import Vaults from "./pages/Vaults/index";
 import { vaultUtils } from "./utils/vaultUtils";
 import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
-import DepositModal from "./components/modal/DepositModal";
-import RedeemModal from "./components/modal/RedeemModal";
 import SimulateModal from "./components/modal/SimulateModal";
 import DotGrid from "./components/utils/DotGrid";
 import LightRays from "./components/utils/LightRays";
@@ -29,8 +27,6 @@ export default function App() {
         <Navbar />
         <OnboardingModal />
         <SimulateModal />
-        <DepositModal />
-        <RedeemModal />
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/:vaultContractId" element={<Vaults />} />

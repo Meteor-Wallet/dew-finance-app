@@ -15,6 +15,7 @@ import { accountQueries } from "../../queries/account";
 import { intentsQueries } from "../../queries/intents";
 import { vaultMutations } from "../../mutations/vault";
 import { CircularProgress } from "../utils/CircularProgress";
+import { vaultUtils } from "../../utils/vaultUtils";
 
 const Asset = ({
   onClick,
@@ -86,6 +87,8 @@ const DepositModal = () => {
     asset: selectedAsset,
   });
 
+  const vaultMeta = vaultUtils.vaults.find((v) => v.vault_id === vaultContractId);
+
   const exchangeRateForSelectedAsset = assetUtils.useExchangeRateForAsset({
     asset: selectedAsset,
     vaultContractId: vaultContractId ?? null,
@@ -149,7 +152,7 @@ const DepositModal = () => {
     >
       <div className="w-full md:w-[500px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
         <h2 className="text-2xl font-semibold mb-0 mt-4">
-          Deposit Into Vault Name
+          Deposit Into {vaultMeta?.name}
         </h2>
         <hr className="border-t border-border-color mt-6 mb-6" />
 

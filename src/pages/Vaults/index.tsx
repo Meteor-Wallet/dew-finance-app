@@ -3,6 +3,8 @@ import Dew2 from "../../assets/dew2.svg";
 import Dew3 from "../../assets/dew3.svg";
 import LeftPanel from "./LeftPanel";
 import RightPanel from "./RightPanel";
+import DepositModal from "../../components/modal/DepositModal";
+import RedeemModal from "../../components/modal/RedeemModal";
 
 export default function Vaults() {
   return (
@@ -20,7 +22,8 @@ export default function Vaults() {
         className="hidden lg:block lg:absolute bottom-[10vh] right-[-40px] w-[10px] dew-float3"
       />
 
-      
+      <DepositModal />
+      <RedeemModal />
       <RightPanel />
       <LeftPanel />
 
