@@ -5,7 +5,10 @@ import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { useVaultActionStore } from "../../stores/vault_action_store";
 import { useParams } from "react-router-dom";
-import { useWalletStore, useConnectedWalletAddress } from "../../stores/wallet_store";
+import {
+  useWalletStore,
+  useConnectedWalletAddress,
+} from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../../queries/vault";
 import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
@@ -39,7 +42,9 @@ const Asset = ({
   asset: TAsset;
   onClick: (asset: TAsset) => void;
 }) => {
-  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({ asset });
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset,
+  });
   return (
     <div
       onClick={() => onClick(asset)}
@@ -53,7 +58,7 @@ const Asset = ({
 
 const RedeemModal = () => {
   const isRedeemWalletModalOpen = useVaultActionStore(
-    (s) => s.isRedeemWalletModalOpen
+    (s) => s.isRedeemWalletModalOpen,
   );
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const [open, setOpen] = useState(false);
@@ -81,7 +86,7 @@ const RedeemModal = () => {
         }
         if ("MultiToken" in e) {
           const tokenInfo = FLAT_LIST_TOKENS.find(
-            (token) => token.defuseAssetId === e.MultiToken.token_id
+            (token) => token.defuseAssetId === e.MultiToken.token_id,
           );
           if (tokenInfo?.chainName === selectedChain) return true;
         }
@@ -147,7 +152,8 @@ const RedeemModal = () => {
     return "0";
   }, [exchangeRateForAsset, myPosition, assetDecimals]);
 
-  const withdrawFromVaultMutation = vaultMutations.useWithdrawFromVaultMutation();
+  const withdrawFromVaultMutation =
+    vaultMutations.useWithdrawFromVaultMutation();
 
   const handleClose = () => {
     if (withdrawFromVaultMutation.isPending) return;
@@ -205,7 +211,9 @@ const RedeemModal = () => {
             className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none cursor-pointer rounded-l-sm min-w-[95px]"
           >
             <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
-            <span className="text-sm text-white font-semibold">{assetSymbol}</span>
+            <span className="text-sm text-white font-semibold">
+              {assetSymbol}
+            </span>
           </div>
           <div
             onClick={() =>
@@ -224,7 +232,9 @@ const RedeemModal = () => {
                   key={"MultiToken" in asset ? asset.MultiToken.token_id : "ft"}
                   asset={asset}
                   onClick={(a) => {
-                    useVaultActionStore.getState().changeWithdrawAsset({ asset: a });
+                    useVaultActionStore
+                      .getState()
+                      .changeWithdrawAsset({ asset: a });
                     setOpen(false);
                   }}
                 />
@@ -242,7 +252,9 @@ const RedeemModal = () => {
               <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
               <ArrowLeftRight className="text-gray" size={12} />
               <span>
-                {stringUtils.truncateDecimals(exchangeRateForAsset?.assetToShare)}{" "}
+                {stringUtils.truncateDecimals(
+                  exchangeRateForAsset?.assetToShare,
+                )}{" "}
                 {vaultShareMetadataQuery.data?.symbol}
               </span>
               {vaultShareMetadataQuery.data?.icon && (
@@ -263,7 +275,8 @@ const RedeemModal = () => {
         <button
           onClick={() => {
             if (!withdrawFromVaultMutation.isPending && canWithdraw) {
-              const { withdrawSlippagePercent } = useVaultActionStore.getState();
+              const { withdrawSlippagePercent } =
+                useVaultActionStore.getState();
               withdrawFromVaultMutation.mutate({
                 nearAddress,
                 asset: selectedAsset,

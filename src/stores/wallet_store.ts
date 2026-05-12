@@ -23,7 +23,7 @@ const getPersistedChain = (): ChainName => {
   } catch {
     // ignore
   }
-  return "eth";
+  return "near";
 };
 
 export interface WalletState {
