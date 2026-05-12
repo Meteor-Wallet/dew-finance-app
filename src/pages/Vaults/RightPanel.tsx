@@ -291,16 +291,12 @@ const RightPanel = memo(() => {
                       </div>
                     </div>
 
-                    <div className="mt-8">
+                    {vaultMeta?.description && <div className="mt-8">
                       <p className="text-base text-white mb-2">Description</p>
                       <p className="text-sm text-gray">
-                        This vault provides leveraged exposure to yoUSD, earning
-                        outstanding dollar denominated yield and a diverse
-                        amount of points. yoUSD tracks the best risk-adjusted
-                        yield across chains and continuously reallocates your
-                        assets across chains and protocols to maximize yield.
+                        {vaultMeta?.description}
                       </p>
-                    </div>
+                    </div>}
 
                     <div className="grid grid-cols-2 md:grid-cols-2 gap-4 text-sm">
                       <div>

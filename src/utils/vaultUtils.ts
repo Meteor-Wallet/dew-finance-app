@@ -63,7 +63,16 @@ function decodeInterface(base64: string): string {
 
 const DEFAULT_VAULT_CONTRACT_ID = "usdt.meteor-vaults.near";
 
-const vaults = [
+const vaults: {
+  vault_id: string;
+  kernel_id: string;
+  share_price_decimals: number;
+  share_deciamls: number;
+  base_asset_decimals: number;
+  curated_by: string;
+  name: string;
+  description?: string;
+}[] = [
   {
     vault_id: "usdt.meteor-vaults.near",
     kernel_id: "kernel-usdt.meteor-vaults.near",
