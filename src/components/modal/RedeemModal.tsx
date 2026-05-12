@@ -248,15 +248,7 @@ const RedeemModal = () => {
           <div className="flex justify-between text-sm">
             <span className="text-gray">Share</span>
             <div className="flex gap-1.5 items-center justify-center">
-              <span>1 {assetSymbol}</span>
-              <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
-              <ArrowLeftRight className="text-gray" size={12} />
-              <span>
-                {stringUtils.truncateDecimals(
-                  exchangeRateForAsset?.assetToShare,
-                )}{" "}
-                {vaultShareMetadataQuery.data?.symbol}
-              </span>
+              <span>1 {vaultShareMetadataQuery.data?.symbol}</span>
               {vaultShareMetadataQuery.data?.icon && (
                 <img
                   src={vaultShareMetadataQuery.data.icon}
@@ -264,6 +256,14 @@ const RedeemModal = () => {
                   className="w-5 h-5"
                 />
               )}
+              <ArrowLeftRight className="text-gray" size={12} />
+              <span>
+                {stringUtils.truncateDecimals(
+                  exchangeRateForAsset?.shareToAsset,
+                )}{" "}
+                {assetSymbol}
+              </span>
+              <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
             </div>
           </div>
           <div className="flex justify-between text-sm">
