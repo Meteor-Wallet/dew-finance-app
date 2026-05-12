@@ -147,6 +147,26 @@ const RedeemModal = () => {
     }
   }, [exchangeRateForAsset, withdrawAmount, assetDecimals]);
 
+  const assetBalanceQuery = useQuery({
+    ...vaultQueries.getAssetBalanceQueryOptions({
+      vaultId: vaultContractId!,
+      asset: selectedAsset!,
+    }),
+    enabled: isRedeemWalletModalOpen && vaultContractId !== undefined && selectedAsset !== undefined,
+  });
+
+  const isLiquidityInsufficient = useMemo(() => {
+    if (!assetBalanceQuery.data || !withdrawAmount || !exchangeRateForAsset || assetDecimals === null) return false;
+    try {
+      const expectedAssetAmount = Big(withdrawAmount)
+        .mul(exchangeRateForAsset.shareToAsset)
+        .mul(Big(10).pow(assetDecimals));
+      return Big(assetBalanceQuery.data.available_amount).lt(expectedAssetAmount);
+    } catch {
+      return false;
+    }
+  }, [assetBalanceQuery.data, withdrawAmount, exchangeRateForAsset, assetDecimals]);
+
   const withdrawFromVaultMutation =
     vaultMutations.useWithdrawFromVaultMutation();
 
@@ -277,6 +297,13 @@ const RedeemModal = () => {
             <span>{slippagePercent}%</span>
           </div>
         </div>
+
+        {isLiquidityInsufficient && (
+          <div className="flex items-start gap-2 mt-4 px-4 py-3 rounded-sm bg-amber-950/60 border border-amber-600/50 text-amber-400 text-sm">
+            <span className="mt-0.5 shrink-0">⚠</span>
+            <span>Liquidity insufficient, opting to async redeem</span>
+          </div>
+        )}
 
         <button
           onClick={() => {
