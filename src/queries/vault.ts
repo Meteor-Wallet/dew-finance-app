@@ -400,34 +400,6 @@ const getAllPoliciesInfiniteQueryOptions = ({
   });
 };
 
-// TODO: UPDATE TO BACKEND
-const getVaultApyQueryOptions = ({
-  vaultContractId,
-  variant,
-}: {
-  vaultContractId: string;
-  variant: "1" | "7" | "30";
-}) => {
-  return queryOptions({
-    queryKey: [
-      "vault",
-      "vaultApy",
-      {
-        vaultContractId,
-        variant,
-      },
-    ],
-    queryFn: async () => {
-      const { data } = await DewAccountBackend.getVaultApy({
-        variant,
-        vaultContractId,
-      });
-
-      return data;
-    },
-  });
-};
-
 const getVaultBaseAssetQueryOptions = ({
   vaultContractId,
 }: {
@@ -603,6 +575,56 @@ const getAssetBalanceQueryOptions = ({
   });
 };
 
+export const zMeteorApiResponse_Error = z.object({
+  ok: z.literal(false),
+  error: z.any(),
+});
+
+export const zMeteorApiResponse_Ok = z.object({
+  ok: z.literal(true),
+  value: z.any(),
+});
+
+export const zMeteorApiResponseAnyError = z.union([
+  zMeteorApiResponse_Error,
+  zMeteorApiResponse_Ok,
+]);
+
+const getVaultAprQueryOptions = ({
+  vaultId
+}: {
+  vaultId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["vaultApr", vaultId],
+    queryFn: async () => {
+      const response = await fetch(`https://backend-v2.meteorwallet.app/api/dew_vault/get_meteor_savings_apr`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lpTokenId: vaultId
+        })
+      })
+
+      const json = await response.json();
+
+      const structureValidate = zMeteorApiResponseAnyError.safeParse(json);
+
+      if(!structureValidate.success){
+        throw new Error("Invalid response structure");
+      }
+
+      if(structureValidate.data.ok){
+        return structureValidate.data.value.apr as string;
+      } else {
+        throw new Error(`API error: ${JSON.stringify(structureValidate.data.error)}`);
+      }
+    }
+  })
+}
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
@@ -614,12 +636,12 @@ export const vaultQueries = {
   getAllRoleAssignmentsQueryOptions,
   getPolicyCountQueryOptions,
   getAllPoliciesInfiniteQueryOptions,
-  getVaultApyQueryOptions,
   getVaultBaseAssetQueryOptions,
   getVaultBalanceDistributionQueryOptions,
   getHistoricalSharePriceQueryOptions,
   getHistoricalBalanceQueryOptions,
   getLatestBlockinfoQueryOptions,
   getBlockinfoQueryOptions,
-  getAssetBalanceQueryOptions
+  getAssetBalanceQueryOptions,
+  getVaultAprQueryOptions
 };

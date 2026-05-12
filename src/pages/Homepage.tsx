@@ -60,6 +60,10 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
     enabled: baseAssetQuery.data !== undefined,
   });
 
+  const vaultAprQuery = useQuery({
+    ...vaultQueries.getVaultAprQueryOptions({ vaultId: vault.vault_id }),
+  });
+
   const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
     asset: baseAssetQuery.data ?? null,
   });
@@ -74,6 +78,15 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
     );
     return usd !== null ? formatUsd(usd) : "—";
   }, [balanceQuery.data, tokenPricesQuery.data, baseAssetQuery.data, vault.share_price_decimals]);
+
+  const aprDisplay = useMemo(() => {
+    if (!vaultAprQuery.data) return "—";
+    try {
+      return `${Big(vaultAprQuery.data).mul(100).round(2, Big.roundDown).toFixed()}%`;
+    } catch {
+      return "—";
+    }
+  }, [vaultAprQuery.data]);
 
   return (
     <tr
@@ -104,7 +117,7 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
         </div>
       </td>
 
-      <td className="px-6 py-4 font-medium text-green text-base">1%</td>
+      <td className="px-6 py-4 font-medium text-green text-base">{aprDisplay}</td>
 
       <td className="px-6 py-4 text-base font-normal">{tvlUsdDisplay}</td>
 

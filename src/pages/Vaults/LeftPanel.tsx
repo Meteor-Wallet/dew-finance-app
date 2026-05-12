@@ -140,27 +140,26 @@ const AvailableBalances = () => {
 export default function LeftPanel() {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
 
-  const vaultApyQuery = useQuery({
-    ...vaultQueries.getVaultApyQueryOptions({
-      variant: "1",
-      vaultContractId: vaultContractId!,
+  const vaultAprQuery = useQuery({
+    ...vaultQueries.getVaultAprQueryOptions({
+      vaultId: vaultContractId!,
     }),
     enabled: vaultContractId !== undefined,
   });
 
   const roundedAPY = useMemo(() => {
-    if (vaultApyQuery.data) {
+    if (vaultAprQuery.data) {
       try {
-        return Big(vaultApyQuery.data)
+        return Big(vaultAprQuery.data)
           .mul(Big(100))
           .round(2, Big.roundDown)
           .toNumber();
       } catch {
-        // ignore Big.js parse error on invalid APY value
+        // ignore Big.js parse error on invalid APR value
       }
     }
     return 0;
-  }, [vaultApyQuery.data]);
+  }, [vaultAprQuery.data]);
 
   return (
     <div className="w-full h-full lg:w-1/3 sticky top-5 lg:order-2 order-1">
