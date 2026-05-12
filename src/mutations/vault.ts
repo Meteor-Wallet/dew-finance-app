@@ -201,7 +201,7 @@ const useWithdrawFromVaultMutation = () => {
           ftCall("redeem", {
             shares: shareAmountStr,
             asset,
-            min_assets: minimumAssetAmount.toFixed(0, Big.roundDown),
+            min_asset_amount: minimumAssetAmount.toFixed(0, Big.roundDown),
           }),
         ],
       });

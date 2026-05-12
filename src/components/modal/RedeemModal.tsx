@@ -24,7 +24,7 @@ const Input = () => {
     <input
       type="text"
       placeholder="0.0"
-      className="w-full pl-28 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
+      className="w-full pl-31 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
       value={withdrawAmount}
       onChange={(e) =>
         useVaultActionStore
@@ -133,24 +133,19 @@ const RedeemModal = () => {
     return "0";
   }, [vaultShareMetadataQuery.data, myPositionQuery.data]);
 
-  const expectedShareToBeBurnt = useMemo(() => {
-    if (exchangeRateForAsset) {
-      return Big(withdrawAmount || "0")
-        .mul(Big(exchangeRateForAsset.assetToShare))
-        .toFixed();
+  const expectedRedeemAmount = useMemo(() => {
+    try {
+      if (exchangeRateForAsset && assetDecimals) {
+        return Big(withdrawAmount || "0")
+          .mul(exchangeRateForAsset.shareToAsset)
+          .round(assetDecimals, Big.roundDown)
+          .toFixed();
+      }
+      return "0";
+    } catch {
+      return "0";
     }
-    return "0";
-  }, [withdrawAmount, exchangeRateForAsset]);
-
-  const balanceInAsset = useMemo(() => {
-    if (exchangeRateForAsset && assetDecimals) {
-      return Big(myPosition)
-        .mul(exchangeRateForAsset.shareToAsset)
-        .round(assetDecimals, Big.roundDown)
-        .toFixed();
-    }
-    return "0";
-  }, [exchangeRateForAsset, myPosition, assetDecimals]);
+  }, [exchangeRateForAsset, withdrawAmount, assetDecimals]);
 
   const withdrawFromVaultMutation =
     vaultMutations.useWithdrawFromVaultMutation();
@@ -198,9 +193,7 @@ const RedeemModal = () => {
 
         <div className="flex justify-between items-center mt-5 mb-1.5">
           <p className="text-sm font-base text-white">Amount</p>
-          <p className="text-sm font-base text-gray">
-            Available: {balanceInAsset}
-          </p>
+          <p className="text-sm font-base text-gray">Available: {myPosition}</p>
         </div>
 
         <div className="relative md:max-w-md mt-1">
@@ -210,16 +203,20 @@ const RedeemModal = () => {
             onClick={() => setOpen(!open)}
             className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none cursor-pointer rounded-l-sm min-w-[95px]"
           >
-            <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
+            <img
+              src={vaultShareMetadataQuery.data?.icon || ""}
+              alt={vaultShareMetadataQuery.data?.symbol}
+              className="w-6 h-6"
+            />
             <span className="text-sm text-white font-semibold">
-              {assetSymbol}
+              {vaultShareMetadataQuery.data?.symbol}
             </span>
           </div>
           <div
             onClick={() =>
               useVaultActionStore
                 .getState()
-                .updateWithdrawAmount({ amount: balanceInAsset })
+                .updateWithdrawAmount({ amount: myPosition })
             }
             className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50"
           >
@@ -246,7 +243,7 @@ const RedeemModal = () => {
         <p className="text-sm mb-2 mt-5">Transaction Details</p>
         <div className="bg-card-background rounded-sm p-4 px-5 space-y-4">
           <div className="flex justify-between text-sm">
-            <span className="text-gray">Share</span>
+            <span className="text-gray">Share price</span>
             <div className="flex gap-1.5 items-center justify-center">
               <span>1 {vaultShareMetadataQuery.data?.symbol}</span>
               {vaultShareMetadataQuery.data?.icon && (
@@ -267,7 +264,16 @@ const RedeemModal = () => {
             </div>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray">Slippage Tolerance</span>
+            <span className="text-gray">Expected to receive</span>
+            <div className="flex gap-1.5 items-center justify-center">
+              <span>
+                {expectedRedeemAmount} {assetSymbol}
+              </span>
+              <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray">Slippage tolerance</span>
             <span>{slippagePercent}%</span>
           </div>
         </div>
@@ -280,7 +286,7 @@ const RedeemModal = () => {
               withdrawFromVaultMutation.mutate({
                 nearAddress,
                 asset: selectedAsset,
-                share: expectedShareToBeBurnt,
+                share: withdrawAmount,
                 exchangeRate: exchangeRateForAsset.shareToAsset,
                 shareDecimals: vaultShareMetadataQuery.data.decimals,
                 vaultContractId,
