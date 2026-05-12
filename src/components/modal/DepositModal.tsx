@@ -16,6 +16,7 @@ import { intentsQueries } from "../../queries/intents";
 import { vaultMutations } from "../../mutations/vault";
 import { CircularProgress } from "../utils/CircularProgress";
 import { vaultUtils } from "../../utils/vaultUtils";
+import Big from "big.js";
 
 const Asset = ({
   onClick,
@@ -93,6 +94,20 @@ const DepositModal = () => {
     asset: selectedAsset,
     vaultContractId: vaultContractId ?? null,
   });
+
+  const expectedToReceiveAmount = useMemo(() => {
+    try{
+      if (exchangeRateForSelectedAsset && vaultMeta) {
+        return Big(depositAmount || "0")
+          .mul(exchangeRateForSelectedAsset.assetToShare)
+          .round(vaultMeta.share_deciamls, Big.roundDown)
+          .toFixed();
+      }
+      return "0";
+    }catch{
+      return "0"
+    }
+  }, [exchangeRateForSelectedAsset, depositAmount, vaultMeta])
 
   const vaultShareMetadataQuery = useQuery({
     ...vaultQueries.getFtMetadataQueryOptions({
@@ -204,7 +219,7 @@ const DepositModal = () => {
         <p className="text-sm mb-2 mt-5">Transaction Details</p>
         <div className="bg-card-background rounded-sm p-4 px-5 space-y-4">
           <div className="flex justify-between text-sm">
-            <span className="text-gray">Share</span>
+            <span className="text-gray">Share price</span>
             <div className="flex gap-1.5 items-center justify-center">
               <span>1 {assetSymbol}</span>
               <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
@@ -225,7 +240,23 @@ const DepositModal = () => {
             </div>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray">Slippage Tolerance</span>
+            <span className="text-gray">Expected to receive</span>
+            <div className="flex gap-1.5 items-center justify-center">
+              <span>
+                {expectedToReceiveAmount}{" "}
+                {vaultShareMetadataQuery.data?.symbol}
+              </span>
+              {vaultShareMetadataQuery.data?.icon && (
+                <img
+                  src={vaultShareMetadataQuery.data.icon}
+                  alt={vaultShareMetadataQuery.data.symbol}
+                  className="w-5 h-5"
+                />
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray">Slippage tolerance</span>
             <span>{slippagePercent}%</span>
           </div>
         </div>

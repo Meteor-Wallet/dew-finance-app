@@ -4,6 +4,11 @@ import { useWalletStore } from "./stores/wallet_store";
 export const nearConnector = new NearConnector({
   network: "mainnet",
   autoConnect: true,
+  features: {
+    signAndSendTransaction: true,
+    signAndSendTransactions: true,
+    signInWithoutAddKey: true,
+  }
 });
 
 nearConnector.on("wallet:signIn", ({ accounts, success }) => {
