@@ -175,7 +175,17 @@ const RedeemModal = () => {
     useVaultActionStore.getState().closeRedeemWalletModal();
   };
 
+  const isExceedingBalance = useMemo(() => {
+    if (!withdrawAmount || !myPosition) return false;
+    try {
+      return Big(withdrawAmount).gt(Big(myPosition));
+    } catch {
+      return false;
+    }
+  }, [withdrawAmount, myPosition]);
+
   const canWithdraw =
+    !isExceedingBalance &&
     nearAddress &&
     selectedAsset &&
     exchangeRateForAsset &&
@@ -301,7 +311,7 @@ const RedeemModal = () => {
         {isLiquidityInsufficient && (
           <div className="flex items-start gap-2 mt-4 px-4 py-3 rounded-sm bg-amber-950/60 border border-amber-600/50 text-amber-400 text-sm">
             <span className="mt-0.5 shrink-0">⚠</span>
-            <span>Liquidity insufficient, opting to async redeem</span>
+            <span>Insufficient liquidity, opting to async redeem</span>
           </div>
         )}
 
@@ -329,6 +339,8 @@ const RedeemModal = () => {
             <div className="mr-1">
               <CircularProgress size="small" />
             </div>
+          ) : isExceedingBalance ? (
+            "Insufficient balance"
           ) : (
             "Redeem"
           )}

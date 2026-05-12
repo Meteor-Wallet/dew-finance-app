@@ -128,7 +128,17 @@ const DepositModal = () => {
 
   const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
 
+  const isExceedingBalance = useMemo(() => {
+    if (!depositAmount || !balance.data?.formatted) return false;
+    try {
+      return Big(depositAmount).gt(Big(balance.data.formatted));
+    } catch {
+      return false;
+    }
+  }, [depositAmount, balance.data?.formatted]);
+
   const canDeposit =
+    !isExceedingBalance &&
     (selectedChain === "near" || intentsAddressQuery.data) &&
     nearAddress &&
     selectedAsset &&
@@ -285,6 +295,8 @@ const DepositModal = () => {
             <div className="mr-1">
               <CircularProgress size="small" />
             </div>
+          ) : isExceedingBalance ? (
+            "Insufficient balance"
           ) : (
             "Deposit"
           )}
