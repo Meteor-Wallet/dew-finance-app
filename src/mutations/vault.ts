@@ -239,13 +239,24 @@ const useWithdrawFromVaultMutation = () => {
         });
       }
 
+      const availableLiquidity = await queryClient.fetchQuery({
+        ...vaultQueries.getAssetBalanceQueryOptions({
+          vaultId: vaultContractId,
+          asset
+        }),
+      });
+
+      const isLiquiditySufficient = Big(
+        availableLiquidity.available_amount,
+      ).gte(Big(expectedAssetAmount));
+
       toast.loading("Withdrawing", {
         description: "Redeeming shares from vault",
         id: toastIdRef.current,
       });
       transactions.push({
         actions: [
-          ftCall("redeem", {
+          ftCall(isLiquiditySufficient ? "redeem" : "request_redeem", {
             shares: shareAmountStr,
             asset,
             min_asset_amount: minimumAssetAmount.toFixed(0, Big.roundDown),

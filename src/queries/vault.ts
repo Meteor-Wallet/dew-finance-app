@@ -577,6 +577,32 @@ const getHistoricalBalanceQueryOptions = ({
   });
 };
 
+const getAssetBalanceQueryOptions = ({
+  vaultId,
+  asset,
+}: {
+  vaultId: string;
+  asset: TAsset;
+}) => {
+  return queryOptions({
+    queryKey: ["assetBalance", { vaultId, asset }],
+    queryFn: async () => {
+      const balance = await nearUtils.provider.callFunction<{
+        available_amount: string;
+        pending_deposit: string;
+      }>(vaultId, "get_asset_balance", {
+        asset,
+      });
+
+      if(!balance){
+        throw new Error("Failed to fetch asset balance");
+      }
+
+      return balance;
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
@@ -595,4 +621,5 @@ export const vaultQueries = {
   getHistoricalBalanceQueryOptions,
   getLatestBlockinfoQueryOptions,
   getBlockinfoQueryOptions,
+  getAssetBalanceQueryOptions
 };
