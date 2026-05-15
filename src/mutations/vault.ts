@@ -163,6 +163,12 @@ const useWithdrawFromVaultMutation = () => {
           nearAddress: params.nearAddress,
         }),
       );
+      queryClient.invalidateQueries({
+        queryKey: accountQueries.queryKey.accountBalanceQueryKey({
+          asset: params.asset,
+          address: params.nearAddress,
+        }),
+      });
       useVaultActionStore.getState().updateWithdrawAmount({ amount: "" });
       useVaultActionStore.getState().closeRedeemWalletModal();
     },
@@ -299,6 +305,12 @@ const useClaimClaimableAssetsMutation = () => {
           nearAddress: params.accountId,
         }),
       );
+      queryClient.invalidateQueries({
+        queryKey: accountQueries.queryKey.accountBalanceQueryKey({
+          asset: params.asset,
+          address: params.accountId,
+        }),
+      });
       queryClient.invalidateQueries(
         vaultQueries.getAccountClaimableAssetsQueryOptions({
           vaultId: params.vaultId,
