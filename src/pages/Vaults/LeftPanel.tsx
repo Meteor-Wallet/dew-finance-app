@@ -15,6 +15,122 @@ import clsx from "clsx";
 import { assetUtils } from "../../utils/assetUtils";
 import { vaultUtils } from "../../utils/vaultUtils";
 
+type TMergedPendingRedeem = {
+  asset: { FungibleToken: { contract_id: string } };
+  // sum of (shares * confirmed_share_price) for confirmed items
+  // divide by 10^(shareDecimals + sharePriceDecimals) to get human-readable asset amount
+  rawAssetNumerator: string | null;
+  allConfirmed: boolean;
+};
+
+const PendingRedeemBanner = ({
+  merged,
+  shareDecimals,
+  sharePriceDecimals,
+}: {
+  merged: TMergedPendingRedeem;
+  shareDecimals: number;
+  sharePriceDecimals: number;
+}) => {
+  const { asset, rawAssetNumerator, allConfirmed } = merged;
+
+  const { assetIcon, assetSymbol, assetDecimals } = assetUtils.useAssetSymbolAndIcon({ asset });
+
+  const amountFormatted = useMemo(() => {
+    if (!rawAssetNumerator || assetDecimals === null) return "—";
+    try {
+      return Big(rawAssetNumerator)
+        .div(Big(10).pow(shareDecimals + sharePriceDecimals))
+        .round(assetDecimals, Big.roundDown)
+        .toFixed();
+    } catch {
+      return "—";
+    }
+  }, [rawAssetNumerator, shareDecimals, sharePriceDecimals, assetDecimals]);
+
+  return (
+    <div className={`flex items-start gap-3 px-4 py-3 rounded-sm text-sm ${allConfirmed ? "bg-green/10 border border-green/30 text-green" : "bg-amber-950/60 border border-amber-600/50 text-amber-400"}`}>
+      <span className="shrink-0 mt-0.5">⏳</span>
+      <div className="flex flex-col gap-0.5">
+        <span>
+          {allConfirmed ? "Your redeem of" : "Awaiting confirmation for"}{" "}
+          <span className="font-semibold">{amountFormatted}</span>{" "}
+          <img src={assetIcon} alt={assetSymbol} className="inline w-4 h-4 mx-0.5 align-middle" />
+          <span className="font-semibold">{assetSymbol}</span>{" "}
+          {allConfirmed ? "is being processed by the vault." : "is pending."}
+        </span>
+        {allConfirmed && (
+          <span className="opacity-70">The vault is processing your confirmed redeem. Funds will be claimable shortly.</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const PendingRedeems = () => {
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
+  const nearAddress = useWalletStore((s) => s.nearAccountId);
+
+  const pendingRedeemsQuery = useQuery({
+    ...vaultQueries.getAccountPendingRedeemsQueryOptions({
+      vaultId: vaultContractId!,
+      accountId: nearAddress!,
+    }),
+    enabled: vaultContractId !== undefined && nearAddress !== null,
+  });
+
+  const vaultShareMetadataQuery = useQuery({
+    ...vaultQueries.getFtMetadataQueryOptions({ tokenId: vaultContractId! }),
+    enabled: vaultContractId !== undefined,
+  });
+
+  const sharePriceDecimals = useMemo(
+    () => vaultUtils.vaults.find((v) => v.vault_id === vaultContractId)?.share_price_decimals ?? 0,
+    [vaultContractId],
+  );
+
+  const mergedByAsset = useMemo((): TMergedPendingRedeem[] => {
+    const items = pendingRedeemsQuery.data;
+    if (!items) return [];
+    const map = new Map<string, TMergedPendingRedeem>();
+    for (const item of items) {
+      const { asset, shares, confirmed, confirmed_share_price } = item.operation.Withdraw;
+      const contractId = asset.FungibleToken.contract_id;
+      const existing = map.get(contractId);
+      const contribution =
+        confirmed && confirmed_share_price
+          ? Big(shares).mul(Big(confirmed_share_price)).toFixed()
+          : null;
+      if (existing) {
+        existing.allConfirmed = existing.allConfirmed && confirmed;
+        if (existing.rawAssetNumerator !== null && contribution !== null) {
+          existing.rawAssetNumerator = Big(existing.rawAssetNumerator).add(contribution).toFixed();
+        } else {
+          existing.rawAssetNumerator = null;
+        }
+      } else {
+        map.set(contractId, { asset, rawAssetNumerator: contribution, allConfirmed: confirmed });
+      }
+    }
+    return Array.from(map.values());
+  }, [pendingRedeemsQuery.data]);
+
+  if (mergedByAsset.length === 0) return null;
+
+  return (
+    <div className="mt-4 space-y-2">
+      {mergedByAsset.map((merged) => (
+        <PendingRedeemBanner
+          key={merged.asset.FungibleToken.contract_id}
+          merged={merged}
+          shareDecimals={vaultShareMetadataQuery.data?.decimals ?? 0}
+          sharePriceDecimals={sharePriceDecimals}
+        />
+      ))}
+    </div>
+  );
+};
+
 const MyPosition2 = () => {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const nearAddress = useWalletStore((s) => s.nearAccountId);
@@ -226,6 +342,10 @@ export default function LeftPanel() {
             </button>
           </div>
         </div>
+      </Motion>
+
+      <Motion direction="right" duration={0.6} delay={0.7}>
+        <PendingRedeems />
       </Motion>
 
       <div className="grid grid-cols-2 mt-3 gap-4"></div>

@@ -625,6 +625,49 @@ const getVaultAprQueryOptions = ({
   })
 }
 
+const zGetAccountPendingRedeemsResponse = z.array(
+  z.object({
+    operation: z.object({
+      Withdraw: z.object({
+        asset: z.object({
+          FungibleToken: z.object({
+            contract_id: z.string(),
+          }),
+        }),
+        shares: z.string(),
+        confirmed: z.boolean(),
+        confirmed_share_price: z.string().nullable(),
+      }),
+    }),
+    operation_id: z.number(),
+  }),
+);
+
+const getAccountPendingRedeemsQueryOptions = ({
+  vaultId,
+  accountId
+}: {
+  vaultId: string;
+  accountId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["account", "pendingRedeems", { vaultId, accountId }],
+    queryFn: async () => {
+      const result = await nearUtils.provider.callFunction(vaultId, "get_account_pending_redeems", {
+        account_id: accountId
+      });
+
+      const parsed = zGetAccountPendingRedeemsResponse.safeParse(result);
+
+      if(!parsed.success){
+        throw new Error("Invalid response structure for pending redeems");
+      }
+
+      return parsed.data;
+    }
+  })
+}
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
@@ -643,5 +686,6 @@ export const vaultQueries = {
   getLatestBlockinfoQueryOptions,
   getBlockinfoQueryOptions,
   getAssetBalanceQueryOptions,
-  getVaultAprQueryOptions
+  getVaultAprQueryOptions,
+  getAccountPendingRedeemsQueryOptions
 };
