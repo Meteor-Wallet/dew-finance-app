@@ -117,6 +117,38 @@ const useDepositToVaultMutation = () => {
         .mul(Big(1 - Number(slippagePercent) / 100))
         .toFixed(0, Big.roundDown);
 
+      if(contractId === 'wrap.near'){
+        toast.loading("Depositing", {
+          description: "Checking if we need to wrap NEAR",
+          id: toastIdRef.current,
+        });
+        const wrapNearBalance = await nearUtils.provider.callFunction<string>(
+          asset.FungibleToken.contract_id,
+          "ft_balance_of",
+          {
+            account_id: nearAddress
+          },
+        );
+
+        if(!wrapNearBalance){
+          throw new Error("Failed to fetch wNEAR balance");
+        }
+
+        if(Big(depositAmountStr).gt(Big(wrapNearBalance))){
+          const nearAmountToWrap = Big(depositAmountStr).minus(Big(wrapNearBalance)).toFixed();
+          actions.push(
+            ftCall(
+              "near_deposit",
+              {
+                amount: nearAmountToWrap
+              },
+              nearAmountToWrap,
+              "10000000000000",
+            ),
+          );
+        }
+      }
+
       toast.loading("Depositing", {
         description: "Waiting for wallet approval",
         id: toastIdRef.current,
