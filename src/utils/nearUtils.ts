@@ -1,7 +1,8 @@
 import { JsonRpcProvider } from "@near-js/providers";
 
 const provider = new JsonRpcProvider({
-  url: "https://free.rpc.fastnear.com",
+  // url: "https://free.rpc.fastnear.com",
+  url: "https://nearinner.deltarpc.com",
 });
 
 const archivalProvider = new JsonRpcProvider({

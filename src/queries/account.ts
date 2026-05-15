@@ -59,7 +59,7 @@ const useAccountBalance = ({ asset }: { asset: TAsset | null }) => {
           decimals: ftMetadata.decimals,
           formatted: Big(balance)
             .div(Big(10).pow(ftMetadata.decimals))
-            .toString(),
+            .toFixed(),
         };
       }
     },

@@ -50,6 +50,10 @@ const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
     }
   }
 
+  if(fungibleTokenId === 'wrap.near'){
+    assetIcon = "https://s2.coinmarketcap.com/static/img/coins/128x128/11808.png"
+  }
+
   return {
     assetSymbol,
     assetIcon,

@@ -4,7 +4,10 @@ import { memo, useEffect, useMemo } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { useVaultActionStore } from "../../stores/vault_action_store";
-import { useWalletStore, useConnectedWalletAddress } from "../../stores/wallet_store";
+import {
+  useWalletStore,
+  useConnectedWalletAddress,
+} from "../../stores/wallet_store";
 import { useParams } from "react-router-dom";
 import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +28,9 @@ const Asset = ({
   asset: TAsset;
   onClick: (asset: TAsset) => void;
 }) => {
-  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({ asset });
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset,
+  });
   return (
     <div
       onClick={() => onClick(asset)}
@@ -56,7 +61,7 @@ const Input = () => {
 
 const DepositModal = () => {
   const isDepositWalletModalOpen = useVaultActionStore(
-    (s) => s.isDepositWalletModalOpen
+    (s) => s.isDepositWalletModalOpen,
   );
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const [open, setOpen] = useState(false);
@@ -76,7 +81,10 @@ const DepositModal = () => {
     enabled: vaultContractId !== undefined,
   });
 
-  const availableTokens = useMemo(() => allAcceptedTokensQuery.data ?? [], [allAcceptedTokensQuery.data]);
+  const availableTokens = useMemo(
+    () => allAcceptedTokensQuery.data ?? [],
+    [allAcceptedTokensQuery.data],
+  );
 
   useEffect(() => {
     useVaultActionStore
@@ -88,7 +96,9 @@ const DepositModal = () => {
     asset: selectedAsset,
   });
 
-  const vaultMeta = vaultUtils.vaults.find((v) => v.vault_id === vaultContractId);
+  const vaultMeta = vaultUtils.vaults.find(
+    (v) => v.vault_id === vaultContractId,
+  );
 
   const exchangeRateForSelectedAsset = assetUtils.useExchangeRateForAsset({
     asset: selectedAsset,
@@ -96,7 +106,7 @@ const DepositModal = () => {
   });
 
   const expectedToReceiveAmount = useMemo(() => {
-    try{
+    try {
       if (exchangeRateForSelectedAsset && vaultMeta) {
         return Big(depositAmount || "0")
           .mul(exchangeRateForSelectedAsset.assetToShare)
@@ -104,10 +114,10 @@ const DepositModal = () => {
           .toFixed();
       }
       return "0";
-    }catch{
-      return "0"
+    } catch {
+      return "0";
     }
-  }, [exchangeRateForSelectedAsset, depositAmount, vaultMeta])
+  }, [exchangeRateForSelectedAsset, depositAmount, vaultMeta]);
 
   const vaultShareMetadataQuery = useQuery({
     ...vaultQueries.getFtMetadataQueryOptions({
@@ -196,7 +206,9 @@ const DepositModal = () => {
             className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none cursor-pointer rounded-l-sm min-w-[95px]"
           >
             <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
-            <span className="text-sm text-white font-semibold">{assetSymbol}</span>
+            <span className="text-sm text-white font-semibold">
+              {assetSymbol}
+            </span>
           </div>
           <div
             onClick={() => {
@@ -212,16 +224,34 @@ const DepositModal = () => {
           </div>
           {open && (
             <div className="absolute left-0 top-full mt-1 w-40 bg-input-inner-background rounded-md shadow-lg z-10">
-              {availableTokens.map((token) => (
-                <Asset
-                  key={"MultiToken" in token ? token.MultiToken.token_id : "ft"}
-                  asset={token}
-                  onClick={(asset) => {
-                    useVaultActionStore.getState().changeDepositAsset({ asset });
-                    setOpen(false);
-                  }}
-                />
-              ))}
+              {availableTokens
+                .filter((e) => {
+                  if ("FungibleToken" in e) {
+                    if (
+                      vaultUtils.DEPRECATED_TOKENS.includes(
+                        e.FungibleToken.contract_id,
+                      )
+                    ) {
+                      return false;
+                    }
+                    return true;
+                  }
+                  return false;
+                })
+                .map((token) => (
+                  <Asset
+                    key={
+                      "MultiToken" in token ? token.MultiToken.token_id : "ft"
+                    }
+                    asset={token}
+                    onClick={(asset) => {
+                      useVaultActionStore
+                        .getState()
+                        .changeDepositAsset({ asset });
+                      setOpen(false);
+                    }}
+                  />
+                ))}
             </div>
           )}
         </div>
@@ -236,7 +266,7 @@ const DepositModal = () => {
               <ArrowLeftRight className="text-gray" size={12} />
               <span>
                 {stringUtils.truncateDecimals(
-                  exchangeRateForSelectedAsset?.assetToShare
+                  exchangeRateForSelectedAsset?.assetToShare,
                 )}{" "}
                 {vaultShareMetadataQuery.data?.symbol}
               </span>
@@ -253,8 +283,7 @@ const DepositModal = () => {
             <span className="text-gray">Expected to receive</span>
             <div className="flex gap-1.5 items-center justify-center">
               <span>
-                {expectedToReceiveAmount}{" "}
-                {vaultShareMetadataQuery.data?.symbol}
+                {expectedToReceiveAmount} {vaultShareMetadataQuery.data?.symbol}
               </span>
               {vaultShareMetadataQuery.data?.icon && (
                 <img

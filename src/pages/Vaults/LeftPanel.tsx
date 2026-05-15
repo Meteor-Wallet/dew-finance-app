@@ -13,6 +13,7 @@ import { CircularProgress } from "../../components/utils/CircularProgress";
 import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 import { assetUtils } from "../../utils/assetUtils";
+import { vaultUtils } from "../../utils/vaultUtils";
 
 const MyPosition2 = () => {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
@@ -61,7 +62,6 @@ const MyPosition2 = () => {
   );
 };
 
-
 type ConfirmButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   isLoading?: boolean;
 };
@@ -92,18 +92,23 @@ const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
   );
 };
 
-
 const AvailableBalanceRow = ({ asset }: { asset: TAsset }) => {
-  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({ asset });
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset,
+  });
   const balance = accountQueries.useAccountBalance({ asset });
 
   return (
     <div className="flex justify-between items-center mt-3">
       <div className="flex gap-2 items-center">
         <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
-        <p className="text-base font-normal text-gray">Available {assetSymbol}</p>
+        <p className="text-base font-normal text-gray">
+          Available {assetSymbol}
+        </p>
       </div>
-      <p className="text-base font-semibold">{balance.data?.formatted ?? "0"}</p>
+      <p className="text-base font-semibold">
+        {balance.data?.formatted ?? "0"}
+      </p>
     </div>
   );
 };
@@ -122,10 +127,18 @@ const AvailableBalances = () => {
   const availableTokens = useMemo(() => {
     return (
       allAcceptedTokensQuery.data?.filter((e) => {
-        if ("FungibleToken" in e && selectedChain === "near") return true;
+        if ("FungibleToken" in e && selectedChain === "near") {
+          if (
+            "FungibleToken" in e &&
+            vaultUtils.DEPRECATED_TOKENS.includes(e.FungibleToken.contract_id)
+          ) {
+            return false;
+          }
+          return true;
+        }
         if ("MultiToken" in e) {
           const tokenInfo = FLAT_LIST_TOKENS.find(
-            (token) => token.defuseAssetId === e.MultiToken.token_id
+            (token) => token.defuseAssetId === e.MultiToken.token_id,
           );
           if (tokenInfo?.chainName === selectedChain) return true;
         }
@@ -134,7 +147,9 @@ const AvailableBalances = () => {
     );
   }, [allAcceptedTokensQuery.data, selectedChain]);
 
-  return availableTokens.map((v, i) => <AvailableBalanceRow key={i} asset={v} />);
+  return availableTokens.map((v, i) => (
+    <AvailableBalanceRow key={i} asset={v} />
+  ));
 };
 
 export default function LeftPanel() {

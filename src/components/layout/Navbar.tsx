@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, Copy, LogOut, X } from "lucide-react";
+import { ChevronDown, Copy, LogOut, PieChart, X } from "lucide-react";
 import Motion from "../utils/Motion";
 import { toast } from "sonner";
 import { useRive } from "@rive-app/react-canvas";
@@ -227,6 +227,14 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
         </Motion>
       </div>
       <hr className="border-card-border" />
+      <Link
+        to="/portfolio"
+        onClick={onClose}
+        className="flex items-center gap-2 w-full text-left px-4 py-4 md:py-3 hover:bg-card-border text-sm"
+      >
+        <PieChart size={16} />
+        My Portfolio
+      </Link>
       <button
         onClick={() => {
           if (connectedWalletAddress) {

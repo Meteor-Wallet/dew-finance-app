@@ -7,6 +7,7 @@ import {
 
 import Homepage from "./pages/Homepage";
 import Policy from "./pages/Policy";
+import Portfolio from "./pages/Portfolio";
 import Vaults from "./pages/Vaults/index";
 import { vaultUtils } from "./utils/vaultUtils";
 import Navbar from "./components/layout/Navbar";
@@ -29,6 +30,7 @@ export default function App() {
         <SimulateModal />
         <Routes>
           <Route path="/" element={<Homepage />} />
+          <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/:vaultContractId" element={<Vaults />} />
           <Route path="/:vaultContractId/policy" element={<Policy />} />
           <Route path="*" element={<Navigate replace to="/" />} />

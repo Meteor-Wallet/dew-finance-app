@@ -74,6 +74,15 @@ const vaults: {
   description?: string;
 }[] = [
   {
+    vault_id: "near.meteor-vaults.near",
+    kernel_id: "kernel-near.meteor-vaults.near",
+    share_price_decimals: 8,
+    share_deciamls: 24,
+    base_asset_decimals: 24,
+    curated_by: "Dew Finance",
+    name: "NEAR Vault"
+  },
+  {
     vault_id: "usdt.meteor-vaults.near",
     kernel_id: "kernel-usdt.meteor-vaults.near",
     share_price_decimals: 8,
@@ -93,11 +102,14 @@ const vaults: {
   }
 ]
 
+const DEPRECATED_TOKENS = ["dew-rneardefi-vault.near"];
+
 export const vaultUtils = {
   isPolicyOfType,
   hasRestrictions,
   withRestrictions,
   decodeInterface,
   DEFAULT_VAULT_CONTRACT_ID,
-  vaults
+  vaults,
+  DEPRECATED_TOKENS
 };
