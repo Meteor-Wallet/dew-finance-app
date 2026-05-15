@@ -410,14 +410,14 @@ const RightPanel = memo(() => {
   const [searchParams, setSearchParams] = useSearchParams();
   const rightTab = (searchParams.get("tab") ?? "overview") as TTab;
 
-  useEffect(() => {
-    const isLarge = window.matchMedia("(min-width: 1024px)").matches;
-    if (isLarge) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      document.getElementById("leftPanelSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [rightTab]);
+  // useEffect(() => {
+  //   const isLarge = window.matchMedia("(min-width: 1024px)").matches;
+  //   if (isLarge) {
+  //     window.scrollTo({ top: 0, behavior: "smooth" });
+  //   } else {
+  //     document.getElementById("leftPanelSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  //   }
+  // }, [rightTab]);
 
   return (
     <div className="w-[calc(100%+_10vw)] ml-[-5vw] lg:ml-0 h-full lg:w-2/3 lg:order-1 order-2">
