@@ -263,6 +263,87 @@ function getContractId(asset: any): string {
   return asset.MultiToken.contract_id;
 }
 
+const VaultPositionCard = ({
+  vault,
+  rawPosition,
+  usdValue,
+  dailyEarningsUsd,
+}: {
+  vault: TVaultConfig;
+  rawPosition: string;
+  usdValue: number | null;
+  dailyEarningsUsd: number | null;
+}) => {
+  const navigate = useNavigate();
+
+  const shareMetadataQuery = useQuery({
+    ...vaultQueries.getFtMetadataQueryOptions({ tokenId: vault.vault_id }),
+  });
+
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({ vaultContractId: vault.vault_id }),
+  });
+
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data ?? null,
+  });
+
+  const shareBalance = useMemo(() => {
+    if (!shareMetadataQuery.data) return "—";
+    try {
+      return Big(rawPosition).div(Big(10).pow(shareMetadataQuery.data.decimals)).toFixed();
+    } catch {
+      return "—";
+    }
+  }, [rawPosition, shareMetadataQuery.data]);
+
+  const dailyEarningsDisplay = useMemo(() => {
+    if (dailyEarningsUsd === null) return null;
+    const formatted = formatUsd(Math.abs(dailyEarningsUsd));
+    const isPositive = dailyEarningsUsd >= 0;
+    return { formatted: `${isPositive ? "+" : "-"}${formatted}`, isPositive };
+  }, [dailyEarningsUsd]);
+
+  return (
+    <div
+      onClick={() => navigate(`/${vault.vault_id}`)}
+      className="bg-[linear-gradient(139deg,#000000,#181822)] border border-dark-border-color rounded-lg p-4 flex items-center justify-between cursor-pointer active:opacity-70 transition"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 relative shrink-0">
+          <img src={vaultIcon} alt="vault" />
+          <img
+            src={assetIcon}
+            className="absolute -bottom-1.25 -right-1.25 w-5.5 h-5.5 rounded-full"
+            alt={assetSymbol}
+          />
+        </div>
+        <div>
+          <p className="font-normal text-sm">{vault.name}</p>
+          <p className="text-xs text-gray font-normal">Curated by {vault.curated_by}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-0.5 shrink-0 ml-2">
+        <div className="flex items-center gap-1.5">
+          {shareMetadataQuery.data?.icon && (
+            <img src={shareMetadataQuery.data.icon} className="w-4 h-4" alt={shareMetadataQuery.data.symbol} />
+          )}
+          <span className="font-semibold text-sm">{shareBalance}</span>
+        </div>
+        <span className="text-xs text-gray">
+          {shareMetadataQuery.data?.symbol ?? "—"}
+          {usdValue !== null && ` · ${formatUsd(usdValue)}`}
+        </span>
+        {dailyEarningsDisplay && (
+          <span className={`text-xs font-medium mt-0.5 ${dailyEarningsDisplay.isPositive ? "text-green" : "text-red-400"}`}>
+            {dailyEarningsDisplay.formatted}/day
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const VaultPositionRow = ({
   vault,
   rawPosition,
@@ -505,7 +586,8 @@ function PortfolioContent({ nearAddress }: { nearAddress: string }) {
       </Motion>
 
       <Motion direction="left" duration={0.6} delay={0.4}>
-        <div className="bg-[linear-gradient(139deg,#000000,#181822)] rounded-lg border border-dark-border-color overflow-hidden mb-6">
+        {/* Desktop table */}
+        <div className="hidden md:block bg-[linear-gradient(139deg,#000000,#181822)] rounded-lg border border-dark-border-color overflow-hidden mb-6">
           <table className="w-full text-left border-collapse">
             <thead className="bg-[#0F0F0F] border-b border-dark-border-color text-gray text-sm">
               <tr>
@@ -543,6 +625,26 @@ function PortfolioContent({ nearAddress }: { nearAddress: string }) {
                 ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-3 mb-6">
+          {!allSettled && (
+            <p className="text-center text-gray text-sm py-6">Loading positions…</p>
+          )}
+          {allSettled && vaultsWithPosition.length === 0 && (
+            <p className="text-center text-gray text-sm py-6">You have no positions in any vault yet.</p>
+          )}
+          {allSettled &&
+            vaultsWithPosition.map(({ vault, rawPosition, usdValue, dailyEarningsUsd }) => (
+              <VaultPositionCard
+                key={vault.vault_id}
+                vault={vault}
+                rawPosition={rawPosition}
+                usdValue={usdValue}
+                dailyEarningsUsd={dailyEarningsUsd}
+              />
+            ))}
         </div>
       </Motion>
 

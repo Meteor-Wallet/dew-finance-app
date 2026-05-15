@@ -130,6 +130,71 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
   );
 };
 
+const VaultCard = ({ vault }: { vault: TVaultConfig }) => {
+  const navigate = useNavigate();
+  const tokenPricesQuery = useQuery(rheaQueries.getTokenPrices());
+  const baseAssetQuery = useQuery({
+    ...vaultQueries.getVaultBaseAssetQueryOptions({ vaultContractId: vault.vault_id }),
+  });
+  const balanceQuery = useQuery({
+    ...vaultQueries.getHistoricalBalanceQueryOptions({
+      vaultContractId: vault.vault_id,
+      asset: baseAssetQuery.data!,
+    }),
+    enabled: baseAssetQuery.data !== undefined,
+  });
+  const vaultAprQuery = useQuery({
+    ...vaultQueries.getVaultAprQueryOptions({ vaultId: vault.vault_id }),
+  });
+  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({
+    asset: baseAssetQuery.data ?? null,
+  });
+
+  const tvlUsdDisplay = useMemo(() => {
+    if (!balanceQuery.data || !tokenPricesQuery.data || !baseAssetQuery.data) return "—";
+    const usd = computeUsdTvl(balanceQuery.data, baseAssetQuery.data, vault.share_price_decimals, tokenPricesQuery.data);
+    return usd !== null ? formatUsd(usd) : "—";
+  }, [balanceQuery.data, tokenPricesQuery.data, baseAssetQuery.data, vault.share_price_decimals]);
+
+  const aprDisplay = useMemo(() => {
+    if (!vaultAprQuery.data) return "—";
+    try {
+      return `${Big(vaultAprQuery.data).mul(100).round(2, Big.roundDown).toFixed()}%`;
+    } catch {
+      return "—";
+    }
+  }, [vaultAprQuery.data]);
+
+  return (
+    <div
+      onClick={() => navigate(`/${vault.vault_id}`)}
+      className="bg-[linear-gradient(139deg,#000000,#181822)] border border-dark-border-color rounded-lg p-4 flex items-center justify-between cursor-pointer active:opacity-70 transition"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 relative shrink-0">
+          <img src={vaultIcon} alt="vault" />
+          <img src={assetIcon} className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full" alt={assetSymbol} />
+        </div>
+        <div>
+          <p className="font-normal text-sm">{vault.name}</p>
+          <p className="text-xs text-gray">Curated by {vault.curated_by}</p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <img src={assetIcon} className="w-3.5 h-3.5" alt={assetSymbol} />
+            <span className="text-xs text-gray">{assetSymbol}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+        <div className="flex items-baseline gap-1">
+          <span className="text-green font-semibold text-base">{aprDisplay}</span>
+          <span className="text-xs text-gray">APY</span>
+        </div>
+        <span className="text-xs text-gray">{tvlUsdDisplay} TVL</span>
+      </div>
+    </div>
+  );
+};
+
 export default function Homepage() {
   const tokenPricesQuery = useQuery(rheaQueries.getTokenPrices());
 
@@ -170,7 +235,7 @@ export default function Homepage() {
 
       {/* Hero Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="col-span-2 bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-lg shadow-lg border border-dark-border-color relative flex flex-col justify-between overflow-hidden min-h-[300px]">
+        <div className="lg:col-span-2 bg-[linear-gradient(139deg,#000000,#0C0C0C)] rounded-lg shadow-lg border border-dark-border-color relative flex flex-col justify-between overflow-hidden min-h-[300px]">
           <div>
             <div className="absolute w-full h-full left-0 top-0 z-1 p-10">
               <h1 className="text-3xl font-medium mb-2 max-w-[60%]">
@@ -206,8 +271,8 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Vaults Table */}
-      <div className="mt-10 bg-[linear-gradient(139deg,#000000,#181822)] rounded-lg border border-dark-border-color overflow-hidden mb-[50px]">
+      {/* Vaults Table — desktop */}
+      <div className="mt-10 hidden md:block bg-[linear-gradient(139deg,#000000,#181822)] rounded-lg border border-dark-border-color overflow-hidden mb-[50px]">
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#0F0F0F] border-b border-dark-border-color text-gray text-sm">
             <tr>
@@ -224,6 +289,13 @@ export default function Homepage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Vaults Cards — mobile */}
+      <div className="mt-10 md:hidden space-y-3 mb-[50px]">
+        {vaultUtils.vaults.map((vault) => (
+          <VaultCard key={vault.vault_id} vault={vault} />
+        ))}
       </div>
     </div>
   );
