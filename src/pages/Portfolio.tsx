@@ -104,16 +104,14 @@ const VaultPositionRow = ({
               alt={shareMetadataQuery.data.symbol}
             />
           )}
-          <span className="text-base font-normal text-gray">
-            {shareMetadataQuery.data?.symbol ?? "—"}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-base">{shareBalance}</span>
+            <span className="text-xs text-gray font-normal">
+              {shareMetadataQuery.data?.symbol ?? "—"}
+              {usdValue !== null && <span className="ml-1">· {formatUsd(usdValue)}</span>}
+            </span>
+          </div>
         </div>
-      </td>
-
-      <td className="px-6 py-4 font-semibold text-base">{shareBalance}</td>
-
-      <td className="px-6 py-4 font-medium text-base">
-        {usdValue !== null ? formatUsd(usdValue) : "—"}
       </td>
 
       <td className="px-6 py-4 font-medium text-base">
@@ -278,9 +276,7 @@ function PortfolioContent({ nearAddress }: { nearAddress: string }) {
             <thead className="bg-[#0F0F0F] border-b border-dark-border-color text-gray text-sm">
               <tr>
                 <th className="px-6 py-4 font-normal">Vault</th>
-                <th className="px-6 py-4 font-normal">Share Token</th>
                 <th className="px-6 py-4 font-normal">My Balance</th>
-                <th className="px-6 py-4 font-normal">Value (USD)</th>
                 <th className="px-6 py-4 font-normal">Daily Earnings</th>
                 <th className="px-6 py-4 font-normal"></th>
               </tr>
@@ -288,14 +284,14 @@ function PortfolioContent({ nearAddress }: { nearAddress: string }) {
             <tbody className="divide-y divide-dark-border-color">
               {!allSettled && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-gray text-sm">
+                  <td colSpan={4} className="px-6 py-10 text-center text-gray text-sm">
                     Loading positions…
                   </td>
                 </tr>
               )}
               {allSettled && vaultsWithPosition.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-gray text-sm">
+                  <td colSpan={4} className="px-6 py-10 text-center text-gray text-sm">
                     You have no positions in any vault yet.
                   </td>
                 </tr>
