@@ -15,8 +15,242 @@ import Dew2 from "../assets/dew2.svg";
 import Motion from "../components/utils/Motion";
 import TVL from "../assets/fee_icon3.svg";
 import TV from "../assets/fee_icon1.svg";
+import { vaultMutations } from "../mutations/vault";
 
 type TVaultConfig = (typeof vaultUtils.vaults)[number];
+
+type TMergedPendingRedeem = {
+  asset: { FungibleToken: { contract_id: string } };
+  rawAssetNumerator: string | null;
+  allConfirmed: boolean;
+};
+
+const PortfolioPendingRedeemBanner = ({
+  merged,
+  shareDecimals,
+  sharePriceDecimals,
+  vaultName,
+  vaultId,
+}: {
+  merged: TMergedPendingRedeem;
+  shareDecimals: number;
+  sharePriceDecimals: number;
+  vaultName: string;
+  vaultId: string;
+}) => {
+  const navigate = useNavigate();
+  const { assetIcon, assetSymbol, assetDecimals } = assetUtils.useAssetSymbolAndIcon({ asset: merged.asset });
+
+  const amountFormatted = useMemo(() => {
+    if (!merged.rawAssetNumerator || assetDecimals === null) return "—";
+    try {
+      return Big(merged.rawAssetNumerator)
+        .div(Big(10).pow(shareDecimals + sharePriceDecimals))
+        .round(assetDecimals, Big.roundDown)
+        .toFixed();
+    } catch {
+      return "—";
+    }
+  }, [merged.rawAssetNumerator, shareDecimals, sharePriceDecimals, assetDecimals]);
+
+  return (
+    <div className={`flex items-start gap-3 px-4 py-3 rounded-sm text-sm ${merged.allConfirmed ? "bg-green/10 border border-green/30 text-green" : "bg-amber-950/60 border border-amber-600/50 text-amber-400"}`}>
+      <span className="shrink-0 mt-0.5">⏳</span>
+      <div className="flex flex-col gap-0.5 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <span>
+            {merged.allConfirmed ? "Your redeem of" : "Awaiting confirmation for"}{" "}
+            <span className="font-semibold">{amountFormatted}</span>{" "}
+            <img src={assetIcon} alt={assetSymbol} className="inline w-4 h-4 mx-0.5 align-middle" />
+            <span className="font-semibold">{assetSymbol}</span>{" "}
+            {merged.allConfirmed ? "is being processed by the vault." : "is pending."}
+          </span>
+          <button
+            onClick={() => navigate(`/${vaultId}`)}
+            className="shrink-0 text-xs opacity-60 hover:opacity-100 underline underline-offset-2 whitespace-nowrap"
+          >
+            {vaultName}
+          </button>
+        </div>
+        {merged.allConfirmed && (
+          <span className="opacity-70">The vault is processing your confirmed redeem. Funds will be claimable shortly.</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const PendingRedeemsSection = ({ nearAddress }: { nearAddress: string }) => {
+  const pendingRedeemsQueries = useQueries({
+    queries: vaultUtils.vaults.map((v) =>
+      vaultQueries.getAccountPendingRedeemsQueryOptions({ vaultId: v.vault_id, accountId: nearAddress }),
+    ),
+  });
+
+  const shareMetadataQueries = useQueries({
+    queries: vaultUtils.vaults.map((v) =>
+      vaultQueries.getFtMetadataQueryOptions({ tokenId: v.vault_id }),
+    ),
+  });
+
+  const rows = useMemo(() => {
+    return vaultUtils.vaults.flatMap((vault, i) => {
+      const items = pendingRedeemsQueries[i].data;
+      if (!items || items.length === 0) return [];
+
+      const sharePriceDecimals = vault.share_price_decimals ?? 0;
+      const shareDecimals = shareMetadataQueries[i].data?.decimals ?? 0;
+
+      const map = new Map<string, TMergedPendingRedeem>();
+      for (const item of items) {
+        const { asset, shares, confirmed, confirmed_share_price } = item.operation.Withdraw;
+        const contractId = asset.FungibleToken.contract_id;
+        const existing = map.get(contractId);
+        const contribution =
+          confirmed && confirmed_share_price
+            ? Big(shares).mul(Big(confirmed_share_price)).toFixed()
+            : null;
+        if (existing) {
+          existing.allConfirmed = existing.allConfirmed && confirmed;
+          if (existing.rawAssetNumerator !== null && contribution !== null) {
+            existing.rawAssetNumerator = Big(existing.rawAssetNumerator).add(contribution).toFixed();
+          } else {
+            existing.rawAssetNumerator = null;
+          }
+        } else {
+          map.set(contractId, { asset, rawAssetNumerator: contribution, allConfirmed: confirmed });
+        }
+      }
+
+      return Array.from(map.values()).map((merged) => ({
+        key: `${vault.vault_id}-${merged.asset.FungibleToken.contract_id}`,
+        vault,
+        merged,
+        shareDecimals,
+        sharePriceDecimals,
+      }));
+    });
+  }, [pendingRedeemsQueries, shareMetadataQueries]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Motion direction="left" duration={0.6} delay={0.5}>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-3">Pending Redeems</h2>
+        <div className="space-y-2">
+          {rows.map(({ key, vault, merged, shareDecimals, sharePriceDecimals }) => (
+            <PortfolioPendingRedeemBanner
+              key={key}
+              merged={merged}
+              shareDecimals={shareDecimals}
+              sharePriceDecimals={sharePriceDecimals}
+              vaultName={vault.name}
+              vaultId={vault.vault_id}
+            />
+          ))}
+        </div>
+      </div>
+    </Motion>
+  );
+};
+
+const PortfolioClaimableAssetBanner = ({
+  asset,
+  rawAmount,
+  vaultId,
+  nearAddress,
+  vaultName,
+}: {
+  asset: { FungibleToken: { contract_id: string } };
+  rawAmount: string;
+  vaultId: string;
+  nearAddress: string;
+  vaultName: string;
+}) => {
+  const { assetIcon, assetSymbol, assetDecimals } = assetUtils.useAssetSymbolAndIcon({ asset });
+  const claimMutation = vaultMutations.useClaimClaimableAssetsMutation();
+
+  const amountFormatted = useMemo(() => {
+    if (assetDecimals === null) return "—";
+    try {
+      return Big(rawAmount).div(Big(10).pow(assetDecimals)).round(assetDecimals, Big.roundDown).toFixed();
+    } catch {
+      return "—";
+    }
+  }, [rawAmount, assetDecimals]);
+
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 rounded-sm text-sm bg-blue-950/60 border border-blue-500/50 text-blue-300">
+      <span className="shrink-0 mt-0.5">💰</span>
+      <div className="flex flex-col gap-1 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <span>
+            <span className="font-semibold">{amountFormatted}</span>{" "}
+            <img src={assetIcon} alt={assetSymbol} className="inline w-4 h-4 mx-0.5 align-middle" />
+            <span className="font-semibold">{assetSymbol}</span>{" "}
+            is ready to claim from <span className="font-medium">{vaultName}</span>.
+          </span>
+          <button
+            disabled={claimMutation.isPending}
+            onClick={() => claimMutation.mutate({ vaultId, accountId: nearAddress, asset })}
+            className="shrink-0 px-4 py-1 bg-secondary transition-opacity duration-200 hover:opacity-50 rounded-sm font-normal text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {claimMutation.isPending ? "Claiming…" : "Claim"}
+          </button>
+        </div>
+        <span className="opacity-70">Your redeemed funds are available. Claim them from the vault.</span>
+      </div>
+    </div>
+  );
+};
+
+const ClaimableAssetsSection = ({ nearAddress }: { nearAddress: string }) => {
+  const claimableQueries = useQueries({
+    queries: vaultUtils.vaults.map((v) =>
+      vaultQueries.getAccountClaimableAssetsQueryOptions({ vaultId: v.vault_id, accountId: nearAddress }),
+    ),
+  });
+
+  const items = useMemo(() => {
+    return vaultUtils.vaults.flatMap((vault, i) => {
+      const data = claimableQueries[i].data;
+      if (!data) return [];
+      return data
+        .filter(([, rawAmount]) => {
+          try { return Big(rawAmount).gt(0); } catch { return false; }
+        })
+        .map(([asset, rawAmount]) => ({
+          key: `${vault.vault_id}-${asset.FungibleToken.contract_id}`,
+          vault,
+          asset,
+          rawAmount,
+        }));
+    });
+  }, [claimableQueries]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <Motion direction="left" duration={0.6} delay={0.55}>
+      <div className="mb-12.5">
+        <h2 className="text-xl font-semibold mb-3">Ready to Claim</h2>
+        <div className="space-y-2">
+          {items.map(({ key, vault, asset, rawAmount }) => (
+            <PortfolioClaimableAssetBanner
+              key={key}
+              asset={asset}
+              rawAmount={rawAmount}
+              vaultId={vault.vault_id}
+              nearAddress={nearAddress}
+              vaultName={vault.name}
+            />
+          ))}
+        </div>
+      </div>
+    </Motion>
+  );
+};
 
 function formatUsd(value: number): string {
   if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
@@ -271,7 +505,7 @@ function PortfolioContent({ nearAddress }: { nearAddress: string }) {
       </Motion>
 
       <Motion direction="left" duration={0.6} delay={0.4}>
-        <div className="bg-[linear-gradient(139deg,#000000,#181822)] rounded-lg border border-dark-border-color overflow-hidden mb-12.5">
+        <div className="bg-[linear-gradient(139deg,#000000,#181822)] rounded-lg border border-dark-border-color overflow-hidden mb-6">
           <table className="w-full text-left border-collapse">
             <thead className="bg-[#0F0F0F] border-b border-dark-border-color text-gray text-sm">
               <tr>
@@ -311,6 +545,9 @@ function PortfolioContent({ nearAddress }: { nearAddress: string }) {
           </table>
         </div>
       </Motion>
+
+      <PendingRedeemsSection nearAddress={nearAddress} />
+      <ClaimableAssetsSection nearAddress={nearAddress} />
     </div>
   );
 }
