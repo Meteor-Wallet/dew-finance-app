@@ -566,7 +566,7 @@ const getAssetBalanceQueryOptions = ({
         asset,
       });
 
-      if(!balance){
+      if (!balance) {
         throw new Error("Failed to fetch asset balance");
       }
 
@@ -590,40 +590,41 @@ export const zMeteorApiResponseAnyError = z.union([
   zMeteorApiResponse_Ok,
 ]);
 
-const getVaultAprQueryOptions = ({
-  vaultId
-}: {
-  vaultId: string;
-}) => {
+const getVaultAprQueryOptions = ({ vaultId }: { vaultId: string }) => {
   return queryOptions({
     queryKey: ["vaultApr", vaultId],
     queryFn: async () => {
-      const response = await fetch(`https://backend-v2.meteorwallet.app/api/dew_vault/get_meteor_savings_apr`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `https://backend-v2.meteorwallet.app/api/dew_vault/get_meteor_savings_apr`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            lpTokenId: vaultId,
+          }),
         },
-        body: JSON.stringify({
-          lpTokenId: vaultId
-        })
-      })
+      );
 
       const json = await response.json();
 
       const structureValidate = zMeteorApiResponseAnyError.safeParse(json);
 
-      if(!structureValidate.success){
+      if (!structureValidate.success) {
         throw new Error("Invalid response structure");
       }
 
-      if(structureValidate.data.ok){
+      if (structureValidate.data.ok) {
         return structureValidate.data.value.apr as string;
       } else {
-        throw new Error(`API error: ${JSON.stringify(structureValidate.data.error)}`);
+        throw new Error(
+          `API error: ${JSON.stringify(structureValidate.data.error)}`,
+        );
       }
-    }
-  })
-}
+    },
+  });
+};
 
 const zGetAccountPendingRedeemsResponse = z.array(
   z.object({
@@ -645,7 +646,7 @@ const zGetAccountPendingRedeemsResponse = z.array(
 
 const getAccountPendingRedeemsQueryOptions = ({
   vaultId,
-  accountId
+  accountId,
 }: {
   vaultId: string;
   accountId: string;
@@ -653,20 +654,64 @@ const getAccountPendingRedeemsQueryOptions = ({
   return queryOptions({
     queryKey: ["account", "pendingRedeems", { vaultId, accountId }],
     queryFn: async () => {
-      const result = await nearUtils.provider.callFunction(vaultId, "get_account_pending_redeems", {
-        account_id: accountId
-      });
+      const result = await nearUtils.provider.callFunction(
+        vaultId,
+        "get_account_pending_redeems",
+        {
+          account_id: accountId,
+        },
+      );
 
       const parsed = zGetAccountPendingRedeemsResponse.safeParse(result);
 
-      if(!parsed.success){
+      if (!parsed.success) {
         throw new Error("Invalid response structure for pending redeems");
       }
 
       return parsed.data;
-    }
-  })
-}
+    },
+  });
+};
+
+const zGetAccountClaimableAssetsResponse = z.array(
+  z.tuple([
+    z.object({
+      FungibleToken: z.object({
+        contract_id: z.string(),
+      }),
+    }),
+    z.string(),
+  ]),
+);
+
+const getAccountClaimableAssetsQueryOptions = ({
+  vaultId,
+  accountId,
+}: {
+  vaultId: string;
+  accountId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["account", "claimableAssets", { vaultId, accountId }],
+    queryFn: async () => {
+      const result = await nearUtils.provider.callFunction(
+        vaultId,
+        "get_all_claimable_asset_amounts",
+        {
+          account_id: accountId,
+        },
+      );
+
+      const parsed = zGetAccountClaimableAssetsResponse.safeParse(result);
+
+      if (!parsed.success) {
+        throw new Error("Invalid response structure for claimable assets");
+      }
+
+      return parsed.data;
+    },
+  });
+};
 
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
@@ -687,5 +732,6 @@ export const vaultQueries = {
   getBlockinfoQueryOptions,
   getAssetBalanceQueryOptions,
   getVaultAprQueryOptions,
-  getAccountPendingRedeemsQueryOptions
+  getAccountPendingRedeemsQueryOptions,
+  getAccountClaimableAssetsQueryOptions,
 };

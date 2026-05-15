@@ -67,6 +67,80 @@ const PendingRedeemBanner = ({
   );
 };
 
+const ClaimableAssetBanner = ({
+  asset,
+  rawAmount,
+}: {
+  asset: { FungibleToken: { contract_id: string } };
+  rawAmount: string;
+}) => {
+  const { assetIcon, assetSymbol, assetDecimals } = assetUtils.useAssetSymbolAndIcon({ asset });
+
+  const amountFormatted = useMemo(() => {
+    if (assetDecimals === null) return "—";
+    try {
+      return Big(rawAmount)
+        .div(Big(10).pow(assetDecimals))
+        .round(assetDecimals, Big.roundDown)
+        .toFixed();
+    } catch {
+      return "—";
+    }
+  }, [rawAmount, assetDecimals]);
+
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 rounded-sm text-sm bg-blue-950/60 border border-blue-500/50 text-blue-300">
+      <span className="shrink-0 mt-0.5">💰</span>
+      <div className="flex flex-col gap-0.5">
+        <span>
+          <span className="font-semibold">{amountFormatted}</span>{" "}
+          <img src={assetIcon} alt={assetSymbol} className="inline w-4 h-4 mx-0.5 align-middle" />
+          <span className="font-semibold">{assetSymbol}</span>{" "}
+          is ready to claim.
+        </span>
+        <span className="opacity-70">Your redeemed funds are available. Claim them from the vault.</span>
+      </div>
+    </div>
+  );
+};
+
+const ClaimableAssets = () => {
+  const { vaultContractId } = useParams<{ vaultContractId: string }>();
+  const nearAddress = useWalletStore((s) => s.nearAccountId);
+
+  const claimableAssetsQuery = useQuery({
+    ...vaultQueries.getAccountClaimableAssetsQueryOptions({
+      vaultId: vaultContractId!,
+      accountId: nearAddress!,
+    }),
+    enabled: vaultContractId !== undefined && nearAddress !== null,
+  });
+
+  const claimableItems = useMemo(() => {
+    return (claimableAssetsQuery.data ?? []).filter(([, rawAmount]) => {
+      try {
+        return Big(rawAmount).gt(0);
+      } catch {
+        return false;
+      }
+    });
+  }, [claimableAssetsQuery.data]);
+
+  if (claimableItems.length === 0) return null;
+
+  return (
+    <div className="mt-4 space-y-2">
+      {claimableItems.map(([asset, rawAmount]) => (
+        <ClaimableAssetBanner
+          key={asset.FungibleToken.contract_id}
+          asset={asset}
+          rawAmount={rawAmount}
+        />
+      ))}
+    </div>
+  );
+};
+
 const PendingRedeems = () => {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const nearAddress = useWalletStore((s) => s.nearAccountId);
@@ -345,6 +419,7 @@ export default function LeftPanel() {
       </Motion>
 
       <Motion direction="right" duration={0.6} delay={0.7}>
+        <ClaimableAssets />
         <PendingRedeems />
       </Motion>
 
