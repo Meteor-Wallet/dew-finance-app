@@ -307,7 +307,7 @@ const VaultSettingsTab = ({ vaultContractId }: { vaultContractId: string }) => {
                       onMouseLeave={() => setHoverAddress(null)}
                     >
                       <a
-                        href={`https://etherscan.io/address/${addr}`}
+                        href={`https://nearblocks.io/address/${addr}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-gray truncate max-w-[250px] underline"
