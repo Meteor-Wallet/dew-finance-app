@@ -79,6 +79,8 @@ const getVaultConfigQueryOptions = ({
 
       return zVaultConfig.parse(vaultConfig);
     },
+    // 5 mins stale time
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -235,6 +237,8 @@ const getAllRoleAssignmentsQueryOptions = ({
         addresses,
       }));
     },
+    // 5 mins stale time
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -260,6 +264,8 @@ const getPolicyCountQueryOptions = ({
 
       return policyCount;
     },
+    // 5 mins stale time
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -397,6 +403,8 @@ const getAllPoliciesInfiniteQueryOptions = ({
       }
       return Math.max(0, firstPageParam - limit);
     },
+    // 5 mins stale time
+    staleTime: 5 * 60 * 1000,
   });
 };
 

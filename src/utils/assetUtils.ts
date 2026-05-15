@@ -4,30 +4,17 @@ import { vaultQueries, type TAsset } from "../queries/vault";
 import { useMemo } from "react";
 import { isEqual } from "es-toolkit";
 import Big from "big.js";
-import { nearUtils } from "./nearUtils";
-
-type FtMetadata = {
-  spec: string;
-  name: string;
-  symbol: string;
-  icon: string | null;
-  decimals: number;
-};
 
 const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
   const fungibleTokenId =
     asset && "FungibleToken" in asset ? asset.FungibleToken.contract_id : null;
 
   const ftMetadataQuery = useQuery({
-    queryKey: ["ft_metadata", fungibleTokenId],
-    queryFn: async () =>
-      nearUtils.provider.callFunction(
-        fungibleTokenId!,
-        "ft_metadata",
-        {}
-      ) as Promise<FtMetadata>,
+    ...vaultQueries.getFtMetadataQueryOptions({
+      tokenId: fungibleTokenId!
+    }),
     enabled: fungibleTokenId !== null,
-  });
+  })
 
   let assetSymbol = "";
   let assetIcon = "";
