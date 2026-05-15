@@ -61,7 +61,6 @@ const RedeemModal = () => {
     (s) => s.isRedeemWalletModalOpen,
   );
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
-  const [open, setOpen] = useState(false);
 
   const selectedChain = useWalletStore((s) => s.selectedChain);
   const connectedWalletAddress = useConnectedWalletAddress();
@@ -72,8 +71,8 @@ const RedeemModal = () => {
   const withdrawAmount = useVaultActionStore((s) => s.withdrawAmount);
 
   const allAcceptedTokensQuery = useQuery({
-    ...vaultQueries.getAllAcceptedTokensQueryOptions({
-      vaultContractId: vaultContractId!,
+    ...vaultQueries.getAvailableRedeemAssetsQueryOptions({
+      vaultId: vaultContractId!,
     }),
     enabled: vaultContractId !== undefined,
   });
@@ -230,7 +229,7 @@ const RedeemModal = () => {
           <div className="flex items-stretch rounded-sm overflow-hidden bg-input-background focus-within:ring-2 focus-within:ring-input-focus transition">
             <div
               id="dropdown"
-              onClick={() => setOpen(!open)}
+              onClick={() => {}}
               className="flex items-center gap-2 bg-input-inner-background px-4 select-none cursor-pointer shrink-0"
             >
               <img
@@ -256,22 +255,6 @@ const RedeemModal = () => {
               </span>
             </div>
           </div>
-          {open && (
-            <div className="absolute left-0 top-full mt-1 w-40 bg-input-inner-background rounded-md shadow-lg z-10">
-              {availableTokens.map((asset) => (
-                <Asset
-                  key={"MultiToken" in asset ? asset.MultiToken.token_id : "ft"}
-                  asset={asset}
-                  onClick={(a) => {
-                    useVaultActionStore
-                      .getState()
-                      .changeWithdrawAsset({ asset: a });
-                    setOpen(false);
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         <p className="text-sm mb-2 mt-5">Transaction Details</p>

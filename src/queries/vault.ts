@@ -57,6 +57,27 @@ const getAllAcceptedTokensQueryOptions = ({
   });
 };
 
+const getAvailableRedeemAssetsQueryOptions = ({vaultId}: {vaultId: string}) => {
+  return queryOptions({
+    queryKey: ["vault", "availableRedeemAssets", vaultId],
+    queryFn: async () => {
+      const assets = await nearUtils.provider.callFunction<TAsset[]>(
+        vaultId,
+        "get_available_redeem_assets",
+        {},
+      );
+
+      if(!assets){
+        throw new Error("Failed to fetch available redeem assets");
+      }
+
+      return assets
+    },
+    // 5 mins stale time
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
 const zVaultConfig = z.object({
   share_price_decimals: z.number(),
   management_fee_bps: z.number(),
@@ -742,4 +763,5 @@ export const vaultQueries = {
   getVaultAprQueryOptions,
   getAccountPendingRedeemsQueryOptions,
   getAccountClaimableAssetsQueryOptions,
+  getAvailableRedeemAssetsQueryOptions
 };
