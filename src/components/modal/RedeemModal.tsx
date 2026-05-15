@@ -24,7 +24,7 @@ const Input = () => {
     <input
       type="text"
       placeholder="0.0"
-      className="w-full pl-31 pr-16 py-3 rounded-sm bg-input-background text-white placeholder-gray-500 text-base outline-hidden focus:ring-2 focus:ring-input-focus focus:border-input-focus transition"
+      className="flex-1 min-w-0 px-3 py-3 bg-input-background text-white placeholder-gray-500 text-base outline-hidden transition"
       value={withdrawAmount}
       onChange={(e) =>
         useVaultActionStore
@@ -227,30 +227,34 @@ const RedeemModal = () => {
         </div>
 
         <div className="relative md:max-w-md mt-1">
-          <Input />
-          <div
-            id="dropdown"
-            onClick={() => setOpen(!open)}
-            className="absolute top-0 h-full flex items-center gap-2 bg-input-inner-background px-4 py-1 select-none cursor-pointer rounded-l-sm min-w-[95px]"
-          >
-            <img
-              src={vaultShareMetadataQuery.data?.icon || ""}
-              alt={vaultShareMetadataQuery.data?.symbol}
-              className="w-6 h-6"
-            />
-            <span className="text-sm text-white font-semibold">
-              {vaultShareMetadataQuery.data?.symbol}
-            </span>
-          </div>
-          <div
-            onClick={() =>
-              useVaultActionStore
-                .getState()
-                .updateWithdrawAmount({ amount: myPosition })
-            }
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm cursor-pointer transition-opacity duration-200 hover:opacity-50"
-          >
-            Max
+          <div className="flex items-stretch rounded-sm overflow-hidden bg-input-background focus-within:ring-2 focus-within:ring-input-focus transition">
+            <div
+              id="dropdown"
+              onClick={() => setOpen(!open)}
+              className="flex items-center gap-2 bg-input-inner-background px-4 select-none cursor-pointer shrink-0"
+            >
+              <img
+                src={vaultShareMetadataQuery.data?.icon || ""}
+                alt={vaultShareMetadataQuery.data?.symbol}
+                className="w-6 h-6"
+              />
+              <span className="text-sm text-white font-semibold whitespace-nowrap">
+                {vaultShareMetadataQuery.data?.symbol}
+              </span>
+            </div>
+            <Input />
+            <div
+              onClick={() =>
+                useVaultActionStore
+                  .getState()
+                  .updateWithdrawAmount({ amount: myPosition })
+              }
+              className="flex items-center px-3 bg-input-background cursor-pointer transition-opacity duration-200 hover:opacity-50"
+            >
+              <span className="bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm">
+                Max
+              </span>
+            </div>
           </div>
           {open && (
             <div className="absolute left-0 top-full mt-1 w-40 bg-input-inner-background rounded-md shadow-lg z-10">
