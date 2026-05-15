@@ -242,7 +242,7 @@ const useWithdrawFromVaultMutation = () => {
       const availableLiquidity = await queryClient.fetchQuery({
         ...vaultQueries.getAssetBalanceQueryOptions({
           vaultId: vaultContractId,
-          asset
+          asset,
         }),
       });
 
@@ -256,11 +256,16 @@ const useWithdrawFromVaultMutation = () => {
       });
       transactions.push({
         actions: [
-          ftCall(isLiquiditySufficient ? "redeem" : "request_redeem", {
-            shares: shareAmountStr,
-            asset,
-            min_asset_amount: minimumAssetAmount.toFixed(0, Big.roundDown),
-          }, "1", "300000000000000"),
+          ftCall(
+            isLiquiditySufficient ? "redeem" : "request_redeem",
+            {
+              shares: shareAmountStr,
+              asset,
+              min_asset_amount: minimumAssetAmount.toFixed(0, Big.roundDown),
+            },
+            "1",
+            "300000000000000",
+          ),
         ],
         receiverId: vaultContractId,
       });
@@ -277,7 +282,110 @@ const useWithdrawFromVaultMutation = () => {
   });
 };
 
+const useClaimClaimableAssetsMutation = () => {
+  const toastIdRef = useRef<number | string>(undefined);
+
+  return useMutation({
+    onError: (error) => {
+      toast.error("Something went wrong", {
+        description: error.message,
+        id: toastIdRef.current,
+      });
+    },
+    onSuccess: (_data, params) => {
+      queryClient.invalidateQueries(
+        vaultQueries.getMyPositionQueryOptions({
+          vaultContractId: params.vaultId,
+          nearAddress: params.accountId,
+        }),
+      );
+      queryClient.invalidateQueries(
+        vaultQueries.getAccountClaimableAssetsQueryOptions({
+          vaultId: params.vaultId,
+          accountId: params.accountId,
+        }),
+      );
+    },
+    mutationFn: async ({
+      vaultId,
+      accountId,
+      asset,
+    }: {
+      vaultId: string;
+      accountId: string;
+      asset: TAsset;
+    }) => {
+      if ("FungibleToken" in asset) {
+        toastIdRef.current = toast.loading("Claiming", {
+          description: "Checking storage deposit",
+        });
+        const isStorageDepositedToWithdrawalToken =
+          await queryClient.fetchQuery(
+            vaultQueries.getCheckIsStorageDepositedQueryOptions({
+              vaultContractId: asset.FungibleToken.contract_id,
+              nearAddress: accountId,
+            }),
+          );
+
+        const transactions: {
+          receiverId: string;
+          actions: ConnectorAction[];
+        }[] = [];
+
+        if (!isStorageDepositedToWithdrawalToken) {
+          transactions.push({
+            actions: [
+              ftCall(
+                "storage_deposit",
+                {
+                  account_id: accountId,
+                  registration_only: true,
+                },
+                "12500000000000000000000",
+              ),
+            ],
+            receiverId: asset.FungibleToken.contract_id,
+          });
+        }
+
+        transactions.push({
+          actions: [
+            ftCall(
+              "claim_assets",
+              {
+                asset,
+              },
+              "0",
+              "300000000000000",
+            ),
+          ],
+          receiverId: vaultId,
+        });
+
+        toast.loading("Claiming", {
+          description: "Claiming assets from vault",
+          id: toastIdRef.current,
+        });
+
+        const { wallet } = await nearConnector.getConnectedWallet();
+
+        await wallet.signAndSendTransactions({
+          transactions,
+        });
+
+        toast.success("Claiming", {
+          description: "Claim successfully",
+          id: toastIdRef.current,
+        });
+      }
+
+      throw new Error("Only fungible token claim is supported");
+    },
+  });
+};
+
 export const vaultMutations = {
   useDepositToVaultMutation,
   useWithdrawFromVaultMutation,
+  useClaimClaimableAssetsMutation
 };

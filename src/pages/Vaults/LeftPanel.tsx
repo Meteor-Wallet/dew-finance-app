@@ -14,6 +14,37 @@ import { twMerge } from "tailwind-merge";
 import clsx from "clsx";
 import { assetUtils } from "../../utils/assetUtils";
 import { vaultUtils } from "../../utils/vaultUtils";
+import { vaultMutations } from "../../mutations/vault";
+
+type ConfirmButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  isLoading?: boolean;
+};
+
+const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
+  return (
+    <button
+      {...props}
+      onClick={(e) => {
+        if (!props.disabled && props.onClick) props.onClick(e);
+      }}
+      className={twMerge([
+        "flex justify-center items-center",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        clsx({ "cursor-progress disabled:cursor-progress": props.isLoading }),
+        "flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative",
+        props.className,
+      ])}
+    >
+      {props.isLoading ? (
+        <div className="mr-1">
+          <CircularProgress size="small" />
+        </div>
+      ) : (
+        props.children
+      )}
+    </button>
+  );
+};
 
 type TMergedPendingRedeem = {
   asset: { FungibleToken: { contract_id: string } };
@@ -70,11 +101,16 @@ const PendingRedeemBanner = ({
 const ClaimableAssetBanner = ({
   asset,
   rawAmount,
+  vaultContractId,
+  nearAddress,
 }: {
   asset: { FungibleToken: { contract_id: string } };
   rawAmount: string;
+  vaultContractId: string;
+  nearAddress: string;
 }) => {
   const { assetIcon, assetSymbol, assetDecimals } = assetUtils.useAssetSymbolAndIcon({ asset });
+  const claimMutation = vaultMutations.useClaimClaimableAssetsMutation();
 
   const amountFormatted = useMemo(() => {
     if (assetDecimals === null) return "—";
@@ -91,7 +127,7 @@ const ClaimableAssetBanner = ({
   return (
     <div className="flex items-start gap-3 px-4 py-3 rounded-sm text-sm bg-blue-950/60 border border-blue-500/50 text-blue-300">
       <span className="shrink-0 mt-0.5">💰</span>
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1 flex-1">
         <span>
           <span className="font-semibold">{amountFormatted}</span>{" "}
           <img src={assetIcon} alt={assetSymbol} className="inline w-4 h-4 mx-0.5 align-middle" />
@@ -99,6 +135,13 @@ const ClaimableAssetBanner = ({
           is ready to claim.
         </span>
         <span className="opacity-70">Your redeemed funds are available. Claim them from the vault.</span>
+        <button
+          disabled={claimMutation.isPending}
+          onClick={() => claimMutation.mutate({ vaultId: vaultContractId, accountId: nearAddress, asset })}
+          className="mt-2 self-start px-5 py-1.5 bg-secondary transition-opacity duration-200 hover:opacity-50 rounded-sm font-normal text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {claimMutation.isPending ? "Claiming…" : "Claim"}
+        </button>
       </div>
     </div>
   );
@@ -135,6 +178,8 @@ const ClaimableAssets = () => {
           key={asset.FungibleToken.contract_id}
           asset={asset}
           rawAmount={rawAmount}
+          vaultContractId={vaultContractId!}
+          nearAddress={nearAddress!}
         />
       ))}
     </div>
@@ -249,36 +294,6 @@ const MyPosition2 = () => {
       </div>
       <p className="text-base font-semibold">{myPosition}</p>
     </div>
-  );
-};
-
-type ConfirmButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  isLoading?: boolean;
-};
-
-const ConfirmButton: React.FC<ConfirmButtonProps> = (props) => {
-  return (
-    <button
-      {...props}
-      onClick={(e) => {
-        if (!props.disabled && props.onClick) props.onClick(e);
-      }}
-      className={twMerge([
-        "flex justify-center items-center",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        clsx({ "cursor-progress disabled:cursor-progress": props.isLoading }),
-        "flex-1 bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative",
-        props.className,
-      ])}
-    >
-      {props.isLoading ? (
-        <div className="mr-1">
-          <CircularProgress size="small" />
-        </div>
-      ) : (
-        props.children
-      )}
-    </button>
   );
 };
 
