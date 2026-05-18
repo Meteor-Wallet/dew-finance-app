@@ -393,7 +393,7 @@ export default function LeftPanel() {
   }, [vaultAprQuery.data]);
 
   return (
-    <div className="w-full h-full lg:w-1/3 sticky top-5 lg:order-2 order-1">
+    <div className="w-full h-full lg:w-1/3 lg:sticky top-5 lg:order-2 order-1">
       <div className="grid grid-cols-2 gap-4">
         <Motion direction="left" duration={0.6} delay={0.5}>
           <div className="flex-1 bg-[linear-gradient(139deg,#000000,#0C0C0C)] p-4 py-5 rounded-md border border-dark-border-color">
