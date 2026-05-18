@@ -9,13 +9,13 @@ import Homepage from "./pages/Homepage";
 import Policy from "./pages/Policy";
 import Portfolio from "./pages/Portfolio";
 import Vaults from "./pages/Vaults/index";
-import { vaultUtils } from "./utils/vaultUtils";
 import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
 import SimulateModal from "./components/modal/SimulateModal";
 import DotGrid from "./components/utils/DotGrid";
 import LightRays from "./components/utils/LightRays";
 import ScrollToTop from "./components/utils/ScrollToTop";
+import RpcBadge from "./components/layout/RpcBadge";
 
 import { Toaster } from "sonner";
 
@@ -78,6 +78,8 @@ export default function App() {
             className="opacity-[0.6]"
           />
         </div>
+        <RpcBadge />
+
         <div
           className="fixed bottom-0 left-0 w-full h-full overflow-hidden "
           style={{ zIndex: "-2" }}
