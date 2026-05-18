@@ -273,6 +273,7 @@ const MyPosition2 = () => {
     if (vaultShareMetadataQuery.data && myPositionQuery.data) {
       return Big(myPositionQuery.data)
         .div(Big(10).pow(vaultShareMetadataQuery.data.decimals))
+        .round(6, Big.roundDown)
         .toFixed();
     }
     return "0";
@@ -303,6 +304,16 @@ const AvailableBalanceRow = ({ asset }: { asset: TAsset }) => {
   });
   const balance = accountQueries.useAccountBalance({ asset });
 
+  const formattedBalance = useMemo(() => {
+    const raw = balance.data?.formatted;
+    if (!raw) return "0";
+    try {
+      return Big(raw).round(6, Big.roundDown).toFixed();
+    } catch {
+      return raw;
+    }
+  }, [balance.data?.formatted]);
+
   return (
     <div className="flex justify-between items-center mt-3">
       <div className="flex gap-2 items-center">
@@ -312,7 +323,7 @@ const AvailableBalanceRow = ({ asset }: { asset: TAsset }) => {
         </p>
       </div>
       <p className="text-base font-semibold">
-        {balance.data?.formatted ?? "0"}
+        {formattedBalance}
       </p>
     </div>
   );

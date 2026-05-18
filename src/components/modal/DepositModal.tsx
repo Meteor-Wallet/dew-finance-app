@@ -110,7 +110,7 @@ const DepositModal = () => {
       if (exchangeRateForSelectedAsset && vaultMeta) {
         return Big(depositAmount || "0")
           .mul(exchangeRateForSelectedAsset.assetToShare)
-          .round(vaultMeta.share_deciamls, Big.roundDown)
+          .round(Math.min(6, vaultMeta.share_deciamls), Big.roundDown)
           .toFixed();
       }
       return "0";
@@ -194,7 +194,7 @@ const DepositModal = () => {
         <div className="flex justify-between items-center mt-5 mb-1.5">
           <p className="text-sm font-base text-white">Amount</p>
           <p className="text-sm font-base text-gray">
-            Available: {balance.data?.formatted}
+            Available: {stringUtils.truncateDecimals(balance.data?.formatted)}
           </p>
         </div>
 

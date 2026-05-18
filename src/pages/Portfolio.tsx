@@ -1,7 +1,7 @@
 import { Navigate, useNavigate } from "react-router-dom";
 import { useWalletStore } from "../stores/wallet_store";
 import { vaultUtils } from "../utils/vaultUtils";
-import { vaultQueries } from "../queries/vault";
+import { vaultQueries, type TAsset } from "../queries/vault";
 import { rheaQueries } from "../queries/rhea";
 import { assetUtils } from "../utils/assetUtils";
 import { useQueries, useQuery } from "@tanstack/react-query";
@@ -46,7 +46,7 @@ const PortfolioPendingRedeemBanner = ({
     try {
       return Big(merged.rawAssetNumerator)
         .div(Big(10).pow(shareDecimals + sharePriceDecimals))
-        .round(assetDecimals, Big.roundDown)
+        .round(Math.min(6, assetDecimals), Big.roundDown)
         .toFixed();
     } catch {
       return "—";
@@ -174,7 +174,7 @@ const PortfolioClaimableAssetBanner = ({
   const amountFormatted = useMemo(() => {
     if (assetDecimals === null) return "—";
     try {
-      return Big(rawAmount).div(Big(10).pow(assetDecimals)).round(assetDecimals, Big.roundDown).toFixed();
+      return Big(rawAmount).div(Big(10).pow(assetDecimals)).round(Math.min(6, assetDecimals), Big.roundDown).toFixed();
     } catch {
       return "—";
     }
@@ -258,7 +258,7 @@ function formatUsd(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
-function getContractId(asset: any): string {
+function getContractId(asset: TAsset): string {
   if ("FungibleToken" in asset) return asset.FungibleToken.contract_id;
   return asset.MultiToken.contract_id;
 }
@@ -291,7 +291,7 @@ const VaultPositionCard = ({
   const shareBalance = useMemo(() => {
     if (!shareMetadataQuery.data) return "—";
     try {
-      return Big(rawPosition).div(Big(10).pow(shareMetadataQuery.data.decimals)).toFixed();
+      return Big(rawPosition).div(Big(10).pow(shareMetadataQuery.data.decimals)).round(6, Big.roundDown).toFixed();
     } catch {
       return "—";
     }
@@ -375,6 +375,7 @@ const VaultPositionRow = ({
     try {
       return Big(rawPosition)
         .div(Big(10).pow(shareMetadataQuery.data.decimals))
+        .round(6, Big.roundDown)
         .toFixed();
     } catch {
       return "—";

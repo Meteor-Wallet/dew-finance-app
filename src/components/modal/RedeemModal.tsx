@@ -137,7 +137,7 @@ const RedeemModal = () => {
       if (exchangeRateForAsset && assetDecimals) {
         return Big(withdrawAmount || "0")
           .mul(exchangeRateForAsset.shareToAsset)
-          .round(assetDecimals, Big.roundDown)
+          .round(Math.min(6, assetDecimals), Big.roundDown)
           .toFixed();
       }
       return "0";
@@ -222,7 +222,7 @@ const RedeemModal = () => {
 
         <div className="flex justify-between items-center mt-5 mb-1.5">
           <p className="text-sm font-base text-white">Amount</p>
-          <p className="text-sm font-base text-gray">Available: {myPosition}</p>
+          <p className="text-sm font-base text-gray">Available: {stringUtils.truncateDecimals(myPosition)}</p>
         </div>
 
         <div className="relative md:max-w-md mt-1">
