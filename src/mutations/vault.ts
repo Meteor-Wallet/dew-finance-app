@@ -33,20 +33,22 @@ const useDepositToVaultMutation = () => {
       });
     },
     onSuccess: (_data, params) => {
-      queryClient.invalidateQueries({
-        queryKey: accountQueries.queryKey.accountBalanceQueryKey({
-          asset: params.asset,
-          address: params.blockchainAddress,
-        }),
-      });
-      queryClient.invalidateQueries(
-        vaultQueries.getMyPositionQueryOptions({
-          vaultContractId: params.vaultContractId,
-          nearAddress: params.nearAddress,
-        }),
-      );
       useVaultActionStore.getState().updateDepositAmount({ amount: "" });
       useVaultActionStore.getState().closeDepositWalletModal();
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: accountQueries.queryKey.accountBalanceQueryKey({
+            asset: params.asset,
+            address: params.blockchainAddress,
+          }),
+        });
+        queryClient.invalidateQueries(
+          vaultQueries.getMyPositionQueryOptions({
+            vaultContractId: params.vaultContractId,
+            nearAddress: params.nearAddress,
+          }),
+        );
+      }, 1000)
     },
     mutationFn: async ({
       nearAddress,
@@ -189,20 +191,22 @@ const useWithdrawFromVaultMutation = () => {
       });
     },
     onSuccess: (_data, params) => {
-      queryClient.invalidateQueries(
-        vaultQueries.getMyPositionQueryOptions({
-          vaultContractId: params.vaultContractId,
-          nearAddress: params.nearAddress,
-        }),
-      );
-      queryClient.invalidateQueries({
-        queryKey: accountQueries.queryKey.accountBalanceQueryKey({
-          asset: params.asset,
-          address: params.nearAddress,
-        }),
-      });
       useVaultActionStore.getState().updateWithdrawAmount({ amount: "" });
       useVaultActionStore.getState().closeRedeemWalletModal();
+      setTimeout(() => {
+        queryClient.invalidateQueries(
+          vaultQueries.getMyPositionQueryOptions({
+            vaultContractId: params.vaultContractId,
+            nearAddress: params.nearAddress,
+          }),
+        );
+        queryClient.invalidateQueries({
+          queryKey: accountQueries.queryKey.accountBalanceQueryKey({
+            asset: params.asset,
+            address: params.nearAddress,
+          }),
+        });
+      }, 1000)
     },
     mutationFn: async ({
       share,
@@ -331,24 +335,26 @@ const useClaimClaimableAssetsMutation = () => {
       });
     },
     onSuccess: (_data, params) => {
-      queryClient.invalidateQueries(
-        vaultQueries.getMyPositionQueryOptions({
-          vaultContractId: params.vaultId,
-          nearAddress: params.accountId,
-        }),
-      );
-      queryClient.invalidateQueries({
-        queryKey: accountQueries.queryKey.accountBalanceQueryKey({
-          asset: params.asset,
-          address: params.accountId,
-        }),
-      });
-      queryClient.invalidateQueries(
-        vaultQueries.getAccountClaimableAssetsQueryOptions({
-          vaultId: params.vaultId,
-          accountId: params.accountId,
-        }),
-      );
+      setTimeout(() => {
+        queryClient.invalidateQueries(
+          vaultQueries.getMyPositionQueryOptions({
+            vaultContractId: params.vaultId,
+            nearAddress: params.accountId,
+          }),
+        );
+        queryClient.invalidateQueries({
+          queryKey: accountQueries.queryKey.accountBalanceQueryKey({
+            asset: params.asset,
+            address: params.accountId,
+          }),
+        });
+        queryClient.invalidateQueries(
+          vaultQueries.getAccountClaimableAssetsQueryOptions({
+            vaultId: params.vaultId,
+            accountId: params.accountId,
+          }),
+        );
+      }, 1000)
     },
     mutationFn: async ({
       vaultId,
