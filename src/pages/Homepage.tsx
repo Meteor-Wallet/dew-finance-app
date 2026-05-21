@@ -99,7 +99,7 @@ const VaultRow = ({ vault }: { vault: TVaultConfig }) => {
             <img src={vaultIcon} alt="vault" />
             <img
               src={assetIcon}
-              className="absolute bottom-[-5px] right-[-5px] w-[22px] h-[22px] rounded-full"
+              className="absolute bottom-[-5px] right-[-5px] w-[22px] h-[22px] rounded-full bg-black"
               alt={assetSymbol}
             />
           </div>
@@ -173,7 +173,9 @@ const VaultCard = ({ vault }: { vault: TVaultConfig }) => {
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 relative shrink-0">
           <img src={vaultIcon} alt="vault" />
-          <img src={assetIcon} className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full" alt={assetSymbol} />
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-black flex items-center justify-center">
+              <img src={assetIcon} className="w-full h-full rounded-full" alt={assetSymbol} />
+            </div>
         </div>
         <div>
           <p className="font-normal text-sm">{vault.name}</p>

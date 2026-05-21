@@ -1,5 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
-import Near from "../../assets/near.png";
+import { memo, useMemo, useState } from "react";
 import Motion from "../../components/utils/Motion";
 import FeeIcon1 from "../../assets/fee_icon1.svg";
 import FeeIcon2 from "../../assets/fee_icon2.svg";
@@ -135,7 +134,9 @@ const OverviewTab = ({ vaultContractId }: { vaultContractId: string }) => {
         <div className="flex items-center gap-4">
           <div className="w-[50px] h-[50px] relative">
             <img src={vaultIcon} />
-            <img src={assetIcon} className="absolute bottom-[-5px] right-[-5px] w-[25px] h-[25px]" />
+            <div className="absolute -bottom-1.25 -right-1.25 w-6.25 h-6.25 rounded-full bg-black flex items-center justify-center">
+              <img src={assetIcon} className="w-full h-full rounded-full" />
+            </div>
           </div>
           <div>
             <h2 className="font-semibold text-2xl">{vaultMeta?.name ?? "—"}</h2>

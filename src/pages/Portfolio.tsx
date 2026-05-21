@@ -312,11 +312,9 @@ const VaultPositionCard = ({
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 relative shrink-0">
           <img src={vaultIcon} alt="vault" />
-          <img
-            src={assetIcon}
-            className="absolute -bottom-1.25 -right-1.25 w-5.5 h-5.5 rounded-full"
-            alt={assetSymbol}
-          />
+          <div className="absolute -bottom-1.25 -right-1.25 w-5.5 h-5.5 rounded-full bg-black flex items-center justify-center">
+            <img src={assetIcon} className="w-full h-full rounded-full" alt={assetSymbol} />
+          </div>
         </div>
         <div>
           <p className="font-normal text-sm">{vault.name}</p>
@@ -398,11 +396,9 @@ const VaultPositionRow = ({
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 relative">
             <img src={vaultIcon} alt="vault" />
-            <img
-              src={assetIcon}
-              className="absolute -bottom-1.25 -right-1.25 w-5.5 h-5.5 rounded-full"
-              alt={assetSymbol}
-            />
+            <div className="absolute -bottom-1.25 -right-1.25 w-5.5 h-5.5 rounded-full bg-black flex items-center justify-center">
+              <img src={assetIcon} className="w-full h-full rounded-full" alt={assetSymbol} />
+            </div>
           </div>
           <div>
             <p className="font-normal text-base">{vault.name}</p>
