@@ -135,7 +135,7 @@ const OverviewTab = ({ vaultContractId }: { vaultContractId: string }) => {
         <div className="flex items-center gap-4">
           <div className="w-[50px] h-[50px] relative">
             <img src={vaultIcon} />
-            <img src={Near} className="absolute bottom-[-5px] right-[-5px] w-[25px] h-[25px]" />
+            <img src={assetIcon} className="absolute bottom-[-5px] right-[-5px] w-[25px] h-[25px]" />
           </div>
           <div>
             <h2 className="font-semibold text-2xl">{vaultMeta?.name ?? "—"}</h2>
