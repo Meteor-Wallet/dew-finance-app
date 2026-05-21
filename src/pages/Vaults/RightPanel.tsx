@@ -18,6 +18,12 @@ import { assetUtils } from "../../utils/assetUtils";
 import { stringUtils } from "../../utils/stringUtils";
 import Big from "big.js";
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function formatChartDate(timestamp: number): string {
+  const d = new Date(timestamp / 1000000);
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
+
 // ─── Tab Components ───────────────────────────────────────────────────────────
 
 const OverviewTab = ({ vaultContractId }: { vaultContractId: string }) => {
@@ -87,7 +93,7 @@ const OverviewTab = ({ vaultContractId }: { vaultContractId: string }) => {
       const chart = sharePricesByBlockIdsQuery.map((q, i) => {
         const blockInfo = blockIdInfoQuery[i].data!;
         return {
-          date: new Date(blockInfo.header.timestamp / 1000000).toLocaleString(),
+          date: formatChartDate(blockInfo.header.timestamp),
           value: Big(q.data).div(Big(10).pow(vaultConfig.share_price_decimals)).toNumber(),
         };
       });
@@ -105,7 +111,7 @@ const OverviewTab = ({ vaultContractId }: { vaultContractId: string }) => {
       const chart = balanceByBlockIdsQuery.map((q, i) => {
         const blockInfo = blockIdInfoQuery[i].data!;
         return {
-          date: new Date(blockInfo.header.timestamp / 1000000).toLocaleString(),
+          date: formatChartDate(blockInfo.header.timestamp),
           value: Big(q.data).div(Big(10).pow(vaultConfig.share_price_decimals)).toNumber(),
         };
       });

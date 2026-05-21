@@ -32,13 +32,7 @@ export default function DewChart({
           <XAxis
             dataKey="date"
             tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11 }}
-            tickFormatter={(v: string) => {
-              const [datePart, timePart] = v.split(", ");
-              if (!timePart) return v;
-              const [month, day] = datePart.split("/");
-              const timeShort = timePart.replace(/:00 /, " ");
-              return `${month}/${day} ${timeShort}`;
-            }}
+            tickFormatter={(v: string) => v}
             interval="preserveStartEnd"
           />
 
