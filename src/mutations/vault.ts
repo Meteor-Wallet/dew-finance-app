@@ -90,19 +90,6 @@ const useDepositToVaultMutation = () => {
 
       const actions: ConnectorAction[] = [];
 
-      if (!isStorageDepositedToVault) {
-        actions.push(
-          ftCall(
-            "storage_deposit",
-            {
-              account_id: nearAddress,
-              registration_only: true,
-            },
-            "12500000000000000000000",
-          ),
-        );
-      }
-
       const contractId = asset.FungibleToken.contract_id;
       const { decimals } = (await nearUtils.provider.callFunction(
         contractId,
@@ -167,11 +154,34 @@ const useDepositToVaultMutation = () => {
           "300000000000000",
         ),
       );
-      await wallet.signAndSendTransaction({
-        receiverId: contractId,
-        actions,
-      });
 
+      const transactions: {
+        receiverId: string;
+        actions: (ConnectorAction)[];
+      }[] = []
+
+      if (!isStorageDepositedToVault) {
+        transactions.push({
+          receiverId: vaultContractId,
+          actions: [ftCall(
+            "storage_deposit",
+            {
+              account_id: nearAddress,
+              registration_only: true,
+            },
+            "12500000000000000000000",
+          )]
+        })
+      }
+
+      transactions.push({
+        actions,
+        receiverId: contractId
+      })
+
+      await wallet.signAndSendTransactions({
+        transactions
+      })
       toast.success("Depositing", {
         description: "Successfully deposited!",
         id: toastIdRef.current,
