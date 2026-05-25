@@ -437,9 +437,9 @@ const useClaimClaimableAssetsMutation = () => {
           description: "Claim successfully",
           id: toastIdRef.current,
         });
+      }else{
+        throw new Error("Only fungible token claim is supported");
       }
-
-      throw new Error("Only fungible token claim is supported");
     },
   });
 };
