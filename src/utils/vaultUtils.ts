@@ -61,8 +61,6 @@ function decodeInterface(base64: string): string {
   }
 }
 
-const DEFAULT_VAULT_CONTRACT_ID = "usdt.meteor-vaults.near";
-
 const vaults: {
   vault_id: string;
   kernel_id: string;
@@ -99,7 +97,16 @@ const vaults: {
     base_asset_decimals: 6,
     curated_by: "Dew Finance",
     name: "USDC Vault"
-  }
+  },
+  {
+    vault_id: "zec.meteor-vaults.near",
+    kernel_id: "kernel-zec.meteor-vaults.near",
+    share_price_decimals: 8,
+    share_deciamls: 18,
+    base_asset_decimals: 8,
+    curated_by: "Dew Finance",
+    name: "ZEC Vault"
+  },
 ]
 
 const DEPRECATED_TOKENS = ["dew-rneardefi-vault.near"];
@@ -109,7 +116,6 @@ export const vaultUtils = {
   hasRestrictions,
   withRestrictions,
   decodeInterface,
-  DEFAULT_VAULT_CONTRACT_ID,
   vaults,
   DEPRECATED_TOKENS
 };
