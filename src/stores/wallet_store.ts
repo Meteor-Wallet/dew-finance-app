@@ -28,6 +28,7 @@ const getPersistedChain = (): ChainName => {
 
 export interface WalletState {
   isConnectWalletModalOpen: boolean;
+  isSolanaWalletModalOpen: boolean;
   isSwitchNetworkModalOpen: boolean;
   isOnboardModalOpen: boolean;
   connectedWallets: { address: string; supportedChains: ChainName[] }[];
@@ -35,6 +36,8 @@ export interface WalletState {
   nearAccountId: string | null;
   openConnectWalletModal: () => void;
   closeConnectWalletModal: () => void;
+  openSolanaWalletModal: () => void;
+  closeSolanaWalletModal: () => void;
   openSwitchNetworkModal: () => void;
   closeSwitchNetworkModal: () => void;
   openOnboardModal: () => void;
@@ -45,6 +48,7 @@ export interface WalletState {
     selectedChain: ChainName;
   }) => void;
   disconnectSelectedChainWallet: () => void;
+  disconnectChainWallet: (chain: ChainName) => void;
   switchChain: (event: { chain: ChainName }) => void;
   setCurrentNearAccountId: (event: { nearAccountId: string | null }) => void;
 }
@@ -52,6 +56,7 @@ export interface WalletState {
 export const useWalletStore = create<WalletState>()(
   subscribeWithSelector((set, get) => ({
     isConnectWalletModalOpen: false,
+    isSolanaWalletModalOpen: false,
     isSwitchNetworkModalOpen: false,
     isOnboardModalOpen: false,
     connectedWallets: [],
@@ -60,6 +65,8 @@ export const useWalletStore = create<WalletState>()(
 
     openConnectWalletModal: () => set({ isConnectWalletModalOpen: true }),
     closeConnectWalletModal: () => set({ isConnectWalletModalOpen: false }),
+    openSolanaWalletModal: () => set({ isSolanaWalletModalOpen: true }),
+    closeSolanaWalletModal: () => set({ isSolanaWalletModalOpen: false }),
     openSwitchNetworkModal: () => set({ isSwitchNetworkModalOpen: true }),
     closeSwitchNetworkModal: () => set({ isSwitchNetworkModalOpen: false }),
     openOnboardModal: () => set({ isOnboardModalOpen: true }),
@@ -82,6 +89,14 @@ export const useWalletStore = create<WalletState>()(
           (e) => !e.supportedChains.includes(selectedChain)
         ),
       });
+    },
+
+    disconnectChainWallet: (chain) => {
+      set((s) => ({
+        connectedWallets: s.connectedWallets.filter(
+          (e) => !e.supportedChains.includes(chain)
+        ),
+      }));
     },
 
     switchChain: ({ chain }) =>

@@ -1,39 +1,26 @@
 import closeIcon from "../../assets/close.svg";
-import nearLogo from "../../assets/near.svg";
-import solanaLogo from "../../assets/solana.svg";
 import Modal from "react-modal";
 import Motion from "../utils/Motion";
 import { memo } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletStore } from "../../stores/wallet_store";
-import { nearConnector } from "../../nearConnector";
+import { useWalletSelector } from "../../walletSelector";
 
-const ConnectWalletModal = () => {
-  const isConnectWalletModalOpen = useWalletStore(
-    (s) => s.isConnectWalletModalOpen
-  );
-  const isNearConnected = useWalletStore((s) =>
-    s.connectedWallets.some((e) => e.supportedChains.includes("near"))
-  );
-  const isSolanaConnected = useWalletStore((s) =>
-    s.connectedWallets.some((e) => e.supportedChains.includes("solana"))
-  );
+const SolanaWalletModal = () => {
+  const { wallets } = useWallet();
+  const { signIn } = useWalletSelector();
+  const isOpen = useWalletStore((s) => s.isSolanaWalletModalOpen);
 
-  const handleClose = () =>
-    useWalletStore.getState().closeConnectWalletModal();
+  const handleClose = () => useWalletStore.getState().closeSolanaWalletModal();
 
-  const handleNearClick = () => {
-    useWalletStore.getState().closeConnectWalletModal();
-    nearConnector.connect();
-  };
-
-  const handleSolanaClick = () => {
-    useWalletStore.getState().closeConnectWalletModal();
-    useWalletStore.getState().openSolanaWalletModal();
+  const handleWalletClick = (walletName: string) => {
+    handleClose();
+    signIn("sol", { walletName });
   };
 
   return (
     <Modal
-      isOpen={isConnectWalletModalOpen}
+      isOpen={isOpen}
       onRequestClose={handleClose}
       shouldCloseOnOverlayClick
       closeTimeoutMS={300}
@@ -54,31 +41,29 @@ const ConnectWalletModal = () => {
       `}
     >
       <div className="w-full md:w-[380px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
-        <h2 className="text-2xl font-semibold mb-0 mt-4">Connect Wallet</h2>
+        <h2 className="text-2xl font-semibold mb-0 mt-4">Connect Solana</h2>
         <p className="text-sm text-gray font-regular mb-4">
-          Select a network to connect.
+          Choose a Solana wallet to connect.
         </p>
         <ul className="mb-8">
-          {!isNearConnected && (
-            <Motion direction="left" duration={0.4} delay={0.3}>
-              <li className="connect-wallet-list-items" onClick={handleNearClick}>
-                <div className="list-logo near-logo">
-                  <img src={nearLogo} alt="NEAR" />
-                </div>
-                NEAR
-              </li>
-            </Motion>
-          )}
-          {!isSolanaConnected && (
-            <Motion direction="left" duration={0.4} delay={0.35}>
-              <li className="connect-wallet-list-items" onClick={handleSolanaClick}>
+          {wallets.map((wallet, i) => (
+            <Motion
+              key={wallet.adapter.name}
+              direction="left"
+              duration={0.4}
+              delay={0.3 + i * 0.05}
+            >
+              <li
+                className="connect-wallet-list-items"
+                onClick={() => handleWalletClick(wallet.adapter.name)}
+              >
                 <div className="list-logo">
-                  <img src={solanaLogo} alt="Solana" />
+                  <img src={wallet.adapter.icon} alt={wallet.adapter.name} />
                 </div>
-                Solana
+                {wallet.adapter.name}
               </li>
             </Motion>
-          )}
+          ))}
         </ul>
         <button
           onClick={handleClose}
@@ -91,4 +76,4 @@ const ConnectWalletModal = () => {
   );
 };
 
-export default memo(ConnectWalletModal);
+export default memo(SolanaWalletModal);

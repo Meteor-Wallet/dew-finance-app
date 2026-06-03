@@ -8,7 +8,6 @@ import { useWalletStore, useConnectedWalletAddress } from "../../stores/wallet_s
 import { useWalletSelector } from "../../walletSelector";
 import { stringUtils } from "../../utils/stringUtils";
 import nearLogo from "../../assets/near.svg";
-import { nearConnector } from "../../nearConnector";
 
 export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -74,7 +73,7 @@ export default function Navbar() {
               {!connectedWalletAddress ? (
                 <div className="relative md:block">
                   <button
-                    onClick={() => nearConnector.connect()}
+                    onClick={() => useWalletStore.getState().openConnectWalletModal()}
                     className="bg-primary text-black px-3 py-3 md:px-6 md:py-3 rounded-md font-bold primary-button-shadow text-base"
                   >
                     Connect Wallet

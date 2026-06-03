@@ -12,20 +12,26 @@ import Vaults from "./pages/Vaults/index";
 import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
 import SimulateModal from "./components/modal/SimulateModal";
+import ConnectWalletModal from "./components/modal/ConnectWalletModal";
+import SolanaWalletModal from "./components/modal/SolanaWalletModal";
 import DotGrid from "./components/utils/DotGrid";
 import LightRays from "./components/utils/LightRays";
 import ScrollToTop from "./components/utils/ScrollToTop";
 import RpcBadge from "./components/layout/RpcBadge";
 
 import { Toaster } from "sonner";
+import { SolanaProvider } from "./solanaProvider";
 
 export default function App() {
   return (
+    <SolanaProvider>
     <Router>
       <ScrollToTop />
       <Toaster position="bottom-center" />
       <div className="relative">
         <Navbar />
+        <ConnectWalletModal />
+        <SolanaWalletModal />
         <OnboardingModal />
         <SimulateModal />
         <Routes>
@@ -99,5 +105,6 @@ export default function App() {
         </div>
       </div>
     </Router>
+    </SolanaProvider>
   );
 }
