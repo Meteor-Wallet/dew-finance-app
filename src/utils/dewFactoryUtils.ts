@@ -73,8 +73,40 @@ const getMessageForCreateAccount = async ({
   };
 };
 
+const checkAccountExists = async ({
+  address,
+  chain
+}: {
+  address: string;
+  chain: ChainName
+}): Promise<{ accountExists: true; nearAddress: string } | { accountExists: false; nearAddress: null }> => {
+  const { nearAddress } =
+    await getAccountDetailsFromAddressAndChain({
+      address,
+      chain,
+    });
+
+  const accountExists = await nearUtils.provider
+    .viewAccount(nearAddress)
+    .then(() => true)
+    .catch(() => false);
+
+  if(accountExists) {
+    return {
+      accountExists: true,
+      nearAddress
+    }
+  }
+
+  return {
+    accountExists: false,
+    nearAddress: null
+  }
+}
+
 export const dewFactoryUtils = {
   getAccountDetailsFromAddressAndChain,
   getMessageForCreateAccount,
   getBlockchainIdFromChainName,
+  checkAccountExists
 };

@@ -7,6 +7,7 @@ import { queryClient } from "./queryClient.ts";
 import { isEqual } from "es-toolkit";
 import { useWalletStore } from "./stores/wallet_store.ts";
 import { dewFactoryUtils } from "./utils/dewFactoryUtils.ts";
+import { multicaUtils } from "./utils/multicaUtils.ts";
 import { nearUtils } from "./utils/nearUtils.ts";
 import { toast } from "sonner";
 import Big from "big.js";
@@ -17,7 +18,7 @@ Big.DP = 26;
 useWalletStore.subscribe(
   (s) =>
     s.connectedWallets.find((e) =>
-      e.supportedChains.includes(s.selectedChain)
+      e.supportedChains.includes(s.selectedChain),
     ) ?? null,
   async (wallet) => {
     if (!wallet) return;
@@ -26,14 +27,18 @@ useWalletStore.subscribe(
 
     // NEAR wallet: account ID is already the NEAR address, skip factory
     if (supportedChain === "near") {
-      useWalletStore.getState().setCurrentNearAccountId({ nearAccountId: wallet.address });
+      useWalletStore
+        .getState()
+        .setCurrentNearAccountId({ nearAccountId: wallet.address });
       return;
     }
 
     // DO NOT REMOVE THIS SETTIMEOUT
     // IT WILL SOMEHOW REMOVE THE SUBSCRIPTION
     setTimeout(() => {
-      useWalletStore.getState().setCurrentNearAccountId({ nearAccountId: null });
+      useWalletStore
+        .getState()
+        .setCurrentNearAccountId({ nearAccountId: null });
     }, 0);
 
     let toastId: string | number | undefined = undefined;
@@ -43,16 +48,12 @@ useWalletStore.subscribe(
       });
 
       const address = wallet.address;
-      const { nearAddress } =
-        await dewFactoryUtils.getAccountDetailsFromAddressAndChain({
+
+      const { accountExists, nearAddress } =
+        await multicaUtils.checkAccountExists({
           address,
           chain: supportedChain,
         });
-
-      const accountExists = await nearUtils.provider
-        .viewAccount(nearAddress)
-        .then(() => true)
-        .catch(() => false);
 
       if (!accountExists) {
         toast.info("Account", {
@@ -78,7 +79,7 @@ useWalletStore.subscribe(
       });
     }
   },
-  { equalityFn: isEqual }
+  { equalityFn: isEqual },
 );
 
 createRoot(document.getElementById("root")!).render(
@@ -86,5 +87,5 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <App />
     </QueryClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );
