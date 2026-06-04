@@ -7,7 +7,7 @@ import { ArrowDown } from "lucide-react";
 import { useVaultActionStore } from "../../stores/vault_action_store";
 
 const SIMULATE_ITEMS = [
-  { title: "Ethereum", actions: 1 },
+  { title: "EVM", actions: 1 },
   { title: "Bitcoin", actions: 1 },
   { title: "Near", actions: 1 },
   { title: "Solana", actions: 1 },

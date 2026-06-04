@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, Copy, LogOut, PieChart, X } from "lucide-react";
+import { ChevronDown, PieChart, Wallet, X } from "lucide-react";
 import Motion from "../utils/Motion";
 import { toast } from "sonner";
 import { useRive } from "@rive-app/react-canvas";
-import { useWalletStore, useConnectedWalletAddress } from "../../stores/wallet_store";
+import { useWalletStore } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
-import { stringUtils } from "../../utils/stringUtils";
 import nearLogo from "../../assets/near.svg";
+import solanaLogo from "../../assets/solana.svg";
+import ethLogo from "../../assets/eth.svg";
+import type { ChainName } from "../../stores/wallet_store";
 
 export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -15,7 +17,9 @@ export default function Navbar() {
   const [walletDrawerClosing, setWalletDrawerClosing] = useState(false);
   const [menuDrawerClosing, setMenuDrawerClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const connectedWalletAddress = useConnectedWalletAddress();
+  const connectedWallets = useWalletStore((s) => s.connectedWallets);
+  const isChainConnected = (chain: ChainName) =>
+    connectedWallets.some((w) => w.supportedChains.includes(chain));
 
   const closeWalletDrawer = () => {
     setWalletDrawerClosing(true);
@@ -70,7 +74,7 @@ export default function Navbar() {
         <div className="flex gap-4 items-center justify-end relative">
           <Motion direction="right" duration={1} delay={0.6} zIndex={1}>
             <div className="flex items-center gap-3">
-              {!connectedWalletAddress ? (
+              {connectedWallets.length === 0 ? (
                 <div className="relative md:block">
                   <button
                     onClick={() => useWalletStore.getState().openConnectWalletModal()}
@@ -83,10 +87,19 @@ export default function Navbar() {
                 <div className="relative md:block" ref={dropdownRef}>
                   <button
                     onClick={() => setShowDropdown(!showDropdown)}
-                    className="bg-card-background border border-card-border flex items-center gap-2.5 px-3 py-2 lg:px-5  rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-98 hover:opacity-80"
+                    className="bg-card-background border border-card-border flex items-center gap-2.5 px-3 py-2 lg:px-4 rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-98 hover:opacity-80"
                   >
-                    {stringUtils
-                      .omitText(connectedWalletAddress?.address)}
+                    <div className="flex items-center gap-1.5">
+                      {DISPLAY_CHAINS.map((chain) => (
+                        <div
+                          key={chain.key}
+                          className={`w-5 h-5 rounded-full flex items-center justify-center ${chain.bgClass}`}
+                          style={{ filter: isChainConnected(chain.key) ? "none" : "grayscale(1) opacity(0.25)" }}
+                        >
+                          <img className="w-full" src={chain.logo} alt={chain.label} />
+                        </div>
+                      ))}
+                    </div>
                     <ChevronDown
                       size={18}
                       className={`transition-transform duration-300 ${
@@ -182,47 +195,25 @@ export default function Navbar() {
   );
 }
 
+const DISPLAY_CHAINS: { key: ChainName; logo: string; label: string; bgClass: string }[] = [
+  { key: "near",   logo: nearLogo,   label: "NEAR",     bgClass: "near-logo" },
+  { key: "solana", logo: solanaLogo, label: "Solana",   bgClass: "solana-logo" },
+  { key: "eth",    logo: ethLogo,    label: "EVM",      bgClass: "eth-logo" },
+];
+
 function WalletDropdownContent({ onClose }: { onClose: () => void }) {
-  const connectedWalletAddress = useConnectedWalletAddress();
   const currentNearAccountId = useWalletStore((s) => s.nearAccountId);
-  const { signOut } = useWalletSelector();
 
   return (
     <div className="text-white">
-      <div className="bg-[linear-gradient(139deg,#1a1c27,#121215,#0D0D0D)] pb-12 p-16 md:p-5 flex justify-center items-center flex-col">
-        <Motion direction="top" duration={1}>
-          <div className="flex justify-center items-center flex-col">
-            <div className="near-logo w-[80px] h-[80px] md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center md:mb-1 mb-2">
-              <img
-                className="w-full"
-                src={nearLogo}
-                alt="near-logo"
-              />
-            </div>
-            <p className="text-xl md:text-base text-center font-semibold flex gap-1 items-center">
-              {stringUtils
-                .omitText(connectedWalletAddress?.address ?? "")}
-              <Copy
-                className="cursor-pointer"
-                onClick={() => {
-                  if (connectedWalletAddress) {
-                    navigator.clipboard.writeText(
-                      connectedWalletAddress.address
-                    );
-                    toast.success("Wallet Address copied!");
-                  }
-                }}
-                size={12}
-              />
-            </p>
-            <p className="text-base md:text-xs text-center text-gray md:mt-0 mt-[-5px]">
-              {stringUtils
-                .omitText(currentNearAccountId ?? "")}
-            </p>
+      {currentNearAccountId && (
+        <>
+          <div className="px-4 py-3">
+            <p className="text-xs text-gray truncate">{currentNearAccountId}</p>
           </div>
-        </Motion>
-      </div>
-      <hr className="border-card-border" />
+          <hr className="border-card-border" />
+        </>
+      )}
       <Link
         to="/portfolio"
         onClick={onClose}
@@ -233,25 +224,13 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
       </Link>
       <button
         onClick={() => {
-          if (connectedWalletAddress) {
-            navigator.clipboard.writeText(connectedWalletAddress.address);
-            toast.success("Wallet Address copied!");
-          }
-        }}
-        className="flex items-center gap-2 w-full text-left px-4 py-4 md:py-3 hover:bg-card-border text-sm"
-      >
-        <Copy size={16} />
-        Copy Wallet Address
-      </button>
-      <button
-        onClick={async () => {
           onClose();
-          await signOut();
+          useWalletStore.getState().openConnectWalletModal();
         }}
         className="flex items-center gap-2 w-full text-left px-4 py-4 md:py-3 hover:bg-card-border text-sm"
       >
-        <LogOut size={16} />
-        Disconnect Wallet
+        <Wallet size={16} />
+        Manage Wallets
       </button>
     </div>
   );

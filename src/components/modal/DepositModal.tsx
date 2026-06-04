@@ -9,7 +9,6 @@ import {
   useConnectedWalletAddress,
 } from "../../stores/wallet_store";
 import { useParams } from "react-router-dom";
-import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../../queries/vault";
 import { assetUtils } from "../../utils/assetUtils";
@@ -66,7 +65,11 @@ const DepositModal = () => {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const [open, setOpen] = useState(false);
 
-  const selectedChain = useWalletStore((s) => s.selectedChain);
+  // Chain of the first non-NEAR connected wallet (used for cross-chain deposit routing)
+  const depositChain = useWalletStore((s) =>
+    s.connectedWallets.find((w) => !w.supportedChains.includes("near"))
+      ?.supportedChains[0] ?? null
+  );
   const nearAddress = useWalletStore((s) => s.nearAccountId);
   const connectedWalletAddress = useConnectedWalletAddress();
 
@@ -130,10 +133,10 @@ const DepositModal = () => {
 
   const intentsAddressQuery = useQuery({
     ...intentsQueries.getIntentsAddressQueryOptions({
-      chain: selectedChain,
+      chain: depositChain!,
       nearAddress: nearAddress!,
     }),
-    enabled: nearAddress !== null && selectedChain !== "near",
+    enabled: nearAddress !== null && depositChain !== null,
   });
 
   const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
@@ -149,7 +152,7 @@ const DepositModal = () => {
 
   const canDeposit =
     !isExceedingBalance &&
-    (selectedChain === "near" || intentsAddressQuery.data) &&
+    (!depositChain || intentsAddressQuery.data) &&
     nearAddress &&
     selectedAsset &&
     exchangeRateForSelectedAsset &&

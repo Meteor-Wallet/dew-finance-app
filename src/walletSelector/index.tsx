@@ -1,32 +1,55 @@
 import { useCallback, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { WalletName } from "@solana/wallet-adapter-base";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import type { Connector } from "wagmi";
 import { useWalletStore } from "../stores/wallet_store";
 import { nearConnector } from "../nearConnector";
 import type { TAsset } from "../queries/vault";
 
 export const useWalletSelector = () => {
-  const { select, connect, disconnect: solanaDisconnect, publicKey, connected } = useWallet();
+  // ── Solana ────────────────────────────────────────────────────────────────
+  const { select, connect: solanaConnect, disconnect: solanaDisconnect, publicKey, connected: solanaConnected } = useWallet();
 
-  // Sync Solana wallet state into the shared store
   useEffect(() => {
-    if (connected && publicKey) {
-      const address = publicKey.toBase58();
+    if (solanaConnected && publicKey) {
       useWalletStore.getState().connectWallet({
-        address,
+        address: publicKey.toBase58(),
         supportedChains: ["solana"],
-        selectedChain: "solana",
       });
-      useWalletStore.getState().closeConnectWalletModal();
+      useWalletStore.getState().closeSolanaWalletModal();
     }
-  }, [connected, publicKey]);
+  }, [solanaConnected, publicKey]);
 
   useEffect(() => {
-    if (!connected && !publicKey) {
+    if (!solanaConnected && !publicKey) {
       useWalletStore.getState().disconnectChainWallet("solana");
     }
-  }, [connected, publicKey]);
+  }, [solanaConnected, publicKey]);
 
+  // ── EVM ───────────────────────────────────────────────────────────────────
+  const { connect: evmConnect } = useConnect();
+  const { disconnect: evmDisconnect } = useDisconnect();
+  const { address: evmAddress, isConnected: evmConnected } = useAccount();
+
+  useEffect(() => {
+    if (evmConnected && evmAddress) {
+      useWalletStore.getState().connectWallet({
+        address: evmAddress,
+        supportedChains: ["eth", "arbitrum"],
+      });
+      useWalletStore.getState().closeEvmWalletModal();
+    }
+  }, [evmConnected, evmAddress]);
+
+  useEffect(() => {
+    if (!evmConnected) {
+      useWalletStore.getState().disconnectChainWallet("eth");
+      useWalletStore.getState().disconnectChainWallet("arbitrum");
+    }
+  }, [evmConnected]);
+
+  // ── Shared API ────────────────────────────────────────────────────────────
   const requestDeposit = useCallback<
     (args: {
       asset: TAsset;
@@ -41,7 +64,7 @@ export const useWalletSelector = () => {
   );
 
   const signIn = useCallback<
-    (adapterType: "evm" | "sol" | "near", options?: { walletName?: string }) => Promise<void>
+    (adapterType: "evm" | "sol" | "near", options?: { walletName?: string; connector?: Connector }) => Promise<void>
   >(
     async (adapterType, options) => {
       if (adapterType === "near") {
@@ -52,32 +75,35 @@ export const useWalletSelector = () => {
         const walletName = options?.walletName;
         if (!walletName) throw new Error("walletName required for sol");
         select(walletName as WalletName);
-        // connect() is triggered by the wallet adapter after select()
-        await connect().catch(() => {
-          // User may have rejected — adapter handles the error state
-        });
+        await solanaConnect().catch(() => {});
         return;
       }
-      throw new Error("Not implemented");
+      if (adapterType === "evm") {
+        const connector = options?.connector;
+        if (!connector) throw new Error("connector required for evm");
+        evmConnect({ connector });
+        return;
+      }
     },
-    [select, connect]
+    [select, solanaConnect, evmConnect]
   );
 
-  const signOut = useCallback(async () => {
-    const selectedChain = useWalletStore.getState().selectedChain;
-    if (selectedChain === "near") {
+  const signOutChain = useCallback(async (chain: "near" | "solana" | "eth" | "arbitrum") => {
+    if (chain === "near") {
       const result = await nearConnector.getConnectedWallet().catch(() => null);
       if (result) await nearConnector.disconnect(result.wallet);
-      else useWalletStore.getState().disconnectSelectedChainWallet();
+      else useWalletStore.getState().disconnectChainWallet("near");
       return;
     }
-    if (selectedChain === "solana") {
+    if (chain === "solana") {
       await solanaDisconnect();
-      // The sync effect above will remove the wallet from the store
       return;
     }
-    useWalletStore.getState().disconnectSelectedChainWallet();
-  }, [solanaDisconnect]);
+    if (chain === "eth" || chain === "arbitrum") {
+      evmDisconnect();
+      return;
+    }
+  }, [solanaDisconnect, evmDisconnect]);
 
-  return { requestDeposit, signIn, signOut };
+  return { requestDeposit, signIn, signOutChain };
 };

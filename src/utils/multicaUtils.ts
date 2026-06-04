@@ -15,6 +15,13 @@ const chainNameToMulticaBlockchainId = (chain: ChainName) => {
   }
 };
 
+const addressToMulticaFormat = (address: string) => {
+  if (address.startsWith("0x")) {
+    return address.toLowerCase().slice(2);
+  }
+  return address;
+} 
+
 const checkAccountExists = async ({
   address,
   chain,
@@ -25,12 +32,15 @@ const checkAccountExists = async ({
   | { accountExists: true; nearAddress: string }
   | { accountExists: false; nearAddress: null }
 > => {
+
+  const addressToBeChecked = addressToMulticaFormat(address);
+
   const mca = await nearUtils.provider.callFunction<string>(
     CONTRACT_ID,
     "get_mca_by_wallet",
     {
       wallet: {
-        [chainNameToMulticaBlockchainId(chain)]: address,
+        [chainNameToMulticaBlockchainId(chain)]: addressToBeChecked,
       },
     },
   );
@@ -44,4 +54,5 @@ const checkAccountExists = async ({
 
 export const multicaUtils = {
   checkAccountExists,
+  addressToMulticaFormat
 };

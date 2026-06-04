@@ -1,39 +1,145 @@
 import closeIcon from "../../assets/close.svg";
 import nearLogo from "../../assets/near.svg";
 import solanaLogo from "../../assets/solana.svg";
+import ethLogo from "../../assets/eth.svg";
 import Modal from "react-modal";
 import Motion from "../utils/Motion";
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useWalletStore } from "../../stores/wallet_store";
+import { useWalletSelector } from "../../walletSelector";
 import { nearConnector } from "../../nearConnector";
+import { stringUtils } from "../../utils/stringUtils";
+import { multicaQueries } from "../../queries/multica";
+import { multicaUtils } from "../../utils/multicaUtils";
+
+const CHAINS = [
+  { key: "near",   label: "NEAR",     logo: nearLogo,   logoClass: "near-logo" },
+  { key: "solana", label: "Solana",   logo: solanaLogo, logoClass: "" },
+  { key: "eth",    label: "EVM",      logo: ethLogo,    logoClass: "" },
+] as const;
+
+type ChainKey = (typeof CHAINS)[number]["key"];
+
+// ── Per-row component so each row can run its own query ──────────────────────
+
+type ChainRowProps = {
+  chain: (typeof CHAINS)[number];
+  address: string | null;
+  nearAccountId: string | null;
+  isGrayedOut: boolean;
+  onConnect: () => void;
+  onDisconnect: () => void;
+};
+
+const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDisconnect }: ChainRowProps) => {
+  const isConnected = address !== null;
+  const showBindButton = isConnected && chain.key !== "near" && !isGrayedOut;
+
+  const boundWalletsQuery = useQuery({
+    ...multicaQueries.getListWalletsByMcaQueryOptions({ mca: nearAccountId! }),
+    enabled: showBindButton && nearAccountId !== null,
+  });
+
+  const isBound = useMemo(() => {
+    if (!boundWalletsQuery.data || !address) return false;
+    return boundWalletsQuery.data.some((w) => {
+      if ("EVM" in w) return multicaUtils.addressToMulticaFormat(w.EVM) === multicaUtils.addressToMulticaFormat(address);
+      if ("Solana" in w) return w.Solana === address;
+      return false;
+    });
+  }, [boundWalletsQuery.data, address]);
+
+  const bindDisabled = isBound || !nearAccountId || boundWalletsQuery.isPending;
+
+  return (
+    <li
+      className="connect-wallet-list-items flex-col items-stretch"
+      style={{ cursor: "default" }}
+    >
+      <div
+        className="flex items-center justify-between w-full"
+        style={{ opacity: isGrayedOut ? 0.4 : 1 }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`list-logo shrink-0 ${chain.logoClass}`}>
+            <img src={chain.logo} alt={chain.label} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm leading-tight">{chain.label}</p>
+            {isConnected && (
+              <p className="text-xs text-gray truncate">{stringUtils.omitText(address)}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {showBindButton && (
+            <button
+              disabled={bindDisabled}
+              onClick={() => useWalletStore.getState().openOnboardModal()}
+              className="text-xs px-3 py-1.5 rounded-md border border-primary/40 text-primary font-medium transition-opacity duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isBound ? "Bound" : "Bind"}
+            </button>
+          )}
+          {isConnected ? (
+            <button
+              onClick={onDisconnect}
+              className="text-xs px-3 py-1.5 rounded-md border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors duration-200 font-medium"
+            >
+              Disconnect
+            </button>
+          ) : (
+            <button
+              disabled={isGrayedOut}
+              onClick={onConnect}
+              className="text-xs px-3 py-1.5 rounded-md bg-primary text-black font-bold hover:opacity-90 transition-opacity duration-200 disabled:cursor-not-allowed"
+            >
+              Connect
+            </button>
+          )}
+        </div>
+      </div>
+      {isGrayedOut && (
+        <p className="text-xs text-gray mt-1">
+          Mixing of native NEAR and non-NEAR wallet is not supported
+        </p>
+      )}
+    </li>
+  );
+};
+
+// ── Modal ────────────────────────────────────────────────────────────────────
 
 const ConnectWalletModal = () => {
-  const isConnectWalletModalOpen = useWalletStore(
-    (s) => s.isConnectWalletModalOpen
-  );
-  const isNearConnected = useWalletStore((s) =>
-    s.connectedWallets.some((e) => e.supportedChains.includes("near"))
-  );
-  const isSolanaConnected = useWalletStore((s) =>
-    s.connectedWallets.some((e) => e.supportedChains.includes("solana"))
-  );
+  const { signOutChain } = useWalletSelector();
+  const isOpen = useWalletStore((s) => s.isConnectWalletModalOpen);
+  const connectedWallets = useWalletStore((s) => s.connectedWallets);
+  const nearAccountId = useWalletStore((s) => s.nearAccountId);
 
-  const handleClose = () =>
-    useWalletStore.getState().closeConnectWalletModal();
+  const handleClose = () => useWalletStore.getState().closeConnectWalletModal();
 
-  const handleNearClick = () => {
-    useWalletStore.getState().closeConnectWalletModal();
-    nearConnector.connect();
+  const getConnectedAddress = (chain: ChainKey) =>
+    connectedWallets.find((w) => w.supportedChains.includes(chain))?.address ?? null;
+
+  const isNearConnected = getConnectedAddress("near") !== null;
+  const hasNonNearConnected =
+    getConnectedAddress("solana") !== null || getConnectedAddress("eth") !== null;
+
+  const isChainGrayedOut = (chain: ChainKey) => {
+    if (chain === "near") return hasNonNearConnected;
+    return isNearConnected;
   };
 
-  const handleSolanaClick = () => {
-    useWalletStore.getState().closeConnectWalletModal();
-    useWalletStore.getState().openSolanaWalletModal();
+  const handleConnect = (chain: ChainKey) => {
+    if (chain === "near") { nearConnector.connect(); return; }
+    if (chain === "solana") { useWalletStore.getState().openSolanaWalletModal(); return; }
+    if (chain === "eth") { useWalletStore.getState().openEvmWalletModal(); return; }
   };
 
   return (
     <Modal
-      isOpen={isConnectWalletModalOpen}
+      isOpen={isOpen}
       onRequestClose={handleClose}
       shouldCloseOnOverlayClick
       closeTimeoutMS={300}
@@ -56,29 +162,21 @@ const ConnectWalletModal = () => {
       <div className="w-full md:w-[380px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
         <h2 className="text-2xl font-semibold mb-0 mt-4">Connect Wallet</h2>
         <p className="text-sm text-gray font-regular mb-4">
-          Select a network to connect.
+          Manage your wallet connections.
         </p>
-        <ul className="mb-8">
-          {!isNearConnected && (
-            <Motion direction="left" duration={0.4} delay={0.3}>
-              <li className="connect-wallet-list-items" onClick={handleNearClick}>
-                <div className="list-logo near-logo">
-                  <img src={nearLogo} alt="NEAR" />
-                </div>
-                NEAR
-              </li>
+        <ul className="mb-8 flex flex-col gap-3">
+          {CHAINS.map((chain, i) => (
+            <Motion key={chain.key} direction="left" duration={0.4} delay={0.3 + i * 0.05}>
+              <ChainRow
+                chain={chain}
+                address={getConnectedAddress(chain.key)}
+                nearAccountId={nearAccountId}
+                isGrayedOut={isChainGrayedOut(chain.key)}
+                onConnect={() => handleConnect(chain.key)}
+                onDisconnect={() => signOutChain(chain.key)}
+              />
             </Motion>
-          )}
-          {!isSolanaConnected && (
-            <Motion direction="left" duration={0.4} delay={0.35}>
-              <li className="connect-wallet-list-items" onClick={handleSolanaClick}>
-                <div className="list-logo">
-                  <img src={solanaLogo} alt="Solana" />
-                </div>
-                Solana
-              </li>
-            </Motion>
-          )}
+          ))}
         </ul>
         <button
           onClick={handleClose}

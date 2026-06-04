@@ -1,7 +1,6 @@
 import Motion from "../../components/utils/Motion";
 import { useVaultActionStore } from "../../stores/vault_action_store";
 import { accountQueries } from "../../queries/account";
-import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import CountUp from "../../components/utils/CountUp";
 import { useParams } from "react-router-dom";
 import { useWalletStore } from "../../stores/wallet_store";
@@ -331,8 +330,6 @@ const AvailableBalanceRow = ({ asset }: { asset: TAsset }) => {
 
 const AvailableBalances = () => {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
-  const selectedChain = useWalletStore((s) => s.selectedChain);
-
   const allAcceptedTokensQuery = useQuery({
     ...vaultQueries.getAllAcceptedTokensQueryOptions({
       vaultContractId: vaultContractId!,
@@ -343,25 +340,13 @@ const AvailableBalances = () => {
   const availableTokens = useMemo(() => {
     return (
       allAcceptedTokensQuery.data?.filter((e) => {
-        if ("FungibleToken" in e && selectedChain === "near") {
-          if (
-            "FungibleToken" in e &&
-            vaultUtils.DEPRECATED_TOKENS.includes(e.FungibleToken.contract_id)
-          ) {
-            return false;
-          }
-          return true;
+        if ("FungibleToken" in e) {
+          return !vaultUtils.DEPRECATED_TOKENS.includes(e.FungibleToken.contract_id);
         }
-        if ("MultiToken" in e) {
-          const tokenInfo = FLAT_LIST_TOKENS.find(
-            (token) => token.defuseAssetId === e.MultiToken.token_id,
-          );
-          if (tokenInfo?.chainName === selectedChain) return true;
-        }
-        return false;
-      }) || []
+        return "MultiToken" in e;
+      }) ?? []
     );
-  }, [allAcceptedTokensQuery.data, selectedChain]);
+  }, [allAcceptedTokensQuery.data]);
 
   return availableTokens.map((v, i) => (
     <AvailableBalanceRow key={i} asset={v} />

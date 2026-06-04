@@ -48,18 +48,18 @@ const NetworkModal = () => {
             <li
               className="connect-wallet-list-items"
               onClick={() =>
-                useWalletStore.getState().switchChain({ chain: "eth" })
+                useWalletStore.getState().closeSwitchNetworkModal()
               }
             >
               <div className="list-logo near-logo">
                 <img src={ethLogo} />
               </div>
-              Ethereum
+              EVM
             </li>
             <li
               className="connect-wallet-list-items"
               onClick={() =>
-                useWalletStore.getState().switchChain({ chain: "arbitrum" })
+                useWalletStore.getState().closeSwitchNetworkModal()
               }
             >
               <div className="list-logo near-logo">
@@ -70,7 +70,7 @@ const NetworkModal = () => {
             <li
               className="connect-wallet-list-items"
               onClick={() =>
-                useWalletStore.getState().switchChain({ chain: "solana" })
+                useWalletStore.getState().closeSwitchNetworkModal()
               }
             >
               <div className="list-logo near-logo">

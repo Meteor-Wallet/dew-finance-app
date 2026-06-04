@@ -29,10 +29,8 @@ const onConnected = (accounts: Account[]) => {
   useWalletStore.getState().connectWallet({
     address: accountId,
     supportedChains: ["near"],
-    selectedChain: "near",
   });
   useWalletStore.getState().setCurrentNearAccountId({ nearAccountId: accountId });
-  useWalletStore.getState().closeConnectWalletModal();
 }
 
 nearConnector.getConnectedWallet().then(wallet => {

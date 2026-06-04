@@ -1,43 +1,26 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { SupportedChainName } from "../intents/types/base";
-import z from "zod";
 
 export type EvmChainName = Extract<SupportedChainName, "eth" | "arbitrum">;
 export type SolanaChainName = Extract<SupportedChainName, "solana">;
 export type NearChainName = Extract<SupportedChainName, "near">;
 export type ChainName = EvmChainName | SolanaChainName | NearChainName;
 
-const zChainName = z.union([
-  z.literal("eth"),
-  z.literal("arbitrum"),
-  z.literal("solana"),
-]);
-
-const SELECTED_CHAIN_KEY = "last_selected_chain_name";
-
-const getPersistedChain = (): ChainName => {
-  try {
-    const raw = localStorage.getItem(SELECTED_CHAIN_KEY);
-    if (raw) return zChainName.parse(JSON.parse(raw));
-  } catch {
-    // ignore
-  }
-  return "near";
-};
-
 export interface WalletState {
   isConnectWalletModalOpen: boolean;
   isSolanaWalletModalOpen: boolean;
+  isEvmWalletModalOpen: boolean;
   isSwitchNetworkModalOpen: boolean;
   isOnboardModalOpen: boolean;
   connectedWallets: { address: string; supportedChains: ChainName[] }[];
-  selectedChain: ChainName;
   nearAccountId: string | null;
   openConnectWalletModal: () => void;
   closeConnectWalletModal: () => void;
   openSolanaWalletModal: () => void;
   closeSolanaWalletModal: () => void;
+  openEvmWalletModal: () => void;
+  closeEvmWalletModal: () => void;
   openSwitchNetworkModal: () => void;
   closeSwitchNetworkModal: () => void;
   openOnboardModal: () => void;
@@ -45,11 +28,8 @@ export interface WalletState {
   connectWallet: (event: {
     address: string;
     supportedChains: ChainName[];
-    selectedChain: ChainName;
   }) => void;
-  disconnectSelectedChainWallet: () => void;
   disconnectChainWallet: (chain: ChainName) => void;
-  switchChain: (event: { chain: ChainName }) => void;
   setCurrentNearAccountId: (event: { nearAccountId: string | null }) => void;
 }
 
@@ -57,38 +37,28 @@ export const useWalletStore = create<WalletState>()(
   subscribeWithSelector((set, get) => ({
     isConnectWalletModalOpen: false,
     isSolanaWalletModalOpen: false,
+    isEvmWalletModalOpen: false,
     isSwitchNetworkModalOpen: false,
     isOnboardModalOpen: false,
     connectedWallets: [],
-    selectedChain: getPersistedChain(),
     nearAccountId: null,
 
     openConnectWalletModal: () => set({ isConnectWalletModalOpen: true }),
     closeConnectWalletModal: () => set({ isConnectWalletModalOpen: false }),
     openSolanaWalletModal: () => set({ isSolanaWalletModalOpen: true }),
     closeSolanaWalletModal: () => set({ isSolanaWalletModalOpen: false }),
+    openEvmWalletModal: () => set({ isEvmWalletModalOpen: true }),
+    closeEvmWalletModal: () => set({ isEvmWalletModalOpen: false }),
     openSwitchNetworkModal: () => set({ isSwitchNetworkModalOpen: true }),
     closeSwitchNetworkModal: () => set({ isSwitchNetworkModalOpen: false }),
     openOnboardModal: () => set({ isOnboardModalOpen: true }),
     closeOnboardModal: () => set({ isOnboardModalOpen: false }),
 
-    connectWallet: ({ address, supportedChains, selectedChain }) => {
-      const state = get();
-      if (state.connectedWallets.find((e) => e.address === address)) return;
+    connectWallet: ({ address, supportedChains }) => {
+      if (get().connectedWallets.find((e) => e.address === address)) return;
       set((s) => ({
-        selectedChain:
-          s.connectedWallets.length === 0 ? selectedChain : s.selectedChain,
         connectedWallets: [...s.connectedWallets, { address, supportedChains }],
       }));
-    },
-
-    disconnectSelectedChainWallet: () => {
-      const { selectedChain, connectedWallets } = get();
-      set({
-        connectedWallets: connectedWallets.filter(
-          (e) => !e.supportedChains.includes(selectedChain)
-        ),
-      });
     },
 
     disconnectChainWallet: (chain) => {
@@ -99,19 +69,16 @@ export const useWalletStore = create<WalletState>()(
       }));
     },
 
-    switchChain: ({ chain }) =>
-      set({ selectedChain: chain, isSwitchNetworkModalOpen: false }),
-
     setCurrentNearAccountId: ({ nearAccountId }) => set({ nearAccountId }),
   }))
 );
 
-useWalletStore.subscribe(
-  (s) => s.selectedChain,
-  (chain) => localStorage.setItem(SELECTED_CHAIN_KEY, JSON.stringify(chain))
-);
+// Returns the first connected wallet with NEAR priority, then Solana, then EVM.
+const pickPrimaryWallet = (wallets: WalletState["connectedWallets"]) =>
+  wallets.find((w) => w.supportedChains.includes("near")) ??
+  wallets.find((w) => w.supportedChains.includes("solana")) ??
+  wallets.find((w) => w.supportedChains.includes("eth")) ??
+  null;
 
 export const useConnectedWalletAddress = () =>
-  useWalletStore((s) =>
-    s.connectedWallets.find((e) => e.supportedChains.includes(s.selectedChain))
-  );
+  useWalletStore((s) => pickPrimaryWallet(s.connectedWallets));

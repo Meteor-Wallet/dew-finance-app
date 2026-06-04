@@ -14,6 +14,7 @@ import OnboardingModal from "./components/modal/OnboardingModal";
 import SimulateModal from "./components/modal/SimulateModal";
 import ConnectWalletModal from "./components/modal/ConnectWalletModal";
 import SolanaWalletModal from "./components/modal/SolanaWalletModal";
+import EvmWalletModal from "./components/modal/EvmWalletModal";
 import DotGrid from "./components/utils/DotGrid";
 import LightRays from "./components/utils/LightRays";
 import ScrollToTop from "./components/utils/ScrollToTop";
@@ -21,9 +22,11 @@ import RpcBadge from "./components/layout/RpcBadge";
 
 import { Toaster } from "sonner";
 import { SolanaProvider } from "./solanaProvider";
+import { EvmProvider } from "./evmProvider";
 
 export default function App() {
   return (
+    <EvmProvider>
     <SolanaProvider>
     <Router>
       <ScrollToTop />
@@ -32,6 +35,7 @@ export default function App() {
         <Navbar />
         <ConnectWalletModal />
         <SolanaWalletModal />
+        <EvmWalletModal />
         <OnboardingModal />
         <SimulateModal />
         <Routes>
@@ -106,5 +110,6 @@ export default function App() {
       </div>
     </Router>
     </SolanaProvider>
+    </EvmProvider>
   );
 }

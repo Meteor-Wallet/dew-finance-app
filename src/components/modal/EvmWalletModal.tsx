@@ -1,21 +1,21 @@
 import closeIcon from "../../assets/close.svg";
+import ethLogo from "../../assets/eth.svg";
 import Modal from "react-modal";
 import Motion from "../utils/Motion";
 import { memo } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnectors } from "wagmi";
 import { useWalletStore } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
 
-const SolanaWalletModal = () => {
-  const { wallets } = useWallet();
+const EvmWalletModal = () => {
+  const connectors = useConnectors();
   const { signIn } = useWalletSelector();
-  const isOpen = useWalletStore((s) => s.isSolanaWalletModalOpen);
+  const isOpen = useWalletStore((s) => s.isEvmWalletModalOpen);
 
-  const handleClose = () => useWalletStore.getState().closeSolanaWalletModal();
+  const handleClose = () => useWalletStore.getState().closeEvmWalletModal();
 
-  const handleWalletClick = (walletName: string) => {
-    handleClose();
-    signIn("sol", { walletName });
+  const handleConnectorClick = (connector: (typeof connectors)[number]) => {
+    signIn("evm", { connector });
   };
 
   return (
@@ -41,26 +41,30 @@ const SolanaWalletModal = () => {
       `}
     >
       <div className="w-full md:w-[380px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
-        <h2 className="text-2xl font-semibold mb-0 mt-4">Connect Solana</h2>
+        <h2 className="text-2xl font-semibold mb-0 mt-4">Connect EVM</h2>
         <p className="text-sm text-gray font-regular mb-4">
-          Choose a Solana wallet to connect.
+          Choose an EVM wallet to connect.
         </p>
         <ul className="mb-8">
-          {wallets.map((wallet, i) => (
+          {connectors.map((connector, i) => (
             <Motion
-              key={wallet.adapter.name}
+              key={connector.id}
               direction="left"
               duration={0.4}
               delay={0.3 + i * 0.05}
             >
               <li
                 className="connect-wallet-list-items"
-                onClick={() => handleWalletClick(wallet.adapter.name)}
+                onClick={() => handleConnectorClick(connector)}
               >
                 <div className="list-logo">
-                  <img src={wallet.adapter.icon} alt={wallet.adapter.name} />
+                  {connector.icon ? (
+                    <img src={connector.icon} alt={connector.name} />
+                  ) : (
+                    <img src={ethLogo} alt="ETH" />
+                  )}
                 </div>
-                {wallet.adapter.name}
+                {connector.name}
               </li>
             </Motion>
           ))}
@@ -76,4 +80,4 @@ const SolanaWalletModal = () => {
   );
 };
 
-export default memo(SolanaWalletModal);
+export default memo(EvmWalletModal);

@@ -11,7 +11,6 @@ import {
 } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../../queries/vault";
-import { FLAT_LIST_TOKENS } from "../../intents/constants/tokens";
 import { assetUtils } from "../../utils/assetUtils";
 import Big from "big.js";
 import { vaultMutations } from "../../mutations/vault";
@@ -62,7 +61,6 @@ const RedeemModal = () => {
   );
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
 
-  const selectedChain = useWalletStore((s) => s.selectedChain);
   const connectedWalletAddress = useConnectedWalletAddress();
   const nearAddress = useWalletStore((s) => s.nearAccountId);
 
@@ -77,22 +75,10 @@ const RedeemModal = () => {
     enabled: vaultContractId !== undefined,
   });
 
-  const availableTokens = useMemo(() => {
-    return (
-      allAcceptedTokensQuery.data?.filter((e) => {
-        if ("FungibleToken" in e) {
-          if (selectedChain === "near") return true;
-        }
-        if ("MultiToken" in e) {
-          const tokenInfo = FLAT_LIST_TOKENS.find(
-            (token) => token.defuseAssetId === e.MultiToken.token_id,
-          );
-          if (tokenInfo?.chainName === selectedChain) return true;
-        }
-        return false;
-      }) || []
-    );
-  }, [allAcceptedTokensQuery.data, selectedChain]);
+  const availableTokens = useMemo(
+    () => allAcceptedTokensQuery.data ?? [],
+    [allAcceptedTokensQuery.data],
+  );
 
   useEffect(() => {
     useVaultActionStore
