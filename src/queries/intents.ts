@@ -1,152 +1,117 @@
 import { queryOptions } from "@tanstack/react-query";
-import type { ChainName } from "../stores/wallet_store";
-import axios from "axios";
-import { nearUtils } from "../utils/nearUtils";
+import z from "zod";
 
-const chainDefuserAxios = axios.create({
-  baseURL: "https://bridge.chaindefuser.com/rpc",
+const zGet1ClickQuotation_Input = z.object({
+  dry: z.boolean(),
+  swapType: z.enum(["EXACT_INPUT", "EXACT_OUTPUT"]),
+  slippageTolerance: z.number(),
+  originAsset: z.string(),
+  depositType: z.enum(["ORIGIN_CHAIN", "INTENTS"]),
+  destinationAsset: z.string(),
+  amount: z.string(),
+  refundTo: z.string(),
+  refundType: z.enum(["ORIGIN_CHAIN", "INTENTS"]),
+  recipient: z.string(),
+  recipientType: z.enum(["DESTINATION_CHAIN", "INTENTS"]),
 });
 
-type TChainDefuserResultSuccess<T> = {
-  id: number | string;
-  jsonrpc: string;
-  result: T;
-};
+export const zMeteorApiResponse_Error = z.object({
+  ok: z.literal(false),
+  error: z.any(),
+});
 
-type TChainDefuserResultError = {
-  id: number | string;
-  jsonrpc: string;
-  error: string;
-};
+export const zMeteorApiResponse_Ok = z.object({
+  ok: z.literal(true),
+  value: z.any(),
+});
 
-type TChainDefuserResult<T> =
-  | TChainDefuserResultSuccess<T>
-  | TChainDefuserResultError;
+export const zMeteorApiResponseAnyError = z.union([
+  zMeteorApiResponse_Error,
+  zMeteorApiResponse_Ok,
+]);
 
-const chainDefuserResultParser = <T>(result: TChainDefuserResult<T>) => {
-  if ("error" in result) {
-    throw new Error(result.error);
-  }
+const zQuotation = z.object({
+  depositAddress: z.optional(z.string()),
+  amountIn: z.string(),
+  amountInFormatted: z.string(),
+  amountInUsd: z.string(),
+  minAmountIn: z.string(),
+  amountOut: z.string(),
+  amountOutFormatted: z.string(),
+  amountOutUsd: z.string(),
+  minAmountOut: z.string(),
+  deadline: z.optional(z.string()),
+  timeWhenInactive: z.optional(z.string()),
+  timeEstimate: z.optional(z.number()),
+});
 
-  return result.result;
-};
+const zQuotation_Response = z.object({
+  timestamp: z.string(),
+  signature: z.string(),
+  quoteRequest: zGet1ClickQuotation_Input,
+  quote: zQuotation,
+});
 
-const getIntentsAddressQueryOptions = ({
-  chain,
-  nearAddress,
-}: {
-  chain: ChainName;
-  nearAddress: string;
-}) => {
+const zTokens_Response = z.array(
+  z.object({
+    assetId: z.string(),
+    decimals: z.number(),
+    blockchain: z.string(),
+    symbol: z.string(),
+    price: z.number(),
+    contractAddress: z.string().optional(),
+  }),
+);
+
+const get1ClickTokens = () => {
   return queryOptions({
-    queryKey: [
-      "intents",
-      "intentsAddress",
-      {
-        chain,
-        nearAddress,
-      },
-    ],
+    queryKey: ["intents", "1click-tokens"],
     queryFn: async () => {
-      let intentsChain = (() => {
-        switch (chain) {
-          case "arbitrum":
-            return "eth:42161";
-          case "eth":
-            return "eth:1";
-          case "solana":
-            return "sol:mainnet";
-        }
-      })();
-      const { data } = await chainDefuserAxios.post<
-        TChainDefuserResult<{
-          address: string;
-          chain: string;
-        }>
-      >("", {
-        jsonrpc: "2.0",
-        id: "dontcare",
-        method: "deposit_address",
-        params: [
-          {
-            account_id: nearAddress,
-            chain: intentsChain,
-          },
-        ],
-      });
+      const res = await fetch("https://1click.chaindefuser.com/v0/tokens");
 
-      return chainDefuserResultParser(data);
+      const json = await res.json();
+
+      return zTokens_Response.parse(json);
     },
+    staleTime: Infinity,
   });
 };
 
-const getBalanceInIntentsQueryOptions = ({
-  nearAddress,
-  intentsTokenId,
-}: {
-  intentsTokenId: string;
-  nearAddress: string;
-}) => {
+const get1ClickQuotation = (
+  params: z.infer<typeof zGet1ClickQuotation_Input>,
+) => {
   return queryOptions({
-    queryKey: [
-      "intents",
-      "intentsBalance",
-      {
-        intentsTokenId,
-        nearAddress,
-      },
-    ],
+    queryKey: ["intents", "1click-quotation", params],
     queryFn: async () => {
-      const balance = (await nearUtils.provider.callFunction(
-        "intents.near",
-        "mt_balance_of",
+      const res = await fetch(
+        "https://backend-v2.meteorwallet.app/api/dew_vault/get_1click_quotation",
         {
-          account_id: nearAddress,
-          token_id: intentsTokenId,
-        }
-      )) as string;
-      return balance;
-    },
-  });
-};
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(params),
+        },
+      );
 
-const getSupportedTokensQueryOptions = () => {
-  return queryOptions({
-    queryKey: ["intents", "supportedTokens"],
-    queryFn: async () => {
-      const { data } = await chainDefuserAxios.post<
-        TChainDefuserResult<{
-          tokens: ({
-            defuse_asset_identifier: string;
-            near_token_id: string;
-            decimals: number;
-            asset_name: string;
-            min_deposit_amount: string;
-            min_withdrawal_amount: string;
-            withdrawal_fee: string;
-            intents_token_id: string;
-          } & (
-            | { standard: "nep141" }
-            | {
-                standard: "nep245";
-                multi_token_id: string;
-              }
-          ))[];
-        }>
-      >("", {
-        jsonrpc: "2.0",
-        id: "dontcare",
-        method: "supported_tokens",
-        params: [],
-      });
+      const json = await res.json();
 
-      return chainDefuserResultParser(data);
+      const structureValidate = zMeteorApiResponseAnyError.safeParse(json);
+
+      if (!structureValidate.success) {
+        throw new Error("Invalid response structure");
+      }
+
+      if (structureValidate.data.ok) {
+        return zQuotation_Response.parse(structureValidate.data.value);
+      }
+
+      throw new Error(structureValidate.data.error);
     },
   });
 };
 
 export const intentsQueries = {
-  getIntentsAddressQueryOptions,
-  getBalanceInIntentsQueryOptions,
-  getSupportedTokensQueryOptions
+  get1ClickQuotation,
+  get1ClickTokens
 };

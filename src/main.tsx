@@ -25,6 +25,12 @@ useWalletStore.subscribe(
     for (const wallet of newWallets) {
       const supportedChain = wallet.supportedChains[0];
 
+      const walletStoreSnapshot = useWalletStore.getState();
+
+      if (walletStoreSnapshot.nearAccountId) {
+        break;
+      }
+
       if (supportedChain === "near") {
         useWalletStore
           .getState()
@@ -32,40 +38,20 @@ useWalletStore.subscribe(
         continue;
       }
 
-      let toastId: string | number | undefined = undefined;
       try {
-        toastId = toast.loading("Account", {
-          description: "Checking account state",
-        });
-
         const { accountExists, nearAddress } =
           await multicaUtils.checkAccountExists({
             address: wallet.address,
             chain: supportedChain,
           });
 
-        if (!accountExists) {
-          toast.info("Account", {
-            description: "Account is pending creation",
-            id: toastId,
-          });
-          useWalletStore.getState().openOnboardModal();
-        } else {
+        if (accountExists) {
           useWalletStore
             .getState()
             .setCurrentNearAccountId({ nearAccountId: nearAddress });
-          toast.success("Account", {
-            description: "Account is ready",
-            id: toastId,
-          });
         }
       } catch (err) {
         console.log(err);
-        toast.error("Account", {
-          description:
-            "Failed to check account status, please try to refresh",
-          id: toastId,
-        });
       }
     }
   },

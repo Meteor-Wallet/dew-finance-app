@@ -1,15 +1,38 @@
 import { useCallback, useEffect } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import type { WalletName } from "@solana/wallet-adapter-base";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { PublicKey, Transaction } from "@solana/web3.js";
+import { getAssociatedTokenAddress, createTransferCheckedInstruction, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
+import { useAccount, useConnect, useDisconnect, useWriteContract, useSwitchChain } from "wagmi";
+import { mainnet, arbitrum } from "wagmi/chains";
 import type { Connector } from "wagmi";
 import { useWalletStore } from "../stores/wallet_store";
+import type { ChainName } from "../stores/wallet_store";
 import { nearConnector } from "../nearConnector";
-import type { TAsset } from "../queries/vault";
+
+const ERC20_TRANSFER_ABI = [
+  {
+    name: "transfer",
+    type: "function",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
 
 export const useWalletSelector = () => {
   // ── Solana ────────────────────────────────────────────────────────────────
-  const { select, connect: solanaConnect, disconnect: solanaDisconnect, publicKey, connected: solanaConnected } = useWallet();
+  const {
+    select,
+    connect: solanaConnect,
+    disconnect: solanaDisconnect,
+    publicKey,
+    connected: solanaConnected,
+    sendTransaction: solanaSendTransaction,
+  } = useWallet();
+  const { connection } = useConnection();
 
   useEffect(() => {
     if (solanaConnected && publicKey) {
@@ -31,6 +54,8 @@ export const useWalletSelector = () => {
   const { connect: evmConnect } = useConnect();
   const { disconnect: evmDisconnect } = useDisconnect();
   const { address: evmAddress, isConnected: evmConnected } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  const { switchChainAsync } = useSwitchChain();
 
   useEffect(() => {
     if (evmConnected && evmAddress) {
@@ -50,17 +75,77 @@ export const useWalletSelector = () => {
   }, [evmConnected]);
 
   // ── Shared API ────────────────────────────────────────────────────────────
-  const requestDeposit = useCallback<
-    (args: {
-      asset: TAsset;
+
+  /**
+   * Sends tokens from the connected wallet to `receiverAddress`.
+   * EVM: standard ERC-20 transfer.
+   * Solana: SPL token transferChecked via associated token accounts.
+   * Returns the transaction hash / signature.
+   */
+  const requestDeposit = useCallback(
+    async (args: {
+      contractAddress: string;
       amount: bigint;
-      receiver_address: `0x${string}` | string;
-    }) => Promise<void>
-  >(
-    async () => {
-      throw new Error("Not implemented");
+      receiverAddress: string;
+      chain: ChainName;
+      decimals: number;
+    }): Promise<string> => {
+      const { contractAddress, amount, receiverAddress, chain, decimals } = args;
+
+      if (chain === "eth" || chain === "arbitrum") {
+        const chainId = chain === "eth" ? mainnet.id : arbitrum.id;
+        await switchChainAsync({ chainId });
+        const txHash = await writeContractAsync({
+          address: contractAddress as `0x${string}`,
+          abi: ERC20_TRANSFER_ABI,
+          functionName: "transfer",
+          args: [receiverAddress as `0x${string}`, amount],
+        });
+        return txHash;
+      }
+
+      if (chain === "solana") {
+        if (!publicKey || !solanaSendTransaction) {
+          throw new Error("Solana wallet not connected");
+        }
+        const mintPubkey = new PublicKey(contractAddress);
+        const receiverPubkey = new PublicKey(receiverAddress);
+
+        const senderAta = await getAssociatedTokenAddress(mintPubkey, publicKey);
+        const receiverAta = await getAssociatedTokenAddress(mintPubkey, receiverPubkey);
+
+        const tx = new Transaction();
+
+        const receiverAtaInfo = await connection.getAccountInfo(receiverAta);
+        if (!receiverAtaInfo) {
+          tx.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey,      // payer
+              receiverAta,    // ata to create
+              receiverPubkey, // owner
+              mintPubkey,     // mint
+            ),
+          );
+        }
+
+        tx.add(
+          createTransferCheckedInstruction(
+            senderAta,
+            mintPubkey,
+            receiverAta,
+            publicKey,
+            amount,
+            decimals,
+          ),
+        );
+
+        const signature = await solanaSendTransaction(tx, connection);
+        return signature;
+      }
+
+      throw new Error(`Unsupported chain for deposit: ${chain}`);
     },
-    []
+    [writeContractAsync, switchChainAsync, publicKey, solanaSendTransaction, connection],
   );
 
   const signIn = useCallback<
@@ -85,25 +170,28 @@ export const useWalletSelector = () => {
         return;
       }
     },
-    [select, solanaConnect, evmConnect]
+    [select, solanaConnect, evmConnect],
   );
 
-  const signOutChain = useCallback(async (chain: "near" | "solana" | "eth" | "arbitrum") => {
-    if (chain === "near") {
-      const result = await nearConnector.getConnectedWallet().catch(() => null);
-      if (result) await nearConnector.disconnect(result.wallet);
-      else useWalletStore.getState().disconnectChainWallet("near");
-      return;
-    }
-    if (chain === "solana") {
-      await solanaDisconnect();
-      return;
-    }
-    if (chain === "eth" || chain === "arbitrum") {
-      evmDisconnect();
-      return;
-    }
-  }, [solanaDisconnect, evmDisconnect]);
+  const signOutChain = useCallback(
+    async (chain: "near" | "solana" | "eth" | "arbitrum") => {
+      if (chain === "near") {
+        const result = await nearConnector.getConnectedWallet().catch(() => null);
+        if (result) await nearConnector.disconnect(result.wallet);
+        else useWalletStore.getState().disconnectChainWallet("near");
+        return;
+      }
+      if (chain === "solana") {
+        await solanaDisconnect();
+        return;
+      }
+      if (chain === "eth" || chain === "arbitrum") {
+        evmDisconnect();
+        return;
+      }
+    },
+    [solanaDisconnect, evmDisconnect],
+  );
 
   return { requestDeposit, signIn, signOutChain };
 };

@@ -1,16 +1,16 @@
 import closeIcon from "../../assets/close.svg";
 import Modal from "react-modal";
-import { memo, useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
-import { useState } from "react";
 import { useVaultActionStore } from "../../stores/vault_action_store";
-import {
-  useWalletStore,
-  useConnectedWalletAddress,
-} from "../../stores/wallet_store";
+import { useWalletStore } from "../../stores/wallet_store";
+import { useShallow } from "zustand/react/shallow";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "../../queryClient";
+import { toast } from "sonner";
 import { vaultQueries, type TAsset } from "../../queries/vault";
+import { useWalletSelector } from "../../walletSelector";
 import { assetUtils } from "../../utils/assetUtils";
 import { stringUtils } from "../../utils/stringUtils";
 import { accountQueries } from "../../queries/account";
@@ -19,6 +19,8 @@ import { vaultMutations } from "../../mutations/vault";
 import { CircularProgress } from "../utils/CircularProgress";
 import { vaultUtils } from "../../utils/vaultUtils";
 import Big from "big.js";
+import { ChainSelect, CHAIN_META, type ChainOption } from "../utils/ChainSelect";
+import { oneClickUtils } from "../../utils/1clickUtils";
 
 const Asset = ({
   onClick,
@@ -64,14 +66,50 @@ const DepositModal = () => {
   );
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const [open, setOpen] = useState(false);
+  const tokenDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Chain of the first non-NEAR connected wallet (used for cross-chain deposit routing)
-  const depositChain = useWalletStore((s) =>
-    s.connectedWallets.find((w) => !w.supportedChains.includes("near"))
-      ?.supportedChains[0] ?? null
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (tokenDropdownRef.current && !tokenDropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const vaultMeta = vaultUtils.vaults.find((v) => v.vault_id === vaultContractId);
+
+  const connectedWallets = useWalletStore(
+    useShallow((s) => s.connectedWallets)
   );
+
+  const chainOptions = useMemo<ChainOption[]>(() => {
+    const vaultChains = vaultMeta?.chains ?? [];
+    return vaultChains.map((c) => {
+      const connectedWallet = connectedWallets.find((w) => w.supportedChains.includes(c));
+      return {
+        chain: c,
+        address: connectedWallet?.address ?? null,
+        disabled: !connectedWallet,
+        ...(CHAIN_META[c] ?? { logo: "", label: c }),
+      };
+    });
+  }, [vaultMeta, connectedWallets]);
+
+  const [selectedChain, setSelectedChain] = useState<ChainOption | null>(null);
+
+  useEffect(() => {
+    setSelectedChain((prev) => {
+      const enabledOptions = chainOptions.filter((o) => !o.disabled);
+      if (enabledOptions.length === 0) return null;
+      if (prev && enabledOptions.some((o) => o.chain === prev.chain)) return prev;
+      return enabledOptions[0];
+    });
+  }, [chainOptions]);
+
+  const depositChain = selectedChain?.chain ?? null;
   const nearAddress = useWalletStore((s) => s.nearAccountId);
-  const connectedWalletAddress = useConnectedWalletAddress();
 
   const selectedAsset = useVaultActionStore((s) => s.selectedDepositAsset);
   const slippagePercent = useVaultActionStore((s) => s.depositSlippagePercent);
@@ -99,28 +137,90 @@ const DepositModal = () => {
     asset: selectedAsset,
   });
 
-  const vaultMeta = vaultUtils.vaults.find(
-    (v) => v.vault_id === vaultContractId,
-  );
-
   const exchangeRateForSelectedAsset = assetUtils.useExchangeRateForAsset({
     asset: selectedAsset,
     vaultContractId: vaultContractId ?? null,
   });
 
+  const isNearDeposit = !depositChain || depositChain === "near";
+
+  const tokensQuery = useQuery({
+    ...intentsQueries.get1ClickTokens(),
+    enabled: !isNearDeposit,
+  });
+
+  const { sourceToken, destToken } = useMemo(() => {
+    if (isNearDeposit || !tokensQuery.data || !selectedAsset || !depositChain) {
+      return { sourceToken: null, destToken: null };
+    }
+    if (!("FungibleToken" in selectedAsset)) return { sourceToken: null, destToken: null };
+
+    const nearContractId = selectedAsset.FungibleToken.contract_id;
+    const pairEntry = oneClickUtils.tokenPairMap[nearContractId];
+    if (!pairEntry) return { sourceToken: null, destToken: null };
+
+    const blockchain = oneClickUtils.chainNameTo1ClickBlockchain(depositChain);
+    const sourceContractAddress = pairEntry[blockchain as "eth" | "arb" | "sol"];
+    if (!sourceContractAddress) return { sourceToken: null, destToken: null };
+
+    return {
+      sourceToken: tokensQuery.data.find(
+        (t) => t.blockchain === blockchain && t.contractAddress?.toLowerCase() === sourceContractAddress.toLowerCase()
+      ) ?? null,
+      destToken: tokensQuery.data.find(
+        (t) => t.blockchain === "near" && t.contractAddress === nearContractId
+      ) ?? null,
+    };
+  }, [isNearDeposit, tokensQuery.data, selectedAsset, depositChain]);
+
+  const amountInBaseUnits = useMemo(() => {
+    if (!depositAmount || !sourceToken) return null;
+    try {
+      const n = Big(depositAmount).mul(Big(10).pow(sourceToken.decimals));
+      return n.gt(0) ? n.toFixed(0) : null;
+    } catch { return null; }
+  }, [depositAmount, sourceToken]);
+
+  const bridgeQuoteEnabled =
+    !isNearDeposit &&
+    !!sourceToken &&
+    !!destToken &&
+    !!amountInBaseUnits &&
+    !!nearAddress &&
+    !!selectedChain?.address;
+
+  const bridgeQuoteQuery = useQuery({
+    ...intentsQueries.get1ClickQuotation({
+      dry: true,
+      swapType: "EXACT_INPUT",
+      slippageTolerance: Number(slippagePercent),
+      originAsset: sourceToken?.assetId ?? "",
+      depositType: "ORIGIN_CHAIN",
+      destinationAsset: destToken?.assetId ?? "",
+      amount: amountInBaseUnits ?? "0",
+      refundTo: selectedChain?.address ?? "",
+      refundType: "ORIGIN_CHAIN",
+      recipient: nearAddress ?? "",
+      recipientType: "DESTINATION_CHAIN",
+    }),
+    enabled: bridgeQuoteEnabled,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const expectedToReceiveAmount = useMemo(() => {
     try {
-      if (exchangeRateForSelectedAsset && vaultMeta) {
-        return Big(depositAmount || "0")
-          .mul(exchangeRateForSelectedAsset.assetToShare)
-          .round(Math.min(6, vaultMeta.share_deciamls), Big.roundDown)
-          .toFixed();
-      }
-      return "0";
+      if (!exchangeRateForSelectedAsset || !vaultMeta) return "0";
+      const baseAmount = !isNearDeposit && bridgeQuoteQuery.data
+        ? bridgeQuoteQuery.data.quote.amountOutFormatted
+        : (depositAmount || "0");
+      return Big(baseAmount)
+        .mul(exchangeRateForSelectedAsset.assetToShare)
+        .round(Math.min(6, vaultMeta.share_deciamls), Big.roundDown)
+        .toFixed();
     } catch {
       return "0";
     }
-  }, [exchangeRateForSelectedAsset, depositAmount, vaultMeta]);
+  }, [exchangeRateForSelectedAsset, depositAmount, vaultMeta, isNearDeposit, bridgeQuoteQuery.data]);
 
   const vaultShareMetadataQuery = useQuery({
     ...vaultQueries.getFtMetadataQueryOptions({
@@ -131,15 +231,62 @@ const DepositModal = () => {
 
   const balance = accountQueries.useAccountBalance({ asset: selectedAsset });
 
-  const intentsAddressQuery = useQuery({
-    ...intentsQueries.getIntentsAddressQueryOptions({
-      chain: depositChain!,
-      nearAddress: nearAddress!,
-    }),
-    enabled: nearAddress !== null && depositChain !== null,
-  });
-
   const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
+  const { requestDeposit } = useWalletSelector();
+
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [bridgeTxHash, setBridgeTxHash] = useState<string | null>(null);
+  const [bridgeQuoteResult, setBridgeQuoteResult] = useState<{ amountInFormatted: string; amountOutFormatted: string } | null>(null);
+
+  const bridgeMutation = useMutation({
+    mutationFn: async () => {
+      const quote = await queryClient.fetchQuery({
+        ...intentsQueries.get1ClickQuotation({
+          dry: false,
+          swapType: "EXACT_INPUT",
+          slippageTolerance: Number(slippagePercent),
+          originAsset: sourceToken!.assetId,
+          depositType: "ORIGIN_CHAIN",
+          destinationAsset: destToken!.assetId,
+          amount: amountInBaseUnits!,
+          refundTo: selectedChain!.address!,
+          refundType: "ORIGIN_CHAIN",
+          recipient: nearAddress!,
+          recipientType: "INTENTS",
+        }),
+        staleTime: 0,
+      });
+
+      setBridgeQuoteResult({
+        amountInFormatted: quote.quote.amountInFormatted,
+        amountOutFormatted: quote.quote.amountOutFormatted,
+      });
+
+      const depositAddress = quote.quote.depositAddress;
+      if (!depositAddress) throw new Error("No deposit address returned from bridge");
+
+      const txHash = await requestDeposit({
+        contractAddress: sourceToken!.contractAddress!,
+        amount: BigInt(amountInBaseUnits!),
+        receiverAddress: depositAddress,
+        chain: depositChain!,
+        decimals: sourceToken!.decimals,
+      });
+
+      return { txHash, quote };
+    },
+    onSuccess: ({ txHash }) => {
+      setBridgeTxHash(txHash);
+    },
+    onError: (error) => {
+      toast.error("Bridge failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+      setStep(1);
+      setBridgeTxHash(null);
+      setBridgeQuoteResult(null);
+    },
+  });
 
   const isExceedingBalance = useMemo(() => {
     if (!depositAmount || !balance.data?.formatted) return false;
@@ -152,17 +299,20 @@ const DepositModal = () => {
 
   const canDeposit =
     !isExceedingBalance &&
-    (!depositChain || intentsAddressQuery.data) &&
+    (isNearDeposit || bridgeQuoteQuery.data) &&
     nearAddress &&
     selectedAsset &&
     exchangeRateForSelectedAsset &&
     vaultShareMetadataQuery.data &&
     vaultContractId &&
-    connectedWalletAddress &&
+    selectedChain &&
     depositAmount;
 
   const handleClose = () => {
-    if (depositToVaultMutation.isPending) return;
+    if (depositToVaultMutation.isPending || bridgeMutation.isPending) return;
+    setStep(1);
+    setBridgeTxHash(null);
+    setBridgeQuoteResult(null);
     useVaultActionStore.getState().closeDepositWalletModal();
   };
 
@@ -190,153 +340,283 @@ const DepositModal = () => {
     >
       <div className="w-full md:w-[500px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
         <h2 className="text-2xl font-semibold mb-0 mt-4">
-          Deposit Into {vaultMeta?.name}
+          {step === 1 ? `Deposit Into ${vaultMeta?.name}` : step === 2 ? "Bridge in Progress" : "Complete Deposit"}
         </h2>
+
+        {/* Stepper — only for cross-chain */}
+        {!isNearDeposit && (
+          <div className="flex items-center mt-4">
+            {(["Deposit", "Bridge", "Confirm"] as const).map((label, i) => {
+              const s = (i + 1) as 1 | 2 | 3;
+              const done = s < step;
+              const active = s === step;
+              return (
+                <div key={s} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                      done ? "bg-green-500 text-black" : active ? "bg-primary text-black" : "bg-card-border text-gray"
+                    }`}>
+                      {done ? "✓" : s}
+                    </div>
+                    <span className={`text-xs mt-1 whitespace-nowrap ${active ? "text-white" : "text-gray"}`}>{label}</span>
+                  </div>
+                  {s < 3 && <div className={`flex-1 h-px mx-2 mb-4 ${s < step ? "bg-green-500" : "bg-card-border"}`} />}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <hr className="border-t border-border-color mt-6 mb-6" />
 
-        <div className="flex justify-between items-center mt-5 mb-1.5">
-          <p className="text-sm font-base text-white">Amount</p>
-          <p className="text-sm font-base text-gray">
-            Available: {stringUtils.truncateDecimals(balance.data?.formatted)}
-          </p>
-        </div>
+        {/* ── Step 1: Deposit form ───────────────────────────────────────── */}
+        {step === 1 && (
+          <>
+            {chainOptions.length > 0 && (
+              <ChainSelect
+                label="From"
+                options={chainOptions}
+                value={selectedChain}
+                onChange={setSelectedChain}
+              />
+            )}
 
-        <div className="relative md:max-w-md mt-1">
-          <div className="flex items-stretch rounded-sm overflow-hidden bg-input-background focus-within:ring-2 focus-within:ring-input-focus transition">
-            <div
-              id="dropdown"
-              onClick={() => setOpen(!open)}
-              className="flex items-center gap-2 bg-input-inner-background px-4 select-none cursor-pointer shrink-0"
-            >
-              <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
-              <span className="text-sm text-white font-semibold whitespace-nowrap">
-                {assetSymbol}
-              </span>
+            <div className="flex justify-between items-center mt-5 mb-1.5">
+              <p className="text-sm font-base text-white">Amount</p>
+              <p className="text-sm font-base text-gray">
+                Available: {stringUtils.truncateDecimals(balance.data?.formatted)}
+              </p>
             </div>
-            <Input />
-            <div
+
+            <div className="relative md:max-w-md mt-1" ref={tokenDropdownRef}>
+              <div className="flex items-stretch rounded-sm overflow-hidden bg-input-background focus-within:ring-2 focus-within:ring-input-focus transition">
+                <div
+                  onClick={() => setOpen(!open)}
+                  className="flex items-center gap-2 bg-input-inner-background px-4 select-none cursor-pointer shrink-0"
+                >
+                  <img src={assetIcon} alt={assetSymbol} className="w-6 h-6" />
+                  <span className="text-sm text-white font-semibold whitespace-nowrap">{assetSymbol}</span>
+                </div>
+                <Input />
+                <div
+                  onClick={() => {
+                    if (balance.data) {
+                      useVaultActionStore.getState().updateDepositAmount({ amount: balance.data.formatted });
+                    }
+                  }}
+                  className="flex items-center px-3 bg-input-background cursor-pointer transition-opacity duration-200 hover:opacity-50"
+                >
+                  <span className="bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm">Max</span>
+                </div>
+              </div>
+              {open && (
+                <div className="absolute left-0 top-full mt-1 w-40 bg-input-inner-background rounded-md shadow-lg z-10">
+                  {availableTokens
+                    .filter((e) => {
+                      if ("FungibleToken" in e) {
+                        if (vaultUtils.DEPRECATED_TOKENS.includes(e.FungibleToken.contract_id)) return false;
+                        return true;
+                      }
+                      return false;
+                    })
+                    .map((token) => (
+                      <Asset
+                        key={"MultiToken" in token ? token.MultiToken.token_id : "ft"}
+                        asset={token}
+                        onClick={(asset) => {
+                          useVaultActionStore.getState().changeDepositAsset({ asset });
+                          setOpen(false);
+                        }}
+                      />
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center mt-5 mb-2">
+              <p className="text-sm">Transaction Details</p>
+              {!isNearDeposit && <span className="text-xs text-gray">Quote refreshes every 5 min</span>}
+            </div>
+            <div className="bg-card-background rounded-sm p-4 px-5 space-y-4">
+              {!isNearDeposit && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray">Bridge output</span>
+                  <div className="flex items-center gap-1.5">
+                    {bridgeQuoteQuery.isFetching ? (
+                      <CircularProgress size="small" />
+                    ) : bridgeQuoteQuery.data ? (
+                      <span>≈ {stringUtils.truncateDecimals(bridgeQuoteQuery.data.quote.amountOutFormatted)} {assetSymbol}</span>
+                    ) : !sourceToken || !destToken ? (
+                      <span className="text-red-400 text-xs">Not supported on this chain</span>
+                    ) : (
+                      <span className="text-gray">—</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray">Share price</span>
+                <div className="flex gap-1.5 items-center">
+                  <span>1 {assetSymbol}</span>
+                  <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
+                  <ArrowLeftRight className="text-gray" size={12} />
+                  <span>{stringUtils.truncateDecimals(exchangeRateForSelectedAsset?.assetToShare)} {vaultShareMetadataQuery.data?.symbol}</span>
+                  {vaultShareMetadataQuery.data?.icon && (
+                    <img src={vaultShareMetadataQuery.data.icon} alt={vaultShareMetadataQuery.data.symbol} className="w-5 h-5" />
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray">Expected to receive</span>
+                <div className="flex gap-1.5 items-center">
+                  {!isNearDeposit && bridgeQuoteQuery.isFetching ? (
+                    <CircularProgress size="small" />
+                  ) : (
+                    <>
+                      <span>{expectedToReceiveAmount} {vaultShareMetadataQuery.data?.symbol}</span>
+                      {vaultShareMetadataQuery.data?.icon && (
+                        <img src={vaultShareMetadataQuery.data.icon} alt={vaultShareMetadataQuery.data.symbol} className="w-5 h-5" />
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray">Slippage tolerance</span>
+                <span>{slippagePercent}%</span>
+              </div>
+            </div>
+
+            <button
               onClick={() => {
-                if (balance.data) {
-                  useVaultActionStore
-                    .getState()
-                    .updateDepositAmount({ amount: balance.data.formatted });
+                if (isNearDeposit) {
+                  if (!depositToVaultMutation.isPending && canDeposit) {
+                    const { depositAmount: amount, depositSlippagePercent } = useVaultActionStore.getState();
+                    depositToVaultMutation.mutate({
+                      nearAddress,
+                      asset: selectedAsset,
+                      amount,
+                      exchangeRate: exchangeRateForSelectedAsset.assetToShare,
+                      sharesDecimals: vaultShareMetadataQuery.data.decimals,
+                      vaultContractId,
+                      slippagePercent: depositSlippagePercent,
+                      blockchainAddress: selectedChain!.address!,
+                    });
+                  }
+                } else {
+                  setStep(2);
+                  bridgeMutation.mutate();
                 }
               }}
-              className="flex items-center px-3 bg-input-background cursor-pointer transition-opacity duration-200 hover:opacity-50"
+              disabled={depositToVaultMutation.isPending || !canDeposit}
+              className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative px-6 mt-10 mb-4"
             >
-              <span className="bg-input-inner-background text-white text-xs px-3 py-1.5 rounded-sm">
-                Max
-              </span>
-            </div>
-          </div>
-          {open && (
-            <div className="absolute left-0 top-full mt-1 w-40 bg-input-inner-background rounded-md shadow-lg z-10">
-              {availableTokens
-                .filter((e) => {
-                  if ("FungibleToken" in e) {
-                    if (
-                      vaultUtils.DEPRECATED_TOKENS.includes(
-                        e.FungibleToken.contract_id,
-                      )
-                    ) {
-                      return false;
-                    }
-                    return true;
-                  }
-                  return false;
-                })
-                .map((token) => (
-                  <Asset
-                    key={
-                      "MultiToken" in token ? token.MultiToken.token_id : "ft"
-                    }
-                    asset={token}
-                    onClick={(asset) => {
-                      useVaultActionStore
-                        .getState()
-                        .changeDepositAsset({ asset });
-                      setOpen(false);
-                    }}
-                  />
-                ))}
-            </div>
-          )}
-        </div>
-
-        <p className="text-sm mb-2 mt-5">Transaction Details</p>
-        <div className="bg-card-background rounded-sm p-4 px-5 space-y-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray">Share price</span>
-            <div className="flex gap-1.5 items-center justify-center">
-              <span>1 {assetSymbol}</span>
-              <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
-              <ArrowLeftRight className="text-gray" size={12} />
-              <span>
-                {stringUtils.truncateDecimals(
-                  exchangeRateForSelectedAsset?.assetToShare,
-                )}{" "}
-                {vaultShareMetadataQuery.data?.symbol}
-              </span>
-              {vaultShareMetadataQuery.data?.icon && (
-                <img
-                  src={vaultShareMetadataQuery.data.icon}
-                  alt={vaultShareMetadataQuery.data.symbol}
-                  className="w-5 h-5"
-                />
+              {depositToVaultMutation.isPending ? (
+                <CircularProgress size="small" />
+              ) : isExceedingBalance ? (
+                "Insufficient balance"
+              ) : isNearDeposit ? (
+                "Deposit"
+              ) : (
+                "Bridge & Deposit"
               )}
-            </div>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray">Expected to receive</span>
-            <div className="flex gap-1.5 items-center justify-center">
-              <span>
-                {expectedToReceiveAmount} {vaultShareMetadataQuery.data?.symbol}
-              </span>
-              {vaultShareMetadataQuery.data?.icon && (
-                <img
-                  src={vaultShareMetadataQuery.data.icon}
-                  alt={vaultShareMetadataQuery.data.symbol}
-                  className="w-5 h-5"
-                />
-              )}
-            </div>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray">Slippage tolerance</span>
-            <span>{slippagePercent}%</span>
-          </div>
-        </div>
+            </button>
+          </>
+        )}
 
-        <button
-          onClick={() => {
-            if (!depositToVaultMutation.isPending && canDeposit) {
-              const { depositAmount: amount, depositSlippagePercent } =
-                useVaultActionStore.getState();
-              depositToVaultMutation.mutate({
-                nearAddress,
-                asset: selectedAsset,
-                amount,
-                exchangeRate: exchangeRateForSelectedAsset.assetToShare,
-                sharesDecimals: vaultShareMetadataQuery.data.decimals,
-                vaultContractId,
-                slippagePercent: depositSlippagePercent,
-                blockchainAddress: connectedWalletAddress.address,
-              });
-            }
-          }}
-          disabled={depositToVaultMutation.isPending || !canDeposit}
-          className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative px-6 mt-10 mb-4"
-        >
-          {depositToVaultMutation.isPending ? (
-            <div className="mr-1">
-              <CircularProgress size="small" />
+        {/* ── Step 2: Bridge in progress ─────────────────────────────────── */}
+        {step === 2 && (
+          <div className="py-4">
+            {bridgeMutation.isPending && !bridgeQuoteResult ? (
+              <div className="flex flex-col items-center gap-4 py-8">
+                <CircularProgress size="medium" />
+                <p className="text-white font-medium">Fetching bridge quote...</p>
+              </div>
+            ) : (bridgeMutation.isPending || bridgeTxHash) && bridgeQuoteResult ? (
+              <>
+                {!bridgeTxHash ? (
+                  <div className="flex flex-col items-center gap-4 py-6">
+                    <CircularProgress size="medium" />
+                    <p className="text-white font-medium">Waiting for wallet confirmation...</p>
+                    <p className="text-gray text-sm text-center">Please confirm the transaction in your wallet</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 py-6">
+                    <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <span className="text-green-500 text-xl font-bold">✓</span>
+                    </div>
+                    <p className="text-white font-medium">Bridge transaction submitted</p>
+                    <p className="text-gray text-xs break-all text-center max-w-xs">{bridgeTxHash}</p>
+                  </div>
+                )}
+                <div className="bg-card-background rounded-sm p-4 space-y-3 mb-6 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray">Amount in</span>
+                    <span>{stringUtils.truncateDecimals(bridgeQuoteResult.amountInFormatted)} {assetSymbol}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray">Amount out</span>
+                    <span>{stringUtils.truncateDecimals(bridgeQuoteResult.amountOutFormatted)} {assetSymbol}</span>
+                  </div>
+                </div>
+                {bridgeTxHash && (
+                  <button
+                    onClick={() => setStep(3)}
+                    className="flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black py-3 rounded-sm font-bold text-base confirm-button-shadow"
+                  >
+                    Continue to Deposit
+                  </button>
+                )}
+              </>
+            ) : null}
+          </div>
+        )}
+
+        {/* ── Step 3: Final vault deposit ────────────────────────────────── */}
+        {step === 3 && (
+          <div className="py-4">
+            <p className="text-gray text-sm mb-5">
+              Your tokens are being bridged to NEAR. Once received, click below to complete the vault deposit.
+            </p>
+            <div className="bg-card-background rounded-sm p-4 px-5 space-y-3 mb-6 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray">Bridge output</span>
+                <span>{stringUtils.truncateDecimals(bridgeQuoteQuery.data?.quote.amountOutFormatted)} {assetSymbol}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray">Expected vault shares</span>
+                <div className="flex items-center gap-1.5">
+                  <span>{expectedToReceiveAmount} {vaultShareMetadataQuery.data?.symbol}</span>
+                  {vaultShareMetadataQuery.data?.icon && (
+                    <img src={vaultShareMetadataQuery.data.icon} alt={vaultShareMetadataQuery.data.symbol} className="w-4 h-4" />
+                  )}
+                </div>
+              </div>
             </div>
-          ) : isExceedingBalance ? (
-            "Insufficient balance"
-          ) : (
-            "Deposit"
-          )}
-        </button>
+            <button
+              onClick={() => {
+                if (!depositToVaultMutation.isPending && canDeposit) {
+                  const { depositSlippagePercent } = useVaultActionStore.getState();
+                  const bridgeAmount = bridgeQuoteQuery.data?.quote.amountOutFormatted ?? depositAmount;
+                  depositToVaultMutation.mutate({
+                    nearAddress,
+                    asset: selectedAsset,
+                    amount: bridgeAmount,
+                    exchangeRate: exchangeRateForSelectedAsset.assetToShare,
+                    sharesDecimals: vaultShareMetadataQuery.data.decimals,
+                    vaultContractId,
+                    slippagePercent: depositSlippagePercent,
+                    blockchainAddress: selectedChain!.address!,
+                  });
+                }
+              }}
+              disabled={depositToVaultMutation.isPending || !canDeposit}
+              className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black py-3 rounded-sm font-bold text-base confirm-button-shadow"
+            >
+              {depositToVaultMutation.isPending ? <CircularProgress size="small" /> : "Deposit into Vault"}
+            </button>
+          </div>
+        )}
 
         <button
           onClick={handleClose}

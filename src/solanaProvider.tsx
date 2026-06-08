@@ -7,9 +7,8 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
 
-const SOLANA_RPC_ENDPOINT = clusterApiUrl("mainnet-beta");
+const SOLANA_RPC_ENDPOINT = "https://backend-v2.meteorwallet.app/rpc/solana";
 
 export function SolanaProvider({ children }: { children: React.ReactNode }) {
   const wallets = useMemo(

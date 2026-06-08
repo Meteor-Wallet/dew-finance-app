@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { FLAT_LIST_TOKENS } from "../intents/constants/tokens";
 import { vaultQueries, type TAsset } from "../queries/vault";
 import { useMemo } from "react";
 import { isEqual } from "es-toolkit";
@@ -21,16 +20,7 @@ const useAssetSymbolAndIcon = ({ asset }: { asset: TAsset | null }) => {
   let assetDecimals: null | number = null;
 
   if (asset) {
-    if ("MultiToken" in asset) {
-      const tokenInfo = FLAT_LIST_TOKENS.find(
-        (e) => e.defuseAssetId === asset.MultiToken.token_id
-      );
-      if (tokenInfo) {
-        assetSymbol = tokenInfo.symbolWithoutChain;
-        assetIcon = tokenInfo.icon;
-        assetDecimals = tokenInfo.decimals;
-      }
-    } else if ("FungibleToken" in asset && ftMetadataQuery.data) {
+    if ("FungibleToken" in asset && ftMetadataQuery.data) {
       assetSymbol = ftMetadataQuery.data.symbol;
       assetIcon = ftMetadataQuery.data.icon ?? "";
       assetDecimals = ftMetadataQuery.data.decimals;

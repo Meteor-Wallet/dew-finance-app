@@ -4,6 +4,7 @@ import {
   type TRestrictionPolicy,
   type TRestrictions,
 } from "../queries/vault";
+import type { ChainName } from "../stores/wallet_store";
 
 function isPolicyOfType<Type extends TPolicyType>(
   type: Type,
@@ -62,6 +63,7 @@ function decodeInterface(base64: string): string {
 }
 
 const vaults: {
+  chains: ChainName[]
   vault_id: string;
   kernel_id: string;
   share_price_decimals: number;
@@ -78,7 +80,8 @@ const vaults: {
     share_deciamls: 24,
     base_asset_decimals: 24,
     curated_by: "Dew Finance",
-    name: "NEAR Vault"
+    name: "NEAR Vault",
+    chains: ["near"]
   },
   {
     vault_id: "usdt.meteor-vaults.near",
@@ -87,7 +90,8 @@ const vaults: {
     share_deciamls: 18,
     base_asset_decimals: 6,
     curated_by: "Dew Finance",
-    name: "USDT Vault"
+    name: "USDT Vault",
+    chains: ["near", "solana", "eth", "arbitrum"]
   },
   {
     vault_id: "usdc.meteor-vaults.near",
@@ -96,7 +100,8 @@ const vaults: {
     share_deciamls: 18,
     base_asset_decimals: 6,
     curated_by: "Dew Finance",
-    name: "USDC Vault"
+    name: "USDC Vault",
+    chains: ["near", "solana", "eth", "arbitrum"]
   },
   {
     vault_id: "zec.meteor-vaults.near",
@@ -105,7 +110,8 @@ const vaults: {
     share_deciamls: 18,
     base_asset_decimals: 8,
     curated_by: "Dew Finance",
-    name: "ZEC Vault"
+    name: "ZEC Vault",
+    chains: ["near"]
   },
 ]
 

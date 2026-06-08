@@ -1,10 +1,9 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { SupportedChainName } from "../intents/types/base";
 
-export type EvmChainName = Extract<SupportedChainName, "eth" | "arbitrum">;
-export type SolanaChainName = Extract<SupportedChainName, "solana">;
-export type NearChainName = Extract<SupportedChainName, "near">;
+export type EvmChainName = "eth" | "arbitrum";
+export type SolanaChainName = "solana";
+export type NearChainName = "near";
 export type ChainName = EvmChainName | SolanaChainName | NearChainName;
 
 export interface WalletState {
