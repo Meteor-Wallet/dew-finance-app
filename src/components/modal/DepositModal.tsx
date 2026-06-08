@@ -229,7 +229,7 @@ const DepositModal = () => {
     enabled: vaultContractId !== undefined,
   });
 
-  const balance = accountQueries.useAccountBalance({ asset: selectedAsset });
+  const balance = accountQueries.useAccountBalance({ asset: selectedAsset, chain: depositChain });
 
   const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
   const { requestDeposit } = useWalletSelector();
@@ -383,8 +383,13 @@ const DepositModal = () => {
 
             <div className="flex justify-between items-center mt-5 mb-1.5">
               <p className="text-sm font-base text-white">Amount</p>
-              <p className="text-sm font-base text-gray">
-                Available: {stringUtils.truncateDecimals(balance.data?.formatted)}
+              <p className="text-sm font-base text-gray flex items-center gap-1.5">
+                Available:{" "}
+                {balance.isLoading ? (
+                  <CircularProgress size="small" />
+                ) : (
+                  stringUtils.truncateDecimals(balance.data?.formatted)
+                )}
               </p>
             </div>
 
