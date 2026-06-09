@@ -201,8 +201,10 @@ const useWithdrawFromVaultMutation = () => {
       });
     },
     onSuccess: (_data, params) => {
-      useVaultActionStore.getState().updateWithdrawAmount({ amount: "" });
-      useVaultActionStore.getState().closeRedeemWalletModal();
+      if (!params.skipClose) {
+        useVaultActionStore.getState().updateWithdrawAmount({ amount: "" });
+        useVaultActionStore.getState().closeRedeemWalletModal();
+      }
       setTimeout(() => {
         queryClient.invalidateQueries(
           vaultQueries.getMyPositionQueryOptions({
@@ -236,6 +238,7 @@ const useWithdrawFromVaultMutation = () => {
       shareDecimals: number;
       vaultContractId: string;
       nearAddress: string;
+      skipClose?: boolean;
     }) => {
       if (!("FungibleToken" in asset)) {
         throw new Error("Only fungible token withdrawal is supported");
