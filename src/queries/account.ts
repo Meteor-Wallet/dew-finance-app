@@ -5,7 +5,6 @@ import { mainnet, arbitrum } from "wagmi/chains";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
-import { wagmiConfig } from "../evmProvider";
 import { vaultQueries, type TAsset } from "./vault";
 import { intentsQueries } from "./intents";
 import { oneClickUtils } from "../utils/1clickUtils";
@@ -13,6 +12,7 @@ import { useConnectedWalletAddress } from "../stores/wallet_store";
 import type { ChainName } from "../stores/wallet_store";
 import { nearUtils } from "../utils/nearUtils";
 import Big from "big.js";
+import { wagmiConfig } from "../evmConfig";
 
 const ERC20_BALANCE_ABI = [
   {
