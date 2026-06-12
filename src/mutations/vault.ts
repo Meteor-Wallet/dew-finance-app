@@ -378,6 +378,8 @@ const useWithdrawFromVaultMutation = () => {
         description: "Withdraw successfully",
         id: toastIdRef.current,
       });
+
+      return {isLiquiditySufficient}
     },
   });
 };

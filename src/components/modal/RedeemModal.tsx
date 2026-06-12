@@ -568,7 +568,19 @@ const RedeemModal = () => {
                         chain: destChain!,
                         signMessage: (msg) => signMessage(destChain!, msg),
                       },
-                      { onSuccess: () => setStep(2) },
+                      {
+                        onSuccess: ({ isLiquiditySufficient }) => {
+                          if (isLiquiditySufficient) {
+                            setStep(2);
+                          } else {
+                            toast.info("Redemption queued", {
+                              description: "Liquidity is insufficient right now. Your funds should be ready to claim in ~15 minutes.",
+                            });
+                            useVaultActionStore.getState().updateWithdrawAmount({ amount: "" });
+                            useVaultActionStore.getState().closeRedeemWalletModal();
+                          }
+                        },
+                      },
                     );
                   }
                 }
