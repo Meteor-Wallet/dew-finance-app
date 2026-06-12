@@ -9,7 +9,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "../../queryClient";
 import { toast } from "sonner";
-import { vaultQueries, type TAsset } from "../../queries/vault";
+import { vaultQueries } from "../../queries/vault";
 import { assetUtils } from "../../utils/assetUtils";
 import Big from "big.js";
 import { vaultMutations } from "../../mutations/vault";
@@ -19,18 +19,8 @@ import { intentsQueries } from "../../queries/intents";
 import { vaultUtils } from "../../utils/vaultUtils";
 import { ChainSelect, CHAIN_META, type ChainOption } from "../utils/ChainSelect";
 import { oneClickUtils } from "../../utils/1clickUtils";
-import { nearConnector } from "../../nearConnector";
-import type { ConnectorAction } from "@hot-labs/near-connect";
-
-const ftCall = (
-  methodName: string,
-  args: object,
-  deposit = "0",
-  gas = "300000000000000",
-): ConnectorAction => ({
-  type: "FunctionCall",
-  params: { methodName, args, gas, deposit },
-});
+import { useWalletSelector } from "../../walletSelector";
+import { dewAccountUtils } from "../../utils/dewAccountUtils";
 
 const Input = () => {
   const withdrawAmount = useVaultActionStore((s) => s.withdrawAmount);
@@ -46,25 +36,6 @@ const Input = () => {
           .updateWithdrawAmount({ amount: e.target.value })
       }
     />
-  );
-};
-
-const Asset = ({
-  onClick,
-  asset,
-}: {
-  asset: TAsset;
-  onClick: (asset: TAsset) => void;
-}) => {
-  const { assetIcon, assetSymbol } = assetUtils.useAssetSymbolAndIcon({ asset });
-  return (
-    <div
-      onClick={() => onClick(asset)}
-      className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-input-focus"
-    >
-      <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
-      <span className="text-sm text-white">{assetSymbol}</span>
-    </div>
   );
 };
 
@@ -254,8 +225,50 @@ const RedeemModal = () => {
     refetchInterval: 5 * 60 * 1000,
   });
 
-  // ── Stepper state ─────────────────────────────────────────────────────────
+  // ── Step 2: abstract account balance + dry bridge quote ──────────────────
+  const assetContractId = selectedAsset && "FungibleToken" in selectedAsset
+    ? selectedAsset.FungibleToken.contract_id
+    : null;
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  const abstractAccountBalanceQuery = useQuery({
+    ...vaultQueries.getFtBalanceQueryOptions({
+      contractId: assetContractId!,
+      accountId: nearAddress!,
+    }),
+    enabled: step === 2 && !!assetContractId && !!nearAddress,
+    refetchInterval: 3000,
+  });
+
+  const abstractAccountBalanceFormatted = useMemo(() => {
+    if (!abstractAccountBalanceQuery.data || assetDecimals === null) return null;
+    try {
+      return Big(abstractAccountBalanceQuery.data).div(Big(10).pow(assetDecimals)).toFixed();
+    } catch {
+      return null;
+    }
+  }, [abstractAccountBalanceQuery.data, assetDecimals]);
+
+  const step2BridgeQuoteQuery = useQuery({
+    ...intentsQueries.get1ClickQuotation({
+      dry: true,
+      swapType: "EXACT_INPUT",
+      slippageTolerance: Number(slippagePercent),
+      originAsset: nearToken?.assetId ?? "",
+      depositType: "ORIGIN_CHAIN",
+      destinationAsset: destChainToken?.assetId ?? "",
+      amount: abstractAccountBalanceQuery.data ?? "0",
+      refundTo: nearAddress ?? "",
+      refundType: "ORIGIN_CHAIN",
+      recipient: selectedChain?.address ?? "",
+      recipientType: "DESTINATION_CHAIN",
+    }),
+    enabled: step === 2 && !!abstractAccountBalanceQuery.data && !!nearToken && !!destChainToken && !!nearAddress && !!selectedChain?.address,
+    staleTime: 0,
+  });
+
+  // ── Stepper state (continued) ─────────────────────────────────────────────
   const [bridgeQuoteResult, setBridgeQuoteResult] = useState<{
     amountInFormatted: string;
     amountOutFormatted: string;
@@ -263,10 +276,11 @@ const RedeemModal = () => {
   const [bridgeTxHash, setBridgeTxHash] = useState<string | null>(null);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
+  const { signMessage } = useWalletSelector();
   const withdrawFromVaultMutation = vaultMutations.useWithdrawFromVaultMutation();
 
   const bridgeMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ amountInBaseUnits }: { amountInBaseUnits: string }) => {
       const quote = await queryClient.fetchQuery({
         ...intentsQueries.get1ClickQuotation({
           dry: false,
@@ -275,7 +289,7 @@ const RedeemModal = () => {
           originAsset: nearToken!.assetId,
           depositType: "ORIGIN_CHAIN",
           destinationAsset: destChainToken!.assetId,
-          amount: redeemAmountInBaseUnits!,
+          amount: amountInBaseUnits,
           refundTo: nearAddress!,
           refundType: "ORIGIN_CHAIN",
           recipient: selectedChain!.address!,
@@ -294,7 +308,30 @@ const RedeemModal = () => {
 
       const ftContractId = (selectedAsset as { FungibleToken: { contract_id: string } }).FungibleToken.contract_id;
       
-      // TODO: sign multica and exec the ft transfer to initiate the bridge
+      await dewAccountUtils.signAndSendTransaction({
+        transaction: {
+          receiverId: ftContractId,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "ft_transfer",
+                args: {
+                  amount: amountInBaseUnits,
+                  receiver_id: depositAddress,
+                },
+                deposit: "1",
+                gas: "100000000000000"
+              }
+            }
+          ]
+        },
+        nearAccountId: nearAddress!,
+        blockchainAddress: selectedChain!.address!,
+        chain: destChain!,
+        signMessage: (msg) => signMessage(destChain!, msg),
+        bridgeOriginAddress: depositAddress,
+      })
 
       return quote;
     },
@@ -509,10 +546,12 @@ const RedeemModal = () => {
                       vaultContractId,
                       slippagePercent,
                       assetDecimals,
-                      usingAbstractAccount: false
+                      usingAbstractAccount: false,
+                      blockchainAddress: selectedChain!.address!,
+                      chain: destChain!,
+                      signMessage: (msg) => signMessage(destChain!, msg),
                     });
                   } else {
-                    setStep(2);
                     withdrawFromVaultMutation.mutate(
                       {
                         nearAddress,
@@ -524,9 +563,12 @@ const RedeemModal = () => {
                         slippagePercent,
                         assetDecimals,
                         skipClose: true,
-                        usingAbstractAccount: true
+                        usingAbstractAccount: true,
+                        blockchainAddress: selectedChain!.address!,
+                        chain: destChain!,
+                        signMessage: (msg) => signMessage(destChain!, msg),
                       },
-                      { onSuccess: () => {} },
+                      { onSuccess: () => setStep(2) },
                     );
                   }
                 }
@@ -547,37 +589,63 @@ const RedeemModal = () => {
           </>
         )}
 
-        {/* ── Step 2: Vault redeem in progress ─────────────────────────── */}
+        {/* ── Step 2: Vault redeem done — confirm bridge ────────────────── */}
         {step === 2 && (
           <div className="py-4">
-            {withdrawFromVaultMutation.isPending ? (
-              <div className="flex flex-col items-center gap-4 py-8">
-                <CircularProgress size="medium" />
-                <p className="text-white font-medium">Redeeming from vault...</p>
-                <p className="text-gray text-sm text-center">Please confirm the transaction in your wallet</p>
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                <span className="text-green-500 text-xl font-bold">✓</span>
               </div>
-            ) : withdrawFromVaultMutation.isSuccess ? (
-              <>
-                <div className="flex flex-col items-center gap-3 py-6">
-                  <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="text-green-500 text-xl font-bold">✓</span>
-                  </div>
-                  <p className="text-white font-medium">Vault redeem complete</p>
-                  <p className="text-gray text-sm text-center">
-                    ≈ {stringUtils.truncateDecimals(expectedRedeemAmount)} {assetSymbol} received to your NEAR wallet
-                  </p>
+              <p className="text-white font-medium">Vault redeem complete</p>
+              <p className="text-gray text-sm text-center">Tokens are in your NEAR abstract account. Review the bridge details below.</p>
+            </div>
+            <div className="bg-card-background rounded-sm p-4 px-5 space-y-3 mb-6 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray">Amount to bridge</span>
+                <div className="flex items-center gap-2">
+                  {abstractAccountBalanceFormatted
+                    ? <span>{stringUtils.truncateDecimals(abstractAccountBalanceFormatted)} {assetSymbol}</span>
+                    : <CircularProgress size="small" />}
+                  <button
+                    onClick={() => abstractAccountBalanceQuery.refetch()}
+                    disabled={abstractAccountBalanceQuery.isFetching}
+                    className="text-gray hover:text-white disabled:opacity-40 transition-colors"
+                    title="Refresh balance"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={abstractAccountBalanceQuery.isFetching ? "animate-spin" : ""}>
+                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                      <path d="M21 3v5h-5" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setStep(3);
-                    bridgeMutation.mutate();
-                  }}
-                  className="flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black py-3 rounded-sm font-bold text-base confirm-button-shadow"
-                >
-                  Continue to Bridge
-                </button>
-              </>
-            ) : null}
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray">Expected on {destChain}</span>
+                <div className="flex items-center gap-1.5">
+                  {step2BridgeQuoteQuery.isFetching ? (
+                    <CircularProgress size="small" />
+                  ) : step2BridgeQuoteQuery.data ? (
+                    <span>≈ {stringUtils.truncateDecimals(step2BridgeQuoteQuery.data.quote.amountOutFormatted)} {assetSymbol}</span>
+                  ) : abstractAccountBalanceQuery.data ? (
+                    <span className="text-gray text-xs">Fetching quote...</span>
+                  ) : (
+                    <span className="text-gray">—</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (abstractAccountBalanceQuery.data) {
+                  setStep(3);
+                  bridgeMutation.mutate({ amountInBaseUnits: abstractAccountBalanceQuery.data });
+                }
+              }}
+              disabled={!abstractAccountBalanceQuery.data || bridgeMutation.isPending}
+              className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black py-3 rounded-sm font-bold text-base confirm-button-shadow"
+            >
+              Continue to Bridge
+            </button>
           </div>
         )}
 

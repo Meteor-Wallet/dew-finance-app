@@ -255,7 +255,10 @@ const useWithdrawFromVaultMutation = () => {
       slippagePercent,
       vaultContractId,
       nearAddress,
-      usingAbstractAccount
+      usingAbstractAccount,
+      blockchainAddress,
+      chain,
+      signMessage,
     }: {
       asset: TAsset;
       share: string;
@@ -266,7 +269,10 @@ const useWithdrawFromVaultMutation = () => {
       vaultContractId: string;
       nearAddress: string;
       skipClose?: boolean;
-      usingAbstractAccount: boolean
+      usingAbstractAccount: boolean;
+      blockchainAddress: string;
+      chain: ChainName;
+      signMessage: (message: string) => Promise<string>;
     }) => {
       if (!("FungibleToken" in asset)) {
         throw new Error("Only fungible token withdrawal is supported");
@@ -291,8 +297,6 @@ const useWithdrawFromVaultMutation = () => {
         description: "Checking if storage is deposited",
         id: toastIdRef.current,
       });
-
-      const { wallet } = await nearConnector.getConnectedWallet();
 
       const isStorageDepositedToWithdrawalToken = await queryClient.fetchQuery(
         vaultQueries.getCheckIsStorageDepositedQueryOptions({
@@ -349,14 +353,25 @@ const useWithdrawFromVaultMutation = () => {
               min_asset_amount: minimumAssetAmount.toFixed(0, Big.roundDown),
             },
             "1",
-            "300000000000000",
+            "100000000000000",
           ),
         ],
         receiverId: vaultContractId,
       });
-      await wallet.signAndSendTransactions({
-        transactions,
-      });
+      if(usingAbstractAccount){
+        await dewAccountUtils.signAndSendTransaction({
+          transaction: transactions[0],
+          nearAccountId: nearAddress,
+          blockchainAddress,
+          chain,
+          signMessage,
+        })
+      }else{
+        const { wallet } = await nearConnector.getConnectedWallet();
+        await wallet.signAndSendTransactions({
+          transactions,
+        });
+      }
       // FungibleToken: vault sends directly to NEAR wallet, no extra step needed
 
       toast.success("Withdrawing", {

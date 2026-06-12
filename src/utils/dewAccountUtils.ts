@@ -92,6 +92,7 @@ const broadcastTransaction = async (params: {
   blockchain_id: string;
   blockchain_address: string;
   account_id: string;
+  bridge_origin_address?: string;
 }) => {
   const response = await fetch(new URL("/api/dew_vault/sign_tx", backendURL), {
     method: "POST",
@@ -131,6 +132,7 @@ const signAndSendTransaction = async ({
   blockchainAddress,
   chain,
   signMessage,
+  bridgeOriginAddress
 }: {
   transaction: {
     receiverId: string;
@@ -140,6 +142,7 @@ const signAndSendTransaction = async ({
   blockchainAddress: string;
   chain: ChainName;
   signMessage: (message: string) => Promise<string>;
+  bridgeOriginAddress?: string;
 }) => {
   const dewTx = convertConnectorTransactionToDewTransaction({
     transaction,
@@ -160,6 +163,7 @@ const signAndSendTransaction = async ({
     account_id: nearAccountId,
     blockchain_id: messageForSigning.blockchainId,
     blockchain_address: blockchainAddress,
+    bridge_origin_address: bridgeOriginAddress
   });
 };
 
