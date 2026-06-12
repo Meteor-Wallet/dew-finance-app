@@ -509,6 +509,7 @@ const RedeemModal = () => {
                       vaultContractId,
                       slippagePercent,
                       assetDecimals,
+                      usingAbstractAccount: false
                     });
                   } else {
                     setStep(2);
@@ -523,6 +524,7 @@ const RedeemModal = () => {
                         slippagePercent,
                         assetDecimals,
                         skipClose: true,
+                        usingAbstractAccount: true
                       },
                       { onSuccess: () => {} },
                     );

@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import z from "zod";
+import { meteorUtils } from "../utils/meteorUtils";
 
 const zGet1ClickQuotation_Input = z.object({
   dry: z.boolean(),
@@ -14,21 +15,6 @@ const zGet1ClickQuotation_Input = z.object({
   recipient: z.string(),
   recipientType: z.enum(["DESTINATION_CHAIN", "INTENTS"]),
 });
-
-export const zMeteorApiResponse_Error = z.object({
-  ok: z.literal(false),
-  error: z.any(),
-});
-
-export const zMeteorApiResponse_Ok = z.object({
-  ok: z.literal(true),
-  value: z.any(),
-});
-
-export const zMeteorApiResponseAnyError = z.union([
-  zMeteorApiResponse_Error,
-  zMeteorApiResponse_Ok,
-]);
 
 const zQuotation = z.object({
   depositAddress: z.optional(z.string()),
@@ -96,7 +82,7 @@ const get1ClickQuotation = (
 
       const json = await res.json();
 
-      const structureValidate = zMeteorApiResponseAnyError.safeParse(json);
+      const structureValidate = meteorUtils.zMeteorApiResponseAnyError.safeParse(json);
 
       if (!structureValidate.success) {
         throw new Error("Invalid response structure");

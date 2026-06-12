@@ -12,6 +12,7 @@ import { nearUtils } from "./utils/nearUtils.ts";
 import { toast } from "sonner";
 import Big from "big.js";
 import "./nearConnector.ts";
+import { dewAccountUtils } from "./utils/dewAccountUtils.ts";
 
 Big.DP = 26;
 
@@ -40,7 +41,7 @@ useWalletStore.subscribe(
 
       try {
         const { accountExists, nearAddress } =
-          await multicaUtils.checkAccountExists({
+          await dewFactoryUtils.checkAccountExists({
             address: wallet.address,
             chain: supportedChain,
           });

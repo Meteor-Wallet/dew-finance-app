@@ -9,6 +9,8 @@ import { accountQueries } from "../queries/account";
 import { nearConnector } from "../nearConnector";
 import { nearUtils } from "../utils/nearUtils";
 import type { ConnectorAction } from "@hot-labs/near-connect";
+import { dewAccountUtils } from "../utils/dewAccountUtils";
+import type { ChainName } from "../stores/wallet_store";
 
 type FtMetadata = { decimals: number };
 
@@ -58,6 +60,10 @@ const useDepositToVaultMutation = () => {
       exchangeRate,
       sharesDecimals,
       slippagePercent,
+      usingAbstractAccount,
+      blockchainAddress,
+      chain,
+      signMessage,
     }: {
       nearAddress: string;
       amount: string;
@@ -67,6 +73,9 @@ const useDepositToVaultMutation = () => {
       sharesDecimals: number;
       slippagePercent: string;
       blockchainAddress: string;
+      usingAbstractAccount: boolean;
+      chain: ChainName;
+      signMessage: (message: string) => Promise<string>;
     }) => {
       if (!("FungibleToken" in asset)) {
         throw new Error("Only fungible token deposit is supported");
@@ -74,8 +83,6 @@ const useDepositToVaultMutation = () => {
       toastIdRef.current = toast.loading("Depositing", {
         description: "Making sure deposit amount is valid",
       });
-
-      const { wallet } = await nearConnector.getConnectedWallet();
 
       toast.loading("Depositing", {
         description: "Checking if storage is deposited",
@@ -151,7 +158,7 @@ const useDepositToVaultMutation = () => {
             msg: JSON.stringify({ min_shares: minShares, is_request: false }),
           },
           "1",
-          "300000000000000",
+          "100000000000000",
         ),
       );
 
@@ -161,17 +168,24 @@ const useDepositToVaultMutation = () => {
       }[] = []
 
       if (!isStorageDepositedToVault) {
-        transactions.push({
-          receiverId: vaultContractId,
-          actions: [ftCall(
-            "storage_deposit",
-            {
-              account_id: nearAddress,
-              registration_only: true,
-            },
-            "12500000000000000000000",
-          )]
-        })
+        if(!usingAbstractAccount){
+          transactions.push({
+            receiverId: vaultContractId,
+            actions: [ftCall(
+              "storage_deposit",
+              {
+                account_id: nearAddress,
+                registration_only: true,
+              },
+              "12500000000000000000000",
+            )]
+          })
+        }else{
+          await dewAccountUtils.sponsorStorageDeposit({
+            vaultContractId,
+            nearAccountId: nearAddress
+          })
+        }
       }
 
       transactions.push({
@@ -179,9 +193,21 @@ const useDepositToVaultMutation = () => {
         receiverId: contractId
       })
 
-      await wallet.signAndSendTransactions({
-        transactions
-      })
+      if(usingAbstractAccount){
+        await dewAccountUtils.signAndSendTransaction({
+          transaction: transactions[0],
+          nearAccountId: nearAddress,
+          blockchainAddress,
+          chain,
+          signMessage,
+        })
+      }else{
+        const { wallet } = await nearConnector.getConnectedWallet();
+
+        await wallet.signAndSendTransactions({
+          transactions
+        })
+      }
       toast.success("Depositing", {
         description: "Successfully deposited!",
         id: toastIdRef.current,
@@ -229,6 +255,7 @@ const useWithdrawFromVaultMutation = () => {
       slippagePercent,
       vaultContractId,
       nearAddress,
+      usingAbstractAccount
     }: {
       asset: TAsset;
       share: string;
@@ -239,6 +266,7 @@ const useWithdrawFromVaultMutation = () => {
       vaultContractId: string;
       nearAddress: string;
       skipClose?: boolean;
+      usingAbstractAccount: boolean
     }) => {
       if (!("FungibleToken" in asset)) {
         throw new Error("Only fungible token withdrawal is supported");
@@ -279,19 +307,21 @@ const useWithdrawFromVaultMutation = () => {
       }[] = [];
 
       if (!isStorageDepositedToWithdrawalToken) {
-        transactions.push({
-          actions: [
-            ftCall(
-              "storage_deposit",
-              {
-                account_id: nearAddress,
-                registration_only: true,
-              },
-              "12500000000000000000000",
-            ),
-          ],
-          receiverId: asset.FungibleToken.contract_id,
-        });
+        if(!usingAbstractAccount){
+          transactions.push({
+            actions: [
+              ftCall(
+                "storage_deposit",
+                {
+                  account_id: nearAddress,
+                  registration_only: true,
+                },
+                "12500000000000000000000",
+              ),
+            ],
+            receiverId: asset.FungibleToken.contract_id,
+          });
+        }
       }
 
       const availableLiquidity = await queryClient.fetchQuery({
@@ -373,10 +403,12 @@ const useClaimClaimableAssetsMutation = () => {
       vaultId,
       accountId,
       asset,
+      usingAbstractAccount
     }: {
       vaultId: string;
       accountId: string;
       asset: TAsset;
+      usingAbstractAccount: boolean
     }) => {
       if ("FungibleToken" in asset) {
         toastIdRef.current = toast.loading("Claiming", {
@@ -396,19 +428,21 @@ const useClaimClaimableAssetsMutation = () => {
         }[] = [];
 
         if (!isStorageDepositedToWithdrawalToken) {
-          transactions.push({
-            actions: [
-              ftCall(
-                "storage_deposit",
-                {
-                  account_id: accountId,
-                  registration_only: true,
-                },
-                "12500000000000000000000",
-              ),
-            ],
-            receiverId: asset.FungibleToken.contract_id,
-          });
+          if(!usingAbstractAccount){
+            transactions.push({
+              actions: [
+                ftCall(
+                  "storage_deposit",
+                  {
+                    account_id: accountId,
+                    registration_only: true,
+                  },
+                  "12500000000000000000000",
+                ),
+              ],
+              receiverId: asset.FungibleToken.contract_id,
+            });
+          }
         }
 
         transactions.push({

@@ -5,6 +5,7 @@ import { DewAccountBackend } from "../backend/DewAccountBackend";
 import { DewAgentBackend } from "../backend/DewAgentBackend";
 import { vaultUtils } from "../utils/vaultUtils";
 import Big from "big.js";
+import { meteorUtils } from "../utils/meteorUtils";
 
 const zAsset = z.union([
   z.object({
@@ -604,20 +605,6 @@ const getAssetBalanceQueryOptions = ({
   });
 };
 
-export const zMeteorApiResponse_Error = z.object({
-  ok: z.literal(false),
-  error: z.any(),
-});
-
-export const zMeteorApiResponse_Ok = z.object({
-  ok: z.literal(true),
-  value: z.any(),
-});
-
-export const zMeteorApiResponseAnyError = z.union([
-  zMeteorApiResponse_Error,
-  zMeteorApiResponse_Ok,
-]);
 
 const getVaultAprQueryOptions = ({ vaultId }: { vaultId: string }) => {
   return queryOptions({
@@ -638,7 +625,7 @@ const getVaultAprQueryOptions = ({ vaultId }: { vaultId: string }) => {
 
       const json = await response.json();
 
-      const structureValidate = zMeteorApiResponseAnyError.safeParse(json);
+      const structureValidate = meteorUtils.zMeteorApiResponseAnyError.safeParse(json);
 
       if (!structureValidate.success) {
         throw new Error("Invalid response structure");
@@ -742,6 +729,25 @@ const getAccountClaimableAssetsQueryOptions = ({
   });
 };
 
+const getFtBalanceQueryOptions = ({
+  contractId,
+  accountId,
+}: {
+  contractId: string;
+  accountId: string;
+}) => {
+  return queryOptions({
+    queryKey: ["ft_balance_of", { contractId, accountId }],
+    queryFn: async () => {
+      return (await nearUtils.provider.callFunction(
+        contractId,
+        "ft_balance_of",
+        { account_id: accountId },
+      )) as string;
+    },
+  });
+};
+
 export const vaultQueries = {
   getAllAcceptedTokensQueryOptions,
   getAllExchangeRatesQueryOptions,
@@ -763,5 +769,6 @@ export const vaultQueries = {
   getVaultAprQueryOptions,
   getAccountPendingRedeemsQueryOptions,
   getAccountClaimableAssetsQueryOptions,
-  getAvailableRedeemAssetsQueryOptions
+  getAvailableRedeemAssetsQueryOptions,
+  getFtBalanceQueryOptions,
 };

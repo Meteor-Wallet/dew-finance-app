@@ -21,6 +21,7 @@ import { vaultUtils } from "../../utils/vaultUtils";
 import Big from "big.js";
 import { ChainSelect, CHAIN_META, type ChainOption } from "../utils/ChainSelect";
 import { oneClickUtils } from "../../utils/1clickUtils";
+import { dewAccountUtils } from "../../utils/dewAccountUtils";
 
 const Asset = ({
   onClick,
@@ -229,12 +230,43 @@ const DepositModal = () => {
     enabled: vaultContractId !== undefined,
   });
 
+  const assetContractId = selectedAsset && "FungibleToken" in selectedAsset
+    ? selectedAsset.FungibleToken.contract_id
+    : null;
+
+  const assetMetadataQuery = useQuery({
+    ...vaultQueries.getFtMetadataQueryOptions({ tokenId: assetContractId! }),
+    enabled: !!assetContractId,
+  });
+
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  const abstractAccountBalanceQuery = useQuery({
+    ...vaultQueries.getFtBalanceQueryOptions({
+      contractId: assetContractId!,
+      accountId: nearAddress!,
+    }),
+    enabled: step === 3 && !!assetContractId && !!nearAddress,
+    refetchInterval: 3000,
+  });
+
+  const abstractAccountBalanceFormatted = useMemo(() => {
+    if (!abstractAccountBalanceQuery.data || !assetMetadataQuery.data) return null;
+    try {
+      return Big(abstractAccountBalanceQuery.data)
+        .div(Big(10).pow(assetMetadataQuery.data.decimals))
+        .toFixed();
+    } catch {
+      return null;
+    }
+  }, [abstractAccountBalanceQuery.data, assetMetadataQuery.data]);
+
   const balance = accountQueries.useAccountBalance({ asset: selectedAsset, chain: depositChain });
 
   const depositToVaultMutation = vaultMutations.useDepositToVaultMutation();
-  const { requestDeposit } = useWalletSelector();
+  const { requestDeposit, signMessage } = useWalletSelector();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  
   const [bridgeTxHash, setBridgeTxHash] = useState<string | null>(null);
   const [bridgeQuoteResult, setBridgeQuoteResult] = useState<{ amountInFormatted: string; amountOutFormatted: string } | null>(null);
 
@@ -252,7 +284,7 @@ const DepositModal = () => {
           refundTo: selectedChain!.address!,
           refundType: "ORIGIN_CHAIN",
           recipient: nearAddress!,
-          recipientType: "INTENTS",
+          recipientType: "DESTINATION_CHAIN",
         }),
         staleTime: 0,
       });
@@ -285,6 +317,32 @@ const DepositModal = () => {
       setStep(1);
       setBridgeTxHash(null);
       setBridgeQuoteResult(null);
+    },
+  });
+
+  const prepareBridgeMutation = useMutation({
+    mutationFn: async () => {
+      const isStorageDeposited = await queryClient.fetchQuery(
+        vaultQueries.getCheckIsStorageDepositedQueryOptions({
+          vaultContractId: vaultContractId!,
+          nearAddress: nearAddress!,
+        }),
+      );
+      if (!isStorageDeposited) {
+        await dewAccountUtils.sponsorStorageDeposit({
+          vaultContractId: vaultContractId!,
+          nearAccountId: nearAddress!,
+        });
+      }
+    },
+    onSuccess: () => {
+      setStep(2);
+      bridgeMutation.mutate();
+    },
+    onError: (error) => {
+      toast.error("Something went wrong", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     },
   });
 
@@ -506,17 +564,19 @@ const DepositModal = () => {
                       vaultContractId,
                       slippagePercent: depositSlippagePercent,
                       blockchainAddress: selectedChain!.address!,
+                      usingAbstractAccount: false,
+                      chain: depositChain!,
+                      signMessage: (msg) => signMessage(depositChain!, msg),
                     });
                   }
                 } else {
-                  setStep(2);
-                  bridgeMutation.mutate();
+                  prepareBridgeMutation.mutate();
                 }
               }}
-              disabled={depositToVaultMutation.isPending || !canDeposit}
+              disabled={depositToVaultMutation.isPending || prepareBridgeMutation.isPending || !canDeposit}
               className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative px-6 mt-10 mb-4"
             >
-              {depositToVaultMutation.isPending ? (
+              {depositToVaultMutation.isPending || prepareBridgeMutation.isPending ? (
                 <CircularProgress size="small" />
               ) : isExceedingBalance ? (
                 "Insufficient balance"
@@ -584,9 +644,24 @@ const DepositModal = () => {
               Your tokens are being bridged to NEAR. Once received, click below to complete the vault deposit.
             </p>
             <div className="bg-card-background rounded-sm p-4 px-5 space-y-3 mb-6 text-sm">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray">Bridge output</span>
-                <span>{stringUtils.truncateDecimals(bridgeQuoteQuery.data?.quote.amountOutFormatted)} {assetSymbol}</span>
+                <div className="flex items-center gap-2">
+                  {abstractAccountBalanceFormatted
+                    ? <span>{stringUtils.truncateDecimals(abstractAccountBalanceFormatted)} {assetSymbol}</span>
+                    : <CircularProgress size="small" />}
+                  <button
+                    onClick={() => abstractAccountBalanceQuery.refetch()}
+                    disabled={abstractAccountBalanceQuery.isFetching}
+                    className="text-gray hover:text-white disabled:opacity-40 transition-colors"
+                    title="Refresh balance"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={abstractAccountBalanceQuery.isFetching ? "animate-spin" : ""}>
+                      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                      <path d="M21 3v5h-5" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray">Expected vault shares</span>
@@ -600,18 +675,20 @@ const DepositModal = () => {
             </div>
             <button
               onClick={() => {
-                if (!depositToVaultMutation.isPending && canDeposit) {
+                if (!depositToVaultMutation.isPending && canDeposit && abstractAccountBalanceFormatted) {
                   const { depositSlippagePercent } = useVaultActionStore.getState();
-                  const bridgeAmount = bridgeQuoteQuery.data?.quote.amountOutFormatted ?? depositAmount;
                   depositToVaultMutation.mutate({
                     nearAddress,
                     asset: selectedAsset,
-                    amount: bridgeAmount,
+                    amount: abstractAccountBalanceFormatted,
                     exchangeRate: exchangeRateForSelectedAsset.assetToShare,
                     sharesDecimals: vaultShareMetadataQuery.data.decimals,
                     vaultContractId,
                     slippagePercent: depositSlippagePercent,
                     blockchainAddress: selectedChain!.address!,
+                    usingAbstractAccount: true,
+                    chain: depositChain!,
+                    signMessage: (msg) => signMessage(depositChain!, msg),
                   });
                 }
               }}

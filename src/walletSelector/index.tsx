@@ -1,9 +1,10 @@
 import { useCallback, useEffect } from "react";
+import bs58 from "bs58";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import type { WalletName } from "@solana/wallet-adapter-base";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { getAssociatedTokenAddress, createTransferCheckedInstruction, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
-import { useAccount, useConnect, useDisconnect, useWriteContract, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useWriteContract, useSwitchChain, useSignMessage } from "wagmi";
 import { mainnet, arbitrum } from "wagmi/chains";
 import type { Connector } from "wagmi";
 import { useWalletStore } from "../stores/wallet_store";
@@ -31,6 +32,7 @@ export const useWalletSelector = () => {
     publicKey,
     connected: solanaConnected,
     sendTransaction: solanaSendTransaction,
+    signMessage: solanaSignMessage,
   } = useWallet();
   const { connection } = useConnection();
 
@@ -56,6 +58,7 @@ export const useWalletSelector = () => {
   const { address: evmAddress, isConnected: evmConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const { switchChainAsync } = useSwitchChain();
+  const { signMessageAsync: evmSignMessageAsync } = useSignMessage();
 
   useEffect(() => {
     if (evmConnected && evmAddress) {
@@ -193,5 +196,20 @@ export const useWalletSelector = () => {
     [solanaDisconnect, evmDisconnect],
   );
 
-  return { requestDeposit, signIn, signOutChain };
+  const signMessage = useCallback(
+    async (chain: ChainName, message: string): Promise<string> => {
+      if (chain === "eth" || chain === "arbitrum") {
+        return evmSignMessageAsync({ message });
+      }
+      if (chain === "solana") {
+        if (!solanaSignMessage) throw new Error("Solana wallet does not support message signing");
+        const signed = await solanaSignMessage(new TextEncoder().encode(message));
+        return bs58.encode(signed);
+      }
+      throw new Error(`Unsupported chain for signing: ${chain}`);
+    },
+    [evmSignMessageAsync, solanaSignMessage],
+  );
+
+  return { requestDeposit, signIn, signOutChain, signMessage };
 };
