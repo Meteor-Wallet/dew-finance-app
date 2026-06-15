@@ -5,7 +5,7 @@ import { vaultQueries, type TAsset } from "../queries/vault";
 import { rheaQueries } from "../queries/rhea";
 import { assetUtils } from "../utils/assetUtils";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Big from "big.js";
 import { isEqual } from "es-toolkit";
 import vaultIcon from "../assets/vault-icon.png";
@@ -16,6 +16,8 @@ import Motion from "../components/utils/Motion";
 import TVL from "../assets/fee_icon3.svg";
 import TV from "../assets/fee_icon1.svg";
 import { vaultMutations } from "../mutations/vault";
+import { dewFactoryUtils } from "../utils/dewFactoryUtils";
+import ClaimModal from "../components/modal/ClaimModal";
 
 type TVaultConfig = (typeof vaultUtils.vaults)[number];
 
@@ -161,12 +163,14 @@ const PortfolioClaimableAssetBanner = ({
   vaultId,
   nearAddress,
   vaultName,
+  onOpenClaimModal,
 }: {
   asset: { FungibleToken: { contract_id: string } };
   rawAmount: string;
   vaultId: string;
   nearAddress: string;
   vaultName: string;
+  onOpenClaimModal: () => void;
 }) => {
   const { assetIcon, assetSymbol, assetDecimals } = assetUtils.useAssetSymbolAndIcon({ asset });
   const claimMutation = vaultMutations.useClaimClaimableAssetsMutation();
@@ -179,6 +183,8 @@ const PortfolioClaimableAssetBanner = ({
       return "—";
     }
   }, [rawAmount, assetDecimals]);
+
+  const usingAbstractAccount = dewFactoryUtils.isAbstractAccount(nearAddress);
 
   return (
     <div className="flex items-start gap-3 px-4 py-3 rounded-sm text-sm bg-blue-950/60 border border-blue-500/50 text-blue-300">
@@ -193,7 +199,13 @@ const PortfolioClaimableAssetBanner = ({
           </span>
           <button
             disabled={claimMutation.isPending}
-            onClick={() => claimMutation.mutate({ vaultId, accountId: nearAddress, asset })}
+            onClick={() => {
+              if (usingAbstractAccount) {
+                onOpenClaimModal();
+              } else {
+                claimMutation.mutate({ vaultId, accountId: nearAddress, asset, usingAbstractAccount: false });
+              }
+            }}
             className="shrink-0 px-4 py-1 bg-secondary transition-opacity duration-200 hover:opacity-50 rounded-sm font-normal text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {claimMutation.isPending ? "Claiming…" : "Claim"}
@@ -206,6 +218,8 @@ const PortfolioClaimableAssetBanner = ({
 };
 
 const ClaimableAssetsSection = ({ nearAddress }: { nearAddress: string }) => {
+  const [claimModalItem, setClaimModalItem] = useState<{ asset: TAsset; rawAmount: string; vaultId: string } | null>(null);
+
   const claimableQueries = useQueries({
     queries: vaultUtils.vaults.map((v) =>
       vaultQueries.getAccountClaimableAssetsQueryOptions({ vaultId: v.vault_id, accountId: nearAddress }),
@@ -229,26 +243,41 @@ const ClaimableAssetsSection = ({ nearAddress }: { nearAddress: string }) => {
     });
   }, [claimableQueries]);
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && !claimModalItem) return null;
 
   return (
-    <Motion direction="left" duration={0.6} delay={0.55}>
-      <div className="mb-12.5">
-        <h2 className="text-xl font-semibold mb-3">Ready to Claim</h2>
-        <div className="space-y-2">
-          {items.map(({ key, vault, asset, rawAmount }) => (
-            <PortfolioClaimableAssetBanner
-              key={key}
-              asset={asset}
-              rawAmount={rawAmount}
-              vaultId={vault.vault_id}
-              nearAddress={nearAddress}
-              vaultName={vault.name}
-            />
-          ))}
-        </div>
-      </div>
-    </Motion>
+    <>
+      {items.length > 0 && (
+        <Motion direction="left" duration={0.6} delay={0.55}>
+          <div className="mb-12.5">
+            <h2 className="text-xl font-semibold mb-3">Ready to Claim</h2>
+            <div className="space-y-2">
+              {items.map(({ key, vault, asset, rawAmount }) => (
+                <PortfolioClaimableAssetBanner
+                  key={key}
+                  asset={asset}
+                  rawAmount={rawAmount}
+                  vaultId={vault.vault_id}
+                  nearAddress={nearAddress}
+                  vaultName={vault.name}
+                  onOpenClaimModal={() => setClaimModalItem({ asset, rawAmount, vaultId: vault.vault_id })}
+                />
+              ))}
+            </div>
+          </div>
+        </Motion>
+      )}
+      {claimModalItem && (
+        <ClaimModal
+          isOpen={true}
+          onClose={() => setClaimModalItem(null)}
+          asset={claimModalItem.asset}
+          rawAmount={claimModalItem.rawAmount}
+          vaultId={claimModalItem.vaultId}
+          nearAddress={nearAddress}
+        />
+      )}
+    </>
   );
 };
 

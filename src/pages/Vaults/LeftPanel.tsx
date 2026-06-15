@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom";
 import { useWalletStore } from "../../stores/wallet_store";
 import { useQuery } from "@tanstack/react-query";
 import { vaultQueries, type TAsset } from "../../queries/vault";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Big from "big.js";
 import { CircularProgress } from "../../components/utils/CircularProgress";
 import { twMerge } from "tailwind-merge";
@@ -14,6 +14,8 @@ import clsx from "clsx";
 import { assetUtils } from "../../utils/assetUtils";
 import { vaultUtils } from "../../utils/vaultUtils";
 import { vaultMutations } from "../../mutations/vault";
+import { dewFactoryUtils } from "../../utils/dewFactoryUtils";
+import ClaimModal from "../../components/modal/ClaimModal";
 
 type ConfirmButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   isLoading?: boolean;
@@ -102,11 +104,13 @@ const ClaimableAssetBanner = ({
   rawAmount,
   vaultContractId,
   nearAddress,
+  onOpenClaimModal,
 }: {
   asset: { FungibleToken: { contract_id: string } };
   rawAmount: string;
   vaultContractId: string;
   nearAddress: string;
+  onOpenClaimModal: () => void;
 }) => {
   const { assetIcon, assetSymbol, assetDecimals } = assetUtils.useAssetSymbolAndIcon({ asset });
   const claimMutation = vaultMutations.useClaimClaimableAssetsMutation();
@@ -123,6 +127,8 @@ const ClaimableAssetBanner = ({
     }
   }, [rawAmount, assetDecimals]);
 
+  const usingAbstractAccount = dewFactoryUtils.isAbstractAccount(nearAddress);
+
   return (
     <div className="flex items-start gap-3 px-4 py-3 rounded-sm text-sm bg-blue-950/60 border border-blue-500/50 text-blue-300">
       <span className="shrink-0 mt-0.5">💰</span>
@@ -136,7 +142,13 @@ const ClaimableAssetBanner = ({
         <span className="opacity-70">Your redeemed funds are available. Claim them from the vault.</span>
         <button
           disabled={claimMutation.isPending}
-          onClick={() => claimMutation.mutate({ vaultId: vaultContractId, accountId: nearAddress, asset })}
+          onClick={() => {
+            if (usingAbstractAccount) {
+              onOpenClaimModal();
+            } else {
+              claimMutation.mutate({ vaultId: vaultContractId, accountId: nearAddress, asset, usingAbstractAccount: false });
+            }
+          }}
           className="mt-2 self-start px-5 py-1.5 bg-secondary transition-opacity duration-200 hover:opacity-50 rounded-sm font-normal text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {claimMutation.isPending ? "Claiming…" : "Claim"}
@@ -149,6 +161,7 @@ const ClaimableAssetBanner = ({
 const ClaimableAssets = () => {
   const { vaultContractId } = useParams<{ vaultContractId: string }>();
   const nearAddress = useWalletStore((s) => s.nearAccountId);
+  const [claimModalItem, setClaimModalItem] = useState<{ asset: TAsset; rawAmount: string } | null>(null);
 
   const claimableAssetsQuery = useQuery({
     ...vaultQueries.getAccountClaimableAssetsQueryOptions({
@@ -168,20 +181,35 @@ const ClaimableAssets = () => {
     });
   }, [claimableAssetsQuery.data]);
 
-  if (claimableItems.length === 0) return null;
+  if (claimableItems.length === 0 && !claimModalItem) return null;
 
   return (
-    <div className="mt-4 space-y-2">
-      {claimableItems.map(([asset, rawAmount]) => (
-        <ClaimableAssetBanner
-          key={asset.FungibleToken.contract_id}
-          asset={asset}
-          rawAmount={rawAmount}
-          vaultContractId={vaultContractId!}
+    <>
+      {claimableItems.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {claimableItems.map(([asset, rawAmount]) => (
+            <ClaimableAssetBanner
+              key={asset.FungibleToken.contract_id}
+              asset={asset}
+              rawAmount={rawAmount}
+              vaultContractId={vaultContractId!}
+              nearAddress={nearAddress!}
+              onOpenClaimModal={() => setClaimModalItem({ asset, rawAmount })}
+            />
+          ))}
+        </div>
+      )}
+      {claimModalItem && (
+        <ClaimModal
+          isOpen={true}
+          onClose={() => setClaimModalItem(null)}
+          asset={claimModalItem.asset}
+          rawAmount={claimModalItem.rawAmount}
+          vaultId={vaultContractId!}
           nearAddress={nearAddress!}
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 };
 

@@ -104,9 +104,14 @@ const checkAccountExists = async ({
   }
 }
 
+const isAbstractAccount = (address: string) => {
+  return address.endsWith(`.${FACTORY_CONTRACT_ID}`);
+}
+
 export const dewFactoryUtils = {
   getAccountDetailsFromAddressAndChain,
   getMessageForCreateAccount,
   getBlockchainIdFromChainName,
-  checkAccountExists
+  checkAccountExists,
+  isAbstractAccount
 };

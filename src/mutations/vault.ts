@@ -428,80 +428,76 @@ const useClaimClaimableAssetsMutation = () => {
       vaultId,
       accountId,
       asset,
-      usingAbstractAccount
+      usingAbstractAccount,
+      blockchainAddress,
+      chain,
+      signMessage,
     }: {
       vaultId: string;
       accountId: string;
       asset: TAsset;
-      usingAbstractAccount: boolean
+      usingAbstractAccount: boolean;
+      blockchainAddress?: string;
+      chain?: ChainName;
+      signMessage?: (message: string) => Promise<string>;
     }) => {
-      if ("FungibleToken" in asset) {
-        toastIdRef.current = toast.loading("Claiming", {
-          description: "Checking storage deposit",
-        });
-        const isStorageDepositedToWithdrawalToken =
-          await queryClient.fetchQuery(
-            vaultQueries.getCheckIsStorageDepositedQueryOptions({
-              vaultContractId: asset.FungibleToken.contract_id,
-              nearAddress: accountId,
-            }),
-          );
-
-        const transactions: {
-          receiverId: string;
-          actions: ConnectorAction[];
-        }[] = [];
-
-        if (!isStorageDepositedToWithdrawalToken) {
-          if(!usingAbstractAccount){
-            transactions.push({
-              actions: [
-                ftCall(
-                  "storage_deposit",
-                  {
-                    account_id: accountId,
-                    registration_only: true,
-                  },
-                  "12500000000000000000000",
-                ),
-              ],
-              receiverId: asset.FungibleToken.contract_id,
-            });
-          }
-        }
-
-        transactions.push({
-          actions: [
-            ftCall(
-              "claim_assets",
-              {
-                asset,
-              },
-              "0",
-              "300000000000000",
-            ),
-          ],
-          receiverId: vaultId,
-        });
-
-        toast.loading("Claiming", {
-          description: "Claiming assets from vault",
-          id: toastIdRef.current,
-        });
-
-        const { wallet } = await nearConnector.getConnectedWallet();
-
-        await wallet.signAndSendTransactions({
-          transactions,
-        });
-
-        toast.success("Claiming", {
-          description: "Claim successfully",
-          id: toastIdRef.current,
-        });
-      }else{
+      if (!("FungibleToken" in asset)) {
         throw new Error("Only fungible token claim is supported");
       }
+
+      toastIdRef.current = toast.loading("Claiming", {
+        description: "Checking storage deposit",
+      });
+      const isStorageDepositedToWithdrawalToken = await queryClient.fetchQuery(
+        vaultQueries.getCheckIsStorageDepositedQueryOptions({
+          vaultContractId: asset.FungibleToken.contract_id,
+          nearAddress: accountId,
+        }),
+      );
+
+      const transactions: { receiverId: string; actions: ConnectorAction[] }[] = [];
+
+      if (!isStorageDepositedToWithdrawalToken) {
+        if (usingAbstractAccount) {
+          await dewAccountUtils.sponsorStorageDeposit({
+            vaultContractId: asset.FungibleToken.contract_id,
+            nearAccountId: accountId,
+          });
+        } else {
+          transactions.push({
+            actions: [ftCall("storage_deposit", { account_id: accountId, registration_only: true }, "12500000000000000000000")],
+            receiverId: asset.FungibleToken.contract_id,
+          });
+        }
+      }
+
+      transactions.push({
+        actions: [ftCall("claim_assets", { asset }, "0", "100000000000000")],
+        receiverId: vaultId,
+      });
+
+      toast.loading("Claiming", {
+        description: "Claiming assets from vault",
+        id: toastIdRef.current,
+      });
+
+      if (usingAbstractAccount) {
+        await dewAccountUtils.signAndSendTransaction({
+          transaction: transactions[0],
+          nearAccountId: accountId,
+          blockchainAddress: blockchainAddress!,
+          chain: chain!,
+          signMessage: signMessage!,
+        });
+      } else {
+        const { wallet } = await nearConnector.getConnectedWallet();
+        await wallet.signAndSendTransactions({ transactions });
+      }
+
+      toast.success("Claiming", {
+        description: "Claim successfully",
+        id: toastIdRef.current,
+      });
     },
   });
 };
