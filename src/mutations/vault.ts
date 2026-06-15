@@ -244,6 +244,14 @@ const useWithdrawFromVaultMutation = () => {
             address: params.nearAddress,
           }),
         });
+        if(!_data.isLiquiditySufficient){
+          queryClient.invalidateQueries(
+            vaultQueries.getAccountPendingRedeemsQueryOptions({
+              vaultId: params.vaultContractId,
+              accountId: params.nearAddress,
+            })
+          );
+        }
       }, 1000)
     },
     mutationFn: async ({
