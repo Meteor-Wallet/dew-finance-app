@@ -49,6 +49,78 @@ const zTokens_Response = z.array(
   }),
 );
 
+const zQuotation_Request = z.object({
+  dry: z.boolean(),
+  swapType: z.enum(["EXACT_INPUT", "EXACT_OUTPUT"]),
+  slippageTolerance: z.number(),
+  originAsset: z.string(),
+  depositType: z.enum(["ORIGIN_CHAIN", "INTENTS"]),
+  destinationAsset: z.string(),
+  amount: z.string(),
+  refundTo: z.string(),
+  refundType: z.enum(["ORIGIN_CHAIN", "INTENTS"]),
+  recipient: z.string(),
+  recipientType: z.enum(["DESTINATION_CHAIN", "INTENTS"]),
+  deadline: z.string(),
+  referral: z.optional(z.string()),
+  quoteWaitingTimeMs: z.optional(z.number()),
+  appFees: z
+    .array(
+      z.object({
+        recipient: z.string(),
+        fee: z.number(),
+      }),
+    )
+    .optional(),
+});
+
+const zSwapDetails = z.object({
+  intentHashes: z.array(z.string()),
+  nearTxHashes: z.array(z.string()),
+  amountIn: z.nullable(z.string()),
+  amountInFormatted: z.nullable(z.string()),
+  amountInUsd: z.nullable(z.string()),
+  amountOut: z.nullable(z.string()),
+  amountOutFormatted: z.nullable(z.string()),
+  amountOutUsd: z.nullable(z.string()),
+  slippage: z.nullable(z.number()),
+  originChainTxHashes: z.array(
+    z.object({
+      hash: z.string(),
+      explorerUrl: z.string(),
+    }),
+  ),
+  destinationChainTxHashes: z.array(
+    z.object({
+      hash: z.string(),
+      explorerUrl: z.string(),
+    }),
+  ),
+  refundedAmount: z.optional(z.string()),
+  refundedAmountFormatted: z.optional(z.string()),
+  refundedAmountUsd: z.optional(z.string()),
+});
+
+const zSwapExecution_Response = z.object({
+  status: z.enum([
+    "PENDING_DEPOSIT",
+    "INCOMPLETE_DEPOSIT",
+    "KNOWN_DEPOSIT_TX",
+    "PROCESSING",
+    "SUCCESS",
+    "REFUNDED",
+    "FAILED",
+  ]),
+  updatedAt: z.string(),
+  swapDetails: zSwapDetails,
+  quoteResponse: z.object({
+    timestamp: z.string(),
+    signature: z.string(),
+    quoteRequest: zQuotation_Request,
+    quote: zQuotation,
+  }),
+});
+
 const get1ClickTokens = () => {
   return queryOptions({
     queryKey: ["intents", "1click-tokens"],
@@ -97,7 +169,42 @@ const get1ClickQuotation = (
   });
 };
 
+const get1ClickStatus = ({depositAddress}: {
+  depositAddress: string;
+}) => {
+  return queryOptions({
+    queryKey: ["intents", "1click-status", depositAddress],
+    queryFn: async () => {
+      const res = await fetch(
+        "https://meteor-backend-v2-dev-276870342533.europe-southwest1.run.app/api/dew_vault/1click_status",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ depositAddress }),
+        },
+      );
+
+      const json = await res.json();
+
+      const structureValidate = meteorUtils.zMeteorApiResponseAnyError.safeParse(json);
+
+      if (!structureValidate.success) {
+        throw new Error("Invalid response structure");
+      }
+
+      if (structureValidate.data.ok) {
+        return zSwapExecution_Response.parse(structureValidate.data.value);
+      }
+
+      throw new Error(structureValidate.data.error);
+    }
+  })
+}
+
 export const intentsQueries = {
   get1ClickQuotation,
-  get1ClickTokens
+  get1ClickTokens,
+  get1ClickStatus
 };
