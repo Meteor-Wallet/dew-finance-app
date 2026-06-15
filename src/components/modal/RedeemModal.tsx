@@ -475,6 +475,25 @@ const RedeemModal = () => {
               {!isNearRedeem && <span className="text-xs text-gray">Quote refreshes every 5 min</span>}
             </div>
             <div className="bg-card-background rounded-sm p-4 px-5 space-y-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray">Share price</span>
+                <div className="flex gap-1.5 items-center justify-center">
+                  <span>1 {vaultShareMetadataQuery.data?.symbol}</span>
+                  {vaultShareMetadataQuery.data?.icon && (
+                    <img src={vaultShareMetadataQuery.data.icon} alt={vaultShareMetadataQuery.data.symbol} className="w-5 h-5" />
+                  )}
+                  <ArrowLeftRight className="text-gray" size={12} />
+                  <span>{stringUtils.truncateDecimals(exchangeRateForAsset?.shareToAsset)} {assetSymbol}</span>
+                  <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
+                </div>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray">{isNearRedeem ? "Expected to receive" : "Expected on NEAR"}</span>
+                <div className="flex gap-1.5 items-center">
+                  <span>{expectedRedeemAmount} {assetSymbol}</span>
+                  <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
+                </div>
+              </div>
               {!isNearRedeem && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray">Bridge output</span>
@@ -491,35 +510,6 @@ const RedeemModal = () => {
                   </div>
                 </div>
               )}
-              <div className="flex justify-between text-sm">
-                <span className="text-gray">Share price</span>
-                <div className="flex gap-1.5 items-center justify-center">
-                  <span>1 {vaultShareMetadataQuery.data?.symbol}</span>
-                  {vaultShareMetadataQuery.data?.icon && (
-                    <img src={vaultShareMetadataQuery.data.icon} alt={vaultShareMetadataQuery.data.symbol} className="w-5 h-5" />
-                  )}
-                  <ArrowLeftRight className="text-gray" size={12} />
-                  <span>{stringUtils.truncateDecimals(exchangeRateForAsset?.shareToAsset)} {assetSymbol}</span>
-                  <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray">Expected to receive</span>
-                <div className="flex gap-1.5 items-center">
-                  {!isNearRedeem && bridgeQuoteQuery.isFetching ? (
-                    <CircularProgress size="small" />
-                  ) : (
-                    <span>
-                      {isNearRedeem
-                        ? `${expectedRedeemAmount} ${assetSymbol}`
-                        : bridgeQuoteQuery.data
-                          ? `${stringUtils.truncateDecimals(bridgeQuoteQuery.data.quote.amountOutFormatted)} ${assetSymbol}`
-                          : `${expectedRedeemAmount} ${assetSymbol}`}
-                    </span>
-                  )}
-                  <img src={assetIcon} alt={assetSymbol} className="w-5 h-5" />
-                </div>
-              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray">Slippage tolerance</span>
                 <span>{slippagePercent}%</span>
