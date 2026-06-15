@@ -124,6 +124,17 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [bridgeQuoteResult, setBridgeQuoteResult] = useState<{ amountInFormatted: string; amountOutFormatted: string } | null>(null);
   const [bridgeTxHash, setBridgeTxHash] = useState<string | null>(null);
+  const [bridgeDepositAddress, setBridgeDepositAddress] = useState<string | null>(null);
+
+  const bridgeStatusQuery = useQuery({
+    ...intentsQueries.get1ClickStatus({ depositAddress: bridgeDepositAddress! }),
+    enabled: !!bridgeDepositAddress,
+    refetchInterval: (query) => {
+      const s = query.state.data?.status;
+      return s === "SUCCESS" || s === "REFUNDED" || s === "FAILED" ? false : 10_000;
+    },
+    staleTime: 0,
+  });
 
   // ── Step 2: abstract account balance ─────────────────────────────────────
   const abstractAccountBalanceQuery = useQuery({
@@ -193,6 +204,7 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
       const depositAddress = quote.quote.depositAddress;
       if (!depositAddress) throw new Error("No deposit address returned from bridge");
 
+      setBridgeDepositAddress(depositAddress);
       await dewAccountUtils.signAndSendTransaction({
         transaction: {
           receiverId: assetContractId!,
@@ -232,6 +244,7 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
     setStep(1);
     setBridgeQuoteResult(null);
     setBridgeTxHash(null);
+    setBridgeDepositAddress(null);
     onClose();
   };
 
@@ -440,11 +453,41 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 py-6">
-                    <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <span className="text-green-500 text-xl font-bold">✓</span>
-                    </div>
-                    <p className="text-white font-medium">Bridge transaction submitted</p>
-                    <p className="text-gray text-xs break-all text-center max-w-xs">{bridgeTxHash}</p>
+                    {bridgeStatusQuery.data?.status === "SUCCESS" ? (
+                      <>
+                        <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <span className="text-green-500 text-xl font-bold">✓</span>
+                        </div>
+                        <p className="text-white font-medium">Bridge complete</p>
+                      </>
+                    ) : bridgeStatusQuery.data?.status === "REFUNDED" ? (
+                      <>
+                        <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
+                          <span className="text-amber-400 text-xl">↩</span>
+                        </div>
+                        <p className="text-white font-medium">Bridge refunded</p>
+                        <p className="text-gray text-sm text-center">Your tokens were refunded</p>
+                      </>
+                    ) : bridgeStatusQuery.data?.status === "FAILED" ? (
+                      <>
+                        <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                          <span className="text-red-400 text-xl font-bold">✗</span>
+                        </div>
+                        <p className="text-white font-medium">Bridge failed</p>
+                      </>
+                    ) : (
+                      <>
+                        <CircularProgress size="medium" />
+                        <p className="text-white font-medium">
+                          {bridgeStatusQuery.data?.status === "PROCESSING" || bridgeStatusQuery.data?.status === "KNOWN_DEPOSIT_TX"
+                            ? "Bridge in progress..."
+                            : "Waiting for bridge..."}
+                        </p>
+                        {bridgeStatusQuery.data?.status && (
+                          <p className="text-gray text-xs uppercase tracking-wide">{bridgeStatusQuery.data.status.replace(/_/g, " ")}</p>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
                 <div className="bg-card-background rounded-sm p-4 space-y-3 mb-6 text-sm">
@@ -457,7 +500,7 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
                     <span>{stringUtils.truncateDecimals(bridgeQuoteResult.amountOutFormatted)} {assetSymbol}</span>
                   </div>
                 </div>
-                {bridgeTxHash && (
+                {bridgeTxHash && (bridgeStatusQuery.data?.status === "SUCCESS" || bridgeStatusQuery.data?.status === "REFUNDED" || bridgeStatusQuery.data?.status === "FAILED") && (
                   <button
                     onClick={handleClose}
                     className="flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black py-3 rounded-sm font-bold text-base confirm-button-shadow"
