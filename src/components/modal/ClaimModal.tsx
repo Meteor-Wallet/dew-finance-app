@@ -486,6 +486,10 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
                         {bridgeStatusQuery.data?.status && (
                           <p className="text-gray text-xs uppercase tracking-wide">{bridgeStatusQuery.data.status.replace(/_/g, " ")}</p>
                         )}
+                        <div className="flex items-center gap-2 w-full mt-2 px-3 py-2 rounded-sm bg-blue-950/60 border border-blue-500/30 text-blue-300 text-xs">
+                          <span>ℹ</span>
+                          <span>Bridge may take more than a minute to complete.</span>
+                        </div>
                       </>
                     )}
                   </div>
