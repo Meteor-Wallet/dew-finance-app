@@ -72,6 +72,7 @@ const vaults: {
   curated_by: string;
   name: string;
   description?: string;
+  nonNearMinReadableDeposit?: number;
 }[] = [
   {
     vault_id: "near.meteor-vaults.near",
@@ -91,7 +92,8 @@ const vaults: {
     base_asset_decimals: 6,
     curated_by: "Dew Finance",
     name: "USDT Vault",
-    chains: ["near", "solana", "eth", "arbitrum"]
+    chains: ["near", "solana", "eth", "arbitrum"],
+    nonNearMinReadableDeposit: 2
   },
   {
     vault_id: "usdc.meteor-vaults.near",
@@ -101,7 +103,8 @@ const vaults: {
     base_asset_decimals: 6,
     curated_by: "Dew Finance",
     name: "USDC Vault",
-    chains: ["near", "solana", "eth", "arbitrum"]
+    chains: ["near", "solana", "eth", "arbitrum"],
+    nonNearMinReadableDeposit: 2
   },
   {
     vault_id: "zec.meteor-vaults.near",

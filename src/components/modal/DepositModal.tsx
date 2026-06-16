@@ -367,8 +367,18 @@ const DepositModal = () => {
     }
   }, [depositAmount, balance.data?.formatted]);
 
+  const isBelowNonNearMinimum = useMemo(() => {
+    if (isNearDeposit || !vaultMeta?.nonNearMinReadableDeposit || !depositAmount) return false;
+    try {
+      return Big(depositAmount).lt(vaultMeta.nonNearMinReadableDeposit);
+    } catch {
+      return false;
+    }
+  }, [isNearDeposit, vaultMeta?.nonNearMinReadableDeposit, depositAmount]);
+
   const canDeposit =
     !isExceedingBalance &&
+    !isBelowNonNearMinimum &&
     (isNearDeposit || bridgeQuoteQuery.data) &&
     nearAddress &&
     selectedAsset &&
@@ -563,6 +573,13 @@ const DepositModal = () => {
               </div>
             </div>
 
+            {isBelowNonNearMinimum && depositAmount && (
+              <div className="flex items-start gap-2 mt-4 px-4 py-3 rounded-sm bg-amber-950/60 border border-amber-600/50 text-amber-400 text-sm">
+                <span className="mt-0.5 shrink-0">⚠</span>
+                <span>Minimum deposit is {vaultMeta?.nonNearMinReadableDeposit} {assetSymbol} for non-NEAR wallets</span>
+              </div>
+            )}
+
             <button
               onClick={() => {
                 if (isNearDeposit) {
@@ -593,6 +610,8 @@ const DepositModal = () => {
                 <CircularProgress size="small" />
               ) : isExceedingBalance ? (
                 "Insufficient balance"
+              ) : isBelowNonNearMinimum ? (
+                `Min ${vaultMeta?.nonNearMinReadableDeposit} ${assetSymbol}`
               ) : isNearDeposit ? (
                 "Deposit"
               ) : (
