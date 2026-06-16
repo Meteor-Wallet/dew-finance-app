@@ -111,6 +111,22 @@ const broadcastTransaction = async (params: {
   if (structureValidate.data.ok) {
     return structureValidate.data.value as FinalExecutionOutcome;
   } else {
+    if(structureValidate.data.error?.name === "MeteorError") {
+      const message = structureValidate.data.error?.message
+      if(message){
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let parsedMessage: any
+        try{
+          parsedMessage = JSON.parse(message)
+        }catch(err){
+          console.log("Failed to parse error message", err)
+        }
+
+        if(parsedMessage && parsedMessage?.kind?.kind?.FunctionCallError?.ExecutionError) {
+          throw new Error(parsedMessage?.kind?.kind?.FunctionCallError?.ExecutionError)
+        }
+      }
+    }
     throw new Error(
       `API error: ${JSON.stringify(structureValidate.data.error)}`,
     );
