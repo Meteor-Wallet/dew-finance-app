@@ -9,6 +9,9 @@ import { useWalletSelector } from "../../walletSelector";
 import nearLogo from "../../assets/near.svg";
 import solanaLogo from "../../assets/solana.svg";
 import ethLogo from "../../assets/eth.svg";
+import arbLogo from "../../assets/arb.png";
+import baseLogo from "../../assets/base.png";
+import bnbLogo from "../../assets/bnb.png";
 import type { ChainName } from "../../stores/wallet_store";
 
 export default function Navbar() {
@@ -90,15 +93,36 @@ export default function Navbar() {
                     className="bg-card-background border border-card-border flex items-center gap-2.5 px-3 py-2 lg:px-4 rounded-md font-medium text-white text-base transform transition duration-300 hover:scale-98 hover:opacity-80"
                   >
                     <div className="flex items-center gap-1.5">
-                      {DISPLAY_CHAINS.map((chain) => (
-                        <div
-                          key={chain.key}
-                          className={`w-5 h-5 rounded-full flex items-center justify-center ${chain.bgClass}`}
-                          style={{ filter: isChainConnected(chain.key) ? "none" : "grayscale(1) opacity(0.25)" }}
-                        >
-                          <img className="w-full" src={chain.logo} alt={chain.label} />
-                        </div>
-                      ))}
+                      {DISPLAY_CHAINS.map((chain) =>
+                        chain.key === "eth" ? (
+                          <div
+                            key={chain.key}
+                            className="w-5 h-5 grid grid-cols-2 gap-px rounded overflow-hidden shrink-0"
+                            style={{ filter: isChainConnected(chain.key) ? "none" : "grayscale(1) opacity(0.25)" }}
+                          >
+                            <div className="bg-[#627EEA] flex items-center justify-center p-px">
+                              <img src={ethLogo} alt="ETH" className="w-full h-full object-contain" />
+                            </div>
+                            <div className="bg-[#213147] flex items-center justify-center p-px">
+                              <img src={arbLogo} alt="ARB" className="w-full h-full object-contain" />
+                            </div>
+                            <div className="bg-[#0052FF] flex items-center justify-center p-px">
+                              <img src={baseLogo} alt="Base" className="w-full h-full object-contain" />
+                            </div>
+                            <div className="bg-[#F3BA2F] flex items-center justify-center p-px">
+                              <img src={bnbLogo} alt="BNB" className="w-full h-full object-contain" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            key={chain.key}
+                            className={`w-5 h-5 rounded-full flex items-center justify-center ${chain.bgClass}`}
+                            style={{ filter: isChainConnected(chain.key) ? "none" : "grayscale(1) opacity(0.25)" }}
+                          >
+                            <img className="w-full" src={chain.logo} alt={chain.label} />
+                          </div>
+                        )
+                      )}
                     </div>
                     <ChevronDown
                       size={18}

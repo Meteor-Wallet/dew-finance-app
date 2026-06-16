@@ -2,7 +2,27 @@ import closeIcon from "../../assets/close.svg";
 import nearLogo from "../../assets/near.svg";
 import solanaLogo from "../../assets/solana.svg";
 import ethLogo from "../../assets/eth.svg";
+import arbLogo from "../../assets/arb.png";
+import baseLogo from "../../assets/base.png";
+import bnbLogo from "../../assets/bnb.png";
 import Modal from "react-modal";
+
+const EvmCombinedLogo = () => (
+  <div className="w-10 h-10 grid grid-cols-2 gap-px shrink-0 rounded-lg overflow-hidden">
+    <div className="bg-[#627EEA] flex items-center justify-center p-0.5">
+      <img src={ethLogo} alt="ETH" className="w-full h-full object-contain" />
+    </div>
+    <div className="bg-[#213147] flex items-center justify-center p-0.5">
+      <img src={arbLogo} alt="ARB" className="w-full h-full object-contain" />
+    </div>
+    <div className="bg-[#0052FF] flex items-center justify-center p-0.5">
+      <img src={baseLogo} alt="Base" className="w-full h-full object-contain" />
+    </div>
+    <div className="bg-[#F3BA2F] flex items-center justify-center p-0.5">
+      <img src={bnbLogo} alt="BNB" className="w-full h-full object-contain" />
+    </div>
+  </div>
+);
 import Motion from "../utils/Motion";
 import { memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -76,9 +96,13 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
       {/* Main row: logo + info on left, connect/disconnect on right */}
       <div className="flex items-center justify-between w-full" style={{ opacity: isGrayedOut ? 0.4 : 1 }}>
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`list-logo shrink-0 ${chain.logoClass}`}>
-            <img src={chain.logo} alt={chain.label} />
-          </div>
+          {chain.key === "eth" ? (
+            <EvmCombinedLogo />
+          ) : (
+            <div className={`list-logo shrink-0 ${chain.logoClass}`}>
+              <img src={chain.logo} alt={chain.label} />
+            </div>
+          )}
           <div className="min-w-0">
             <p className="font-semibold text-sm leading-tight">{chain.label}</p>
             {isConnected && (
