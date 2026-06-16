@@ -376,9 +376,12 @@ const DepositModal = () => {
     }
   }, [isNearDeposit, vaultMeta?.nonNearMinReadableDeposit, depositAmount]);
 
+  const needsAbstractAccount = !isNearDeposit && !nearAddress;
+
   const canDeposit =
     !isExceedingBalance &&
     !isBelowNonNearMinimum &&
+    !needsAbstractAccount &&
     (isNearDeposit || bridgeQuoteQuery.data) &&
     nearAddress &&
     selectedAsset &&
@@ -580,8 +583,23 @@ const DepositModal = () => {
               </div>
             )}
 
+            {needsAbstractAccount && (
+              <div className="flex items-start gap-2 mt-4 px-4 py-3 rounded-sm bg-amber-950/60 border border-amber-600/50 text-amber-400 text-sm">
+                <span className="mt-0.5 shrink-0">⚠</span>
+                <span>A NEAR abstract account is required to deposit from a non-NEAR wallet.</span>
+              </div>
+            )}
+
             <button
               onClick={() => {
+                if (needsAbstractAccount) {
+                  handleClose();
+                  useWalletStore.getState().setPendingAbstractAccountCreation({
+                    address: selectedChain!.address!,
+                    chain: depositChain!,
+                  });
+                  return;
+                }
                 if (isNearDeposit) {
                   if (!depositToVaultMutation.isPending && canDeposit) {
                     const { depositAmount: amount, depositSlippagePercent } = useVaultActionStore.getState();
@@ -603,11 +621,13 @@ const DepositModal = () => {
                   prepareBridgeMutation.mutate();
                 }
               }}
-              disabled={depositToVaultMutation.isPending || prepareBridgeMutation.isPending || !canDeposit}
+              disabled={!needsAbstractAccount && (depositToVaultMutation.isPending || prepareBridgeMutation.isPending || !canDeposit)}
               className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative px-6 mt-10 mb-4"
             >
               {depositToVaultMutation.isPending || prepareBridgeMutation.isPending ? (
                 <CircularProgress size="small" />
+              ) : needsAbstractAccount ? (
+                "Create Account"
               ) : isExceedingBalance ? (
                 "Insufficient balance"
               ) : isBelowNonNearMinimum ? (

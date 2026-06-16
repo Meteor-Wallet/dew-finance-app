@@ -378,8 +378,11 @@ const RedeemModal = () => {
     }
   }, [withdrawAmount, myPosition]);
 
+  const needsAbstractAccount = !isNearRedeem && !nearAddress;
+
   const canWithdraw =
     !isExceedingBalance &&
+    !needsAbstractAccount &&
     (isNearRedeem || bridgeQuoteQuery.data) &&
     nearAddress &&
     selectedAsset &&
@@ -536,8 +539,23 @@ const RedeemModal = () => {
               </div>
             )}
 
+            {needsAbstractAccount && (
+              <div className="flex items-start gap-2 mt-4 px-4 py-3 rounded-sm bg-amber-950/60 border border-amber-600/50 text-amber-400 text-sm">
+                <span className="mt-0.5 shrink-0">⚠</span>
+                <span>A NEAR abstract account is required to redeem from a non-NEAR wallet.</span>
+              </div>
+            )}
+
             <button
               onClick={() => {
+                if (needsAbstractAccount) {
+                  handleClose();
+                  useWalletStore.getState().setPendingAbstractAccountCreation({
+                    address: selectedChain!.address!,
+                    chain: destChain!,
+                  });
+                  return;
+                }
                 if (!withdrawFromVaultMutation.isPending && canWithdraw) {
                   if (isNearRedeem) {
                     withdrawFromVaultMutation.mutate({
@@ -588,11 +606,13 @@ const RedeemModal = () => {
                   }
                 }
               }}
-              disabled={withdrawFromVaultMutation.isPending || !canWithdraw}
+              disabled={!needsAbstractAccount && (withdrawFromVaultMutation.isPending || !canWithdraw)}
               className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black transition-opacity duration-200 hover:opacity-50 py-3 rounded-sm font-bold text-base confirm-button-shadow relative px-6 mt-10 mb-4"
             >
               {withdrawFromVaultMutation.isPending ? (
                 <CircularProgress size="small" />
+              ) : needsAbstractAccount ? (
+                "Create Account"
               ) : isExceedingBalance ? (
                 "Insufficient balance"
               ) : isNearRedeem ? (
