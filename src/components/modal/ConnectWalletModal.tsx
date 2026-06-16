@@ -55,7 +55,7 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
     });
   }, [boundWalletsQuery.data, address]);
 
-  const bindDisabled = isBound || !nearAccountId || boundWalletsQuery.isPending;
+  const bindDisabled = isBound || (nearAccountId !== null && boundWalletsQuery.isPending);
 
   return (
     <li
@@ -81,7 +81,16 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
           {showBindButton && (
             <button
               disabled={bindDisabled}
-              onClick={() => useWalletStore.getState().openOnboardModal()}
+              onClick={() => {
+                if (!nearAccountId) {
+                  useWalletStore.getState().setPendingAbstractAccountCreation({
+                    address: address!,
+                    chain: chain.key,
+                  });
+                } else {
+                  useWalletStore.getState().openOnboardModal();
+                }
+              }}
               className="text-xs px-3 py-1.5 rounded-md border border-primary/40 text-primary font-medium transition-opacity duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isBound ? "Bound" : "Bind"}
