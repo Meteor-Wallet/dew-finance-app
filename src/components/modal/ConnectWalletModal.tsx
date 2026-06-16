@@ -6,6 +6,19 @@ import arbLogo from "../../assets/arb.png";
 import baseLogo from "../../assets/base.png";
 import bnbLogo from "../../assets/bnb.png";
 import Modal from "react-modal";
+import Motion from "../utils/Motion";
+import { memo, useMemo } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useWalletStore } from "../../stores/wallet_store";
+import { useWalletSelector } from "../../walletSelector";
+import { nearConnector } from "../../nearConnector";
+import { stringUtils } from "../../utils/stringUtils";
+import { dewAccountQueries } from "../../queries/dewAccount";
+import { dewAccountUtils } from "../../utils/dewAccountUtils";
+import { dewFactoryUtils } from "../../utils/dewFactoryUtils";
+import { queryClient } from "../../queryClient";
+import { CircularProgress } from "../utils/CircularProgress";
 
 const EvmCombinedLogo = () => (
   <div className="w-10 h-10 grid grid-cols-2 gap-px shrink-0 rounded-lg overflow-hidden">
@@ -23,14 +36,6 @@ const EvmCombinedLogo = () => (
     </div>
   </div>
 );
-import Motion from "../utils/Motion";
-import { memo, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useWalletStore } from "../../stores/wallet_store";
-import { useWalletSelector } from "../../walletSelector";
-import { nearConnector } from "../../nearConnector";
-import { stringUtils } from "../../utils/stringUtils";
-import { dewAccountQueries } from "../../queries/dewAccount";
 
 const CHAINS = [
   { key: "near",   label: "NEAR",     logo: nearLogo,   logoClass: "near-logo" },
@@ -88,6 +93,32 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
 
   const bindDisabled = isBound || isBoundToOtherAccount || (nearAccountId !== null && boundWalletsQuery.isPending);
 
+  const { signMessage } = useWalletSelector();
+
+  const addWalletMutation = useMutation({
+    mutationFn: async () => {
+      const [existingBlockchainId, existingBlockchainAddress] = boundWalletsQuery.data![0];
+      const existingChain = dewFactoryUtils.getChainNameFromBlockchainId(existingBlockchainId);
+      await dewAccountUtils.signAndAddWallet({
+        blockchainAddress: existingBlockchainAddress,
+        chain: existingChain,
+        newBlockchainAddress: address!,
+        newChain: chain.key,
+        nearAddress: nearAccountId!,
+        signMessage: (msg) => signMessage(existingChain, msg),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["walletsByAbstractAccount", nearAccountId] });
+      queryClient.invalidateQueries({ queryKey: ["abstractAccountsByWallet", address, chain.key] });
+    },
+    onError: (error) => {
+      toast.error("Failed to bind wallet", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
+
   return (
     <li
       className="connect-wallet-list-items flex-col items-stretch"
@@ -139,7 +170,7 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
             <span className="text-xs text-amber-400">Bound to a different account</span>
           ) : (
             <button
-              disabled={bindDisabled}
+              disabled={bindDisabled || addWalletMutation.isPending}
               onClick={() => {
                 if (!nearAccountId) {
                   useWalletStore.getState().setPendingAbstractAccountCreation({
@@ -147,12 +178,16 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
                     chain: chain.key,
                   });
                 } else {
-                  useWalletStore.getState().openOnboardModal();
+                  addWalletMutation.mutate();
                 }
               }}
-              className="text-xs px-3 py-1.5 rounded-md border border-primary/40 text-primary font-medium transition-opacity duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-primary/40 text-primary font-medium transition-opacity duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Bind account
+              {addWalletMutation.isPending ? (
+                <CircularProgress size="small" />
+              ) : (
+                "Bind account"
+              )}
             </button>
           )}
         </div>
