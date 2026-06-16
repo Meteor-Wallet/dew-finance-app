@@ -22,6 +22,7 @@ import Big from "big.js";
 import { ChainSelect, CHAIN_META, type ChainOption } from "../utils/ChainSelect";
 import { oneClickUtils } from "../../utils/1clickUtils";
 import { dewAccountUtils } from "../../utils/dewAccountUtils";
+import { dewAccountQueries } from "../../queries/dewAccount";
 
 const Asset = ({
   onClick,
@@ -81,22 +82,34 @@ const DepositModal = () => {
 
   const vaultMeta = vaultUtils.vaults.find((v) => v.vault_id === vaultContractId);
 
-  const connectedWallets = useWalletStore(
-    useShallow((s) => s.connectedWallets)
-  );
+  const connectedWallets = useWalletStore(useShallow((s) => s.connectedWallets));
+  const nearAddress = useWalletStore((s) => s.nearAccountId);
+
+  const boundWalletsQuery = useQuery({
+    ...dewAccountQueries.walletsByAbstractAccountQueryOptions({ nearAccountId: nearAddress }),
+    enabled: !!nearAddress,
+  });
 
   const chainOptions = useMemo<ChainOption[]>(() => {
     const vaultChains = vaultMeta?.chains ?? [];
+    const boundAddresses = new Set(
+      (boundWalletsQuery.data ?? []).map(([, addr]) => addr.toLowerCase()),
+    );
     return vaultChains.map((c) => {
       const connectedWallet = connectedWallets.find((w) => w.supportedChains.includes(c));
+      const address = connectedWallet?.address ?? null;
+      const isConnected = !!connectedWallet;
+      const isBound = !nearAddress || !boundWalletsQuery.data || !address ||
+        boundAddresses.has(address.toLowerCase());
       return {
         chain: c,
-        address: connectedWallet?.address ?? null,
-        disabled: !connectedWallet,
+        address,
+        disabled: !isConnected || !isBound,
+        disabledReason: !isConnected ? "Not connected" : !isBound ? "Not bound" : undefined,
         ...(CHAIN_META[c] ?? { logo: "", label: c }),
       };
     });
-  }, [vaultMeta, connectedWallets]);
+  }, [vaultMeta, connectedWallets, nearAddress, boundWalletsQuery.data]);
 
   const [selectedChain, setSelectedChain] = useState<ChainOption | null>(null);
 
@@ -110,7 +123,6 @@ const DepositModal = () => {
   }, [chainOptions]);
 
   const depositChain = selectedChain?.chain ?? null;
-  const nearAddress = useWalletStore((s) => s.nearAccountId);
 
   const selectedAsset = useVaultActionStore((s) => s.selectedDepositAsset);
   const slippagePercent = useVaultActionStore((s) => s.depositSlippagePercent);

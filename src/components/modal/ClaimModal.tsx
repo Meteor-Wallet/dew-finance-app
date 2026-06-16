@@ -19,6 +19,7 @@ import { dewAccountUtils } from "../../utils/dewAccountUtils";
 import { useWalletStore } from "../../stores/wallet_store";
 import { useShallow } from "zustand/react/shallow";
 import { dewFactoryUtils } from "../../utils/dewFactoryUtils";
+import { dewAccountQueries } from "../../queries/dewAccount";
 
 interface ClaimModalProps {
   isOpen: boolean;
@@ -36,20 +37,33 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
   const { signMessage } = useWalletSelector();
   const connectedWallets = useWalletStore(useShallow((s) => s.connectedWallets));
 
+  const boundWalletsQuery = useQuery({
+    ...dewAccountQueries.walletsByAbstractAccountQueryOptions({ nearAccountId: nearAddress }),
+    enabled: usingAbstractAccount,
+  });
+
   // ── Chain select (abstract account only) ─────────────────────────────────
   const chainOptions = useMemo<ChainOption[]>(() => {
     if (!usingAbstractAccount) return [];
     const vaultChains = (vaultMeta?.chains ?? []).filter((c) => c !== "near");
+    const boundAddresses = new Set(
+      (boundWalletsQuery.data ?? []).map(([, addr]) => addr.toLowerCase()),
+    );
     return vaultChains.map((c) => {
       const connectedWallet = connectedWallets.find((w) => w.supportedChains.includes(c));
+      const address = connectedWallet?.address ?? null;
+      const isConnected = !!connectedWallet;
+      const isBound = !boundWalletsQuery.data || !address ||
+        boundAddresses.has(address.toLowerCase());
       return {
         chain: c,
-        address: connectedWallet?.address ?? null,
-        disabled: !connectedWallet,
+        address,
+        disabled: !isConnected || !isBound,
+        disabledReason: !isConnected ? "Not connected" : !isBound ? "Not bound" : undefined,
         ...(CHAIN_META[c] ?? { logo: "", label: c }),
       };
     });
-  }, [vaultMeta, connectedWallets, usingAbstractAccount]);
+  }, [vaultMeta, connectedWallets, usingAbstractAccount, boundWalletsQuery.data]);
 
   const [selectedChain, setSelectedChain] = useState<ChainOption | null>(null);
 

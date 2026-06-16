@@ -12,6 +12,7 @@ export type ChainOption = {
   logo: string;
   label: string;
   disabled?: boolean;
+  disabledReason?: string;
 };
 
 export const CHAIN_META: Partial<Record<ChainName, { logo: string; label: string }>> = {
@@ -81,7 +82,7 @@ export function ChainSelect({
                 <img src={option.logo} alt={option.label} className="w-4 h-4" />
                 <span>{option.label}</span>
                 {option.disabled && (
-                  <span className="ml-auto text-xs">Not connected</span>
+                  <span className="ml-auto text-xs">{option.disabledReason ?? "Not connected"}</span>
                 )}
               </div>
             ))}
