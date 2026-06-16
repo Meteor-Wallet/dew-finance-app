@@ -73,10 +73,8 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
       className="connect-wallet-list-items flex-col items-stretch"
       style={{ cursor: "default" }}
     >
-      <div
-        className="flex items-center justify-between w-full"
-        style={{ opacity: isGrayedOut ? 0.4 : 1 }}
-      >
+      {/* Main row: logo + info on left, connect/disconnect on right */}
+      <div className="flex items-center justify-between w-full" style={{ opacity: isGrayedOut ? 0.4 : 1 }}>
         <div className="flex items-center gap-3 min-w-0">
           <div className={`list-logo shrink-0 ${chain.logoClass}`}>
             <img src={chain.logo} alt={chain.label} />
@@ -88,25 +86,7 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {showBindButton && (
-            <button
-              disabled={bindDisabled}
-              onClick={() => {
-                if (!nearAccountId) {
-                  useWalletStore.getState().setPendingAbstractAccountCreation({
-                    address: address!,
-                    chain: chain.key,
-                  });
-                } else {
-                  useWalletStore.getState().openOnboardModal();
-                }
-              }}
-              className="text-xs px-3 py-1.5 rounded-md border border-primary/40 text-primary font-medium transition-opacity duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isBound ? "Bound" : isBoundToOtherAccount ? "Bound elsewhere" : "Bind"}
-            </button>
-          )}
+        <div className="shrink-0 ml-3">
           {isConnected ? (
             <button
               onClick={onDisconnect}
@@ -125,14 +105,38 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
           )}
         </div>
       </div>
+
+      {/* Bind row — indented to align with chain name */}
+      {showBindButton && (
+        <div className="flex items-center gap-2 mt-2 pl-13 w-full">
+          {isBound ? (
+            <span className="text-xs text-primary font-medium">✓ Bound</span>
+          ) : isBoundToOtherAccount ? (
+            <span className="text-xs text-amber-400">Bound to a different account</span>
+          ) : (
+            <button
+              disabled={bindDisabled}
+              onClick={() => {
+                if (!nearAccountId) {
+                  useWalletStore.getState().setPendingAbstractAccountCreation({
+                    address: address!,
+                    chain: chain.key,
+                  });
+                } else {
+                  useWalletStore.getState().openOnboardModal();
+                }
+              }}
+              className="text-xs px-3 py-1.5 rounded-md border border-primary/40 text-primary font-medium transition-opacity duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Bind account
+            </button>
+          )}
+        </div>
+      )}
+
       {isGrayedOut && (
         <p className="text-xs text-gray mt-1">
           Mixing of native NEAR and non-NEAR wallet is not supported
-        </p>
-      )}
-      {isBoundToOtherAccount && (
-        <p className="text-xs text-amber-400 mt-1">
-          This wallet is already bound to a different abstract account
         </p>
       )}
     </li>
