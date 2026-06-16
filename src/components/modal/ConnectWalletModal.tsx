@@ -40,6 +40,11 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
     enabled: showBindButton && nearAccountId !== null,
   });
 
+  const abstractAccountsQuery = useQuery({
+    ...dewAccountQueries.abstractAccountsByWalletQueryOptions({ blockchainAddress: address, chain: chain.key }),
+    enabled: showBindButton,
+  });
+
   const isBound = useMemo(() => {
     if (!boundWalletsQuery.data || !address) return false;
     return boundWalletsQuery.data.some((w) => {
@@ -55,7 +60,13 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
     });
   }, [boundWalletsQuery.data, address]);
 
-  const bindDisabled = isBound || (nearAccountId !== null && boundWalletsQuery.isPending);
+  const isBoundToOtherAccount = useMemo(() => {
+    if (!abstractAccountsQuery.data || abstractAccountsQuery.data.length === 0) return false;
+    if (!nearAccountId) return true;
+    return !abstractAccountsQuery.data.includes(nearAccountId);
+  }, [abstractAccountsQuery.data, nearAccountId]);
+
+  const bindDisabled = isBound || isBoundToOtherAccount || (nearAccountId !== null && boundWalletsQuery.isPending);
 
   return (
     <li
@@ -93,7 +104,7 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
               }}
               className="text-xs px-3 py-1.5 rounded-md border border-primary/40 text-primary font-medium transition-opacity duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isBound ? "Bound" : "Bind"}
+              {isBound ? "Bound" : isBoundToOtherAccount ? "Bound elsewhere" : "Bind"}
             </button>
           )}
           {isConnected ? (
@@ -117,6 +128,11 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
       {isGrayedOut && (
         <p className="text-xs text-gray mt-1">
           Mixing of native NEAR and non-NEAR wallet is not supported
+        </p>
+      )}
+      {isBoundToOtherAccount && (
+        <p className="text-xs text-amber-400 mt-1">
+          This wallet is already bound to a different abstract account
         </p>
       )}
     </li>

@@ -56,7 +56,7 @@ useWalletStore.subscribe(
       }
     }
 
-    if(newWallets.length === 0){
+    if(wallets.length === 0){
       useWalletStore
         .getState()
         .setCurrentNearAccountId({ nearAccountId: null });
