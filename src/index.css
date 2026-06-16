@@ -222,6 +222,7 @@ nav {
 
 .confirm-button-shadow {
   transition: 0.3s all;
+  position: relative;
 }
 
 .confirm-button-shadow:hover {

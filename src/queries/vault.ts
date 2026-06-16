@@ -1,7 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { nearUtils } from "../utils/nearUtils";
 import z from "zod";
-import { DewAccountBackend } from "../backend/DewAccountBackend";
 import { DewAgentBackend } from "../backend/DewAgentBackend";
 import { vaultUtils } from "../utils/vaultUtils";
 import Big from "big.js";

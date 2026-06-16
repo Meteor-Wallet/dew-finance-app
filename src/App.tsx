@@ -11,6 +11,7 @@ import Portfolio from "./pages/Portfolio";
 import Vaults from "./pages/Vaults/index";
 import Navbar from "./components/layout/Navbar";
 import OnboardingModal from "./components/modal/OnboardingModal";
+import CreateAbstractAccountModal from "./components/modal/CreateAbstractAccountModal";
 import SimulateModal from "./components/modal/SimulateModal";
 import ConnectWalletModal from "./components/modal/ConnectWalletModal";
 import SolanaWalletModal from "./components/modal/SolanaWalletModal";
@@ -37,6 +38,7 @@ export default function App() {
         <SolanaWalletModal />
         <EvmWalletModal />
         <OnboardingModal />
+        <CreateAbstractAccountModal />
         <SimulateModal />
         <Routes>
           <Route path="/" element={<Homepage />} />

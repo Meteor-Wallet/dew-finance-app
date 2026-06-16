@@ -10,8 +10,7 @@ import { useWalletStore } from "../../stores/wallet_store";
 import { useWalletSelector } from "../../walletSelector";
 import { nearConnector } from "../../nearConnector";
 import { stringUtils } from "../../utils/stringUtils";
-import { multicaQueries } from "../../queries/multica";
-import { multicaUtils } from "../../utils/multicaUtils";
+import { dewAccountQueries } from "../../queries/dewAccount";
 
 const CHAINS = [
   { key: "near",   label: "NEAR",     logo: nearLogo,   logoClass: "near-logo" },
@@ -37,15 +36,21 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
   const showBindButton = isConnected && chain.key !== "near" && !isGrayedOut;
 
   const boundWalletsQuery = useQuery({
-    ...multicaQueries.getListWalletsByMcaQueryOptions({ mca: nearAccountId! }),
+    ...dewAccountQueries.walletsByAbstractAccountQueryOptions({ nearAccountId: nearAccountId }),
     enabled: showBindButton && nearAccountId !== null,
   });
 
   const isBound = useMemo(() => {
     if (!boundWalletsQuery.data || !address) return false;
     return boundWalletsQuery.data.some((w) => {
-      if ("EVM" in w) return multicaUtils.addressToMulticaFormat(w.EVM) === multicaUtils.addressToMulticaFormat(address);
-      if ("Solana" in w) return w.Solana === address;
+      const [blockchainId, blockchainAddress] = w;
+      if(blockchainId === 'solana'){
+        return blockchainAddress === address;
+      }
+
+      if(blockchainId === 'evm'){
+        return blockchainAddress === address
+      }
       return false;
     });
   }, [boundWalletsQuery.data, address]);

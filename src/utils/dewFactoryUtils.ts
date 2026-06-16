@@ -1,18 +1,32 @@
 import type { ChainName } from "../stores/wallet_store";
+import { dewAccountUtils } from "./dewAccountUtils";
 import { nearUtils } from "./nearUtils";
 
 const FACTORY_CONTRACT_ID = "aa-dew.near";
 
-const getBlockchainIdFromChainName = (chain: ChainName) => {
-  switch (chain) {
-    case "arbitrum":
-    case "eth":
-      return "ethereum";
-    case "solana":
-      return "solana";
-    case "near":
-      throw new Error("Near should use native wallet selector");
-  }
+const CHAIN_BLOCKCHAIN_MAP = [
+  { blockchainId: "ethereum", chain: ["eth", "arbitrum"] as ChainName[] },
+  { blockchainId: "solana", chain: ["solana"] as ChainName[] },
+];
+
+const CHAIN_TO_BLOCKCHAIN_ID = Object.fromEntries(
+  CHAIN_BLOCKCHAIN_MAP.flatMap(({ blockchainId, chain }) => chain.map((c) => [c, blockchainId])),
+) as Partial<Record<ChainName, string>>;
+
+const BLOCKCHAIN_ID_TO_CHAIN = Object.fromEntries(
+  CHAIN_BLOCKCHAIN_MAP.map(({ blockchainId, chain }) => [blockchainId, chain[0]]),
+) as Record<string, ChainName>;
+
+const getBlockchainIdFromChainName = (chain: ChainName): string => {
+  const blockchainId = CHAIN_TO_BLOCKCHAIN_ID[chain];
+  if (!blockchainId) throw new Error("Near should use native wallet selector");
+  return blockchainId;
+};
+
+const getChainNameFromBlockchainId = (blockchainId: string): ChainName => {
+  const chain = BLOCKCHAIN_ID_TO_CHAIN[blockchainId];
+  if (!chain) throw new Error(`Unknown blockchain ID: ${blockchainId}`);
+  return chain;
 };
 
 const getAccountDetailsFromAddressAndChain = async ({
@@ -31,7 +45,7 @@ const getAccountDetailsFromAddressAndChain = async ({
     {
       blockchain_id: blockchainId,
       blockchain_address: address,
-    }
+    },
   )) as string;
 
   return {
@@ -48,11 +62,7 @@ const getMessageForCreateAccount = async ({
   blockchainAddress: string;
   chain: ChainName;
 }) => {
-  const { blockchainId, nearAddress } =
-    await getAccountDetailsFromAddressAndChain({
-      address: blockchainAddress,
-      chain,
-    });
+  const blockchainId = getBlockchainIdFromChainName(chain);
 
   const message = (await nearUtils.provider.callFunction(
     FACTORY_CONTRACT_ID,
@@ -60,58 +70,138 @@ const getMessageForCreateAccount = async ({
     {
       blockchain_id: blockchainId,
       blockchain_address: blockchainAddress,
-    }
+    },
   )) as string;
 
-  const parsedMessage = JSON.parse(message);
+  const parsedMessage = JSON.parse(message) as {
+    account_id: string;
+    blockchain_id: string;
+    blockchain_address: string;
+    deadline: string;
+  };
 
   return {
-    message: message,
-    blockchainId,
-    nearAddress,
-    deadline: parsedMessage.deadline,
+    parsedMessage,
+    message,
   };
 };
 
 const checkAccountExists = async ({
   address,
-  chain
+  chain,
 }: {
   address: string;
-  chain: ChainName
-}): Promise<{ accountExists: true; nearAddress: string } | { accountExists: false; nearAddress: null }> => {
-  const { nearAddress } =
-    await getAccountDetailsFromAddressAndChain({
-      address,
-      chain,
-    });
+  chain: ChainName;
+}): Promise<
+  | { accountExists: true; nearAddress: string }
+  | { accountExists: false; nearAddress: null }
+> => {
+  const { nearAddress } = await getAccountDetailsFromAddressAndChain({
+    address,
+    chain,
+  });
 
   const accountExists = await nearUtils.provider
     .viewAccount(nearAddress)
     .then(() => true)
     .catch(() => false);
 
-  if(accountExists) {
+  if (accountExists) {
     return {
       accountExists: true,
-      nearAddress
-    }
+      nearAddress,
+    };
   }
 
   return {
     accountExists: false,
-    nearAddress: null
+    nearAddress: null,
+  };
+};
+
+const getAbstractAccountsByWallet = async ({
+  blockchainAddress,
+  chain,
+}: {
+  blockchainAddress: string;
+  chain: ChainName;
+}) => {
+  const blockchainId = getBlockchainIdFromChainName(chain);
+
+  const accountIds = await nearUtils.provider.callFunction<string[]>(
+    FACTORY_CONTRACT_ID,
+    "list_account_ids_for_wallet",
+    {
+      blockchain_id: blockchainId,
+      blockchain_address: blockchainAddress,
+    },
+  );
+
+  return accountIds || [];
+};
+
+const getWalletsByAbstractAccount = async ({
+  nearAccountId,
+}: {
+  nearAccountId: string;
+}) => {
+  // first is blockchain id, second is blockchain address
+  const wallets = await nearUtils.provider.callFunction<[string, string][]>(
+    FACTORY_CONTRACT_ID,
+    "list_wallets_for_account_id",
+    {
+      account_id: nearAccountId,
+    },
+  );
+
+  return wallets || [];
+};
+
+const createAbstractAccount = async ({
+  blockchainAddress,
+  chain,
+  signMessage
+}: {
+  blockchainAddress: string;
+  chain: ChainName;
+  signMessage: (message: string) => Promise<string>;
+}) => {
+  // throw if the wallet is already connected
+  const existingWallets = await getWalletsByAbstractAccount({
+    nearAccountId: `${blockchainAddress}.${FACTORY_CONTRACT_ID}`,
+  });
+
+  if (existingWallets.length > 0) {
+    throw new Error("Wallet is connected with another abstract account");
   }
+
+  const { message, parsedMessage } = await getMessageForCreateAccount({
+    blockchainAddress,
+    chain,
+  });
+
+  const signature = await signMessage(message)
+
+  await dewAccountUtils.sponsorCreateAccount({
+    blockchainAddress: parsedMessage.blockchain_address,
+    blockchainId: parsedMessage.blockchain_id,
+    deadline: parsedMessage.deadline,
+    signature,
+  });
 }
 
 const isAbstractAccount = (address: string) => {
   return address.endsWith(`.${FACTORY_CONTRACT_ID}`);
-}
+};
 
 export const dewFactoryUtils = {
   getAccountDetailsFromAddressAndChain,
   getMessageForCreateAccount,
   getBlockchainIdFromChainName,
+  getChainNameFromBlockchainId,
   checkAccountExists,
-  isAbstractAccount
+  isAbstractAccount,
+  createAbstractAccount,
+  getAbstractAccountsByWallet,
+  getWalletsByAbstractAccount,
 };

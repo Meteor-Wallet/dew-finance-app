@@ -22,6 +22,9 @@ type TDewTransaction = {
   actions: Action[];
 };
 
+const backendURL =
+  "https://meteor-backend-v2-dev-276870342533.europe-southwest1.run.app";
+
 const sponsorStorageDeposit = async ({
   vaultContractId,
   nearAccountId,
@@ -82,9 +85,6 @@ const convertConnectorTransactionToDewTransaction = ({
     }),
   };
 };
-
-const backendURL =
-  "https://meteor-backend-v2-dev-276870342533.europe-southwest1.run.app";
 
 const broadcastTransaction = async (params: {
   transaction: TDewTransaction;
@@ -209,8 +209,48 @@ const getMessageForSigningTransaction = async ({
   return { message, blockchainId };
 };
 
+const sponsorCreateAccount = async ({
+  blockchainAddress,
+  blockchainId,
+  deadline,
+  signature
+}: {
+  blockchainId: string,
+  blockchainAddress: string,
+  signature: string,
+  deadline: string,
+}) => {
+  const response = await fetch(new URL("/api/dew_vault/create_account", backendURL), {
+    method: "POST",
+    body: JSON.stringify({
+      blockchain_id: blockchainId,
+      blockchain_address: blockchainAddress,
+      signature: signature,
+      deadline: deadline,
+    }),
+  });
+
+  const result = await response.json();
+
+  const structureValidate =
+    meteorUtils.zMeteorApiResponseAnyError.safeParse(result);
+
+  if (!structureValidate.success) {
+    throw new Error("Invalid response structure");
+  }
+
+  if (structureValidate.data.ok) {
+    return structureValidate.data.value as FinalExecutionOutcome;
+  } else {
+    throw new Error(
+      `API error: ${JSON.stringify(structureValidate.data.error)}`,
+    );
+  }
+};
+
 export const dewAccountUtils = {
   getMessageForSigningTransaction,
   sponsorStorageDeposit,
   signAndSendTransaction,
+  sponsorCreateAccount
 };

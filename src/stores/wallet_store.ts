@@ -14,6 +14,7 @@ export interface WalletState {
   isOnboardModalOpen: boolean;
   connectedWallets: { address: string; supportedChains: ChainName[] }[];
   nearAccountId: string | null;
+  pendingAbstractAccountCreation: { address: string; chain: ChainName } | null;
   openConnectWalletModal: () => void;
   closeConnectWalletModal: () => void;
   openSolanaWalletModal: () => void;
@@ -24,6 +25,7 @@ export interface WalletState {
   closeSwitchNetworkModal: () => void;
   openOnboardModal: () => void;
   closeOnboardModal: () => void;
+  setPendingAbstractAccountCreation: (pending: { address: string; chain: ChainName } | null) => void;
   connectWallet: (event: {
     address: string;
     supportedChains: ChainName[];
@@ -41,6 +43,7 @@ export const useWalletStore = create<WalletState>()(
     isOnboardModalOpen: false,
     connectedWallets: [],
     nearAccountId: null,
+    pendingAbstractAccountCreation: null,
 
     openConnectWalletModal: () => set({ isConnectWalletModalOpen: true }),
     closeConnectWalletModal: () => set({ isConnectWalletModalOpen: false }),
@@ -69,6 +72,7 @@ export const useWalletStore = create<WalletState>()(
     },
 
     setCurrentNearAccountId: ({ nearAccountId }) => set({ nearAccountId }),
+    setPendingAbstractAccountCreation: (pending) => set({ pendingAbstractAccountCreation: pending }),
   }))
 );
 

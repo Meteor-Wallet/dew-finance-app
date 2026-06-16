@@ -7,12 +7,8 @@ import { queryClient } from "./queryClient.ts";
 import { isEqual } from "es-toolkit";
 import { useWalletStore } from "./stores/wallet_store.ts";
 import { dewFactoryUtils } from "./utils/dewFactoryUtils.ts";
-import { multicaUtils } from "./utils/multicaUtils.ts";
-import { nearUtils } from "./utils/nearUtils.ts";
-import { toast } from "sonner";
 import Big from "big.js";
 import "./nearConnector.ts";
-import { dewAccountUtils } from "./utils/dewAccountUtils.ts";
 
 Big.DP = 26;
 
@@ -50,10 +46,20 @@ useWalletStore.subscribe(
           useWalletStore
             .getState()
             .setCurrentNearAccountId({ nearAccountId: nearAddress });
+        } else {
+          useWalletStore
+            .getState()
+            .setPendingAbstractAccountCreation({ address: wallet.address, chain: supportedChain });
         }
       } catch (err) {
         console.log(err);
       }
+    }
+
+    if(newWallets.length === 0){
+      useWalletStore
+        .getState()
+        .setCurrentNearAccountId({ nearAccountId: null });
     }
   },
   { equalityFn: isEqual },
