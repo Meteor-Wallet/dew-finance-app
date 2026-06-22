@@ -2,6 +2,7 @@ import closeIcon from "../../assets/close.svg";
 import nearLogo from "../../assets/near.svg";
 import solanaLogo from "../../assets/solana.svg";
 import ethLogo from "../../assets/eth.svg";
+import zecLogo from "../../assets/zec.svg";
 import arbLogo from "../../assets/arb.png";
 import baseLogo from "../../assets/base.png";
 import bnbLogo from "../../assets/bnb.png";
@@ -41,6 +42,7 @@ const CHAINS = [
   { key: "near",   label: "NEAR",     logo: nearLogo,   logoClass: "near-logo" },
   { key: "solana", label: "Solana",   logo: solanaLogo, logoClass: "" },
   { key: "eth",    label: "EVM",      logo: ethLogo,    logoClass: "" },
+  { key: "zec",    label: "Zcash",    logo: zecLogo,    logoClass: "" },
 ] as const;
 
 type ChainKey = (typeof CHAINS)[number]["key"];
@@ -79,6 +81,10 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
       }
 
       if(blockchainId === 'evm'){
+        return blockchainAddress.toLowerCase() === address.toLowerCase();
+      }
+
+      if(blockchainId === 'noirzec'){
         return blockchainAddress.toLowerCase() === address.toLowerCase();
       }
       return false;
@@ -208,7 +214,7 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
 // ── Modal ────────────────────────────────────────────────────────────────────
 
 const ConnectWalletModal = () => {
-  const { signOutChain } = useWalletSelector();
+  const { signOutChain, signIn } = useWalletSelector();
   const isOpen = useWalletStore((s) => s.isConnectWalletModalOpen);
   const connectedWallets = useWalletStore((s) => s.connectedWallets);
   const nearAccountId = useWalletStore((s) => s.nearAccountId);
@@ -220,7 +226,9 @@ const ConnectWalletModal = () => {
 
   const isNearConnected = getConnectedAddress("near") !== null;
   const hasNonNearConnected =
-    getConnectedAddress("solana") !== null || getConnectedAddress("eth") !== null;
+    getConnectedAddress("solana") !== null ||
+    getConnectedAddress("eth") !== null ||
+    getConnectedAddress("zec") !== null;
 
   const isChainGrayedOut = (chain: ChainKey) => {
     if (chain === "near") return hasNonNearConnected;
@@ -231,6 +239,7 @@ const ConnectWalletModal = () => {
     if (chain === "near") { nearConnector.connect(); return; }
     if (chain === "solana") { useWalletStore.getState().openSolanaWalletModal(); return; }
     if (chain === "eth") { useWalletStore.getState().openEvmWalletModal(); return; }
+    if (chain === "zec") { signIn("zec"); return; }
   };
 
   return (

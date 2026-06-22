@@ -7,6 +7,7 @@ const FACTORY_CONTRACT_ID = "aa-dew.near";
 const CHAIN_BLOCKCHAIN_MAP = [
   { blockchainId: "evm", chain: ["eth", "arbitrum"] as ChainName[] },
   { blockchainId: "solana", chain: ["solana"] as ChainName[] },
+  { blockchainId: "noirzec", chain: ["zec"] as ChainName[] },
 ];
 
 const CHAIN_TO_BLOCKCHAIN_ID = Object.fromEntries(

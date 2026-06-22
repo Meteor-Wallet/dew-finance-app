@@ -9,6 +9,7 @@ import { useWalletSelector } from "../../walletSelector";
 import nearLogo from "../../assets/near.svg";
 import solanaLogo from "../../assets/solana.svg";
 import ethLogo from "../../assets/eth.svg";
+import zecLogo from "../../assets/zec.svg";
 import arbLogo from "../../assets/arb.png";
 import baseLogo from "../../assets/base.png";
 import bnbLogo from "../../assets/bnb.png";
@@ -223,6 +224,7 @@ const DISPLAY_CHAINS: { key: ChainName; logo: string; label: string; bgClass: st
   { key: "near",   logo: nearLogo,   label: "NEAR",     bgClass: "near-logo" },
   { key: "solana", logo: solanaLogo, label: "Solana",   bgClass: "solana-logo" },
   { key: "eth",    logo: ethLogo,    label: "EVM",      bgClass: "eth-logo" },
+  { key: "zec",    logo: zecLogo,    label: "Zcash",    bgClass: "" },
 ];
 
 function WalletDropdownContent({ onClose }: { onClose: () => void }) {

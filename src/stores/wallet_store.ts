@@ -4,7 +4,8 @@ import { subscribeWithSelector } from "zustand/middleware";
 export type EvmChainName = "eth" | "arbitrum";
 export type SolanaChainName = "solana";
 export type NearChainName = "near";
-export type ChainName = EvmChainName | SolanaChainName | NearChainName;
+export type ZecChainName = "zec"
+export type ChainName = EvmChainName | SolanaChainName | NearChainName | ZecChainName;
 
 export interface WalletState {
   isConnectWalletModalOpen: boolean;

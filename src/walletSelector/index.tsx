@@ -5,15 +5,17 @@ import type { ChainName } from "../stores/wallet_store";
 import { nearConnector } from "../nearConnector";
 import { useEvmWallet } from "./useEvmWallet";
 import { useSolanaWallet } from "./useSolanaWallet";
+import { useZecWallet } from "./useZecWallet";
 import type { ChainAdapter } from "./types";
 
 export const useWalletSelector = () => {
   const evmAdapter = useEvmWallet();
   const solanaAdapter = useSolanaWallet();
+  const zecAdapter = useZecWallet();
 
   const adapters: ChainAdapter[] = useMemo(
-    () => [evmAdapter, solanaAdapter],
-    [evmAdapter, solanaAdapter],
+    () => [evmAdapter, solanaAdapter, zecAdapter],
+    [evmAdapter, solanaAdapter, zecAdapter],
   );
 
   const requestDeposit = useCallback(
@@ -33,7 +35,7 @@ export const useWalletSelector = () => {
 
   const signIn = useCallback(
     async (
-      adapterType: "evm" | "sol" | "near",
+      adapterType: "evm" | "sol" | "near" | "zec",
       options?: { walletName?: string; connector?: Connector },
     ) => {
       if (adapterType === "near") {
@@ -42,8 +44,9 @@ export const useWalletSelector = () => {
       }
       if (adapterType === "evm") return evmAdapter.signIn(options);
       if (adapterType === "sol") return solanaAdapter.signIn(options);
+      if (adapterType === "zec") return zecAdapter.signIn();
     },
-    [evmAdapter, solanaAdapter],
+    [evmAdapter, solanaAdapter, zecAdapter],
   );
 
   const signOutChain = useCallback(
