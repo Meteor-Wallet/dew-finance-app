@@ -8,6 +8,7 @@
         "@headlessui/react": "^2.2.8",
         "@hot-labs/near-connect": "^0.11.2",
         "@near-js/providers": "^2.3.1",
+        "@noir-wallet/sdk": "^0.1.5",
         "@reown/appkit": "^1.8.6",
         "@reown/appkit-adapter-wagmi": "^1.8.6",
         "@rive-app/react-canvas": "^4.23.3",
@@ -310,6 +311,8 @@
     "@nodelib/fs.stat": ["@nodelib/fs.stat@2.0.5", "", {}, "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A=="],
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
+
+    "@noir-wallet/sdk": ["@noir-wallet/sdk@0.1.5", "", { "dependencies": { "bs58": "^6.0.0", "hash.js": "^1.1.7" } }, "sha512-sHa+xY1Qvb5CATYh8Pm2Nwq7vob1d9DMZXFqAL9e8+fvFdEBdGvw7J3rgoZYTXm17pamvoge6+PghvpddvFuxA=="],
 
     "@oxc-project/types": ["@oxc-project/types@0.128.0", "", {}, "sha512-huv1Y/LzBJkBVHt3OlC7u0zHBW9qXf1FdD7sGmc1rXc2P1mTwHssYv7jyGx5KAACSCH+9B3Bhn6Z9luHRvf7pQ=="],
 
