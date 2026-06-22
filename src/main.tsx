@@ -19,6 +19,37 @@ useWalletStore.subscribe(
       (w) => !prevWallets.some((p) => p.address === w.address),
     );
 
+    const isDisconnecting = wallets.length < prevWallets.length;
+
+    if(isDisconnecting && wallets.length > 0){
+      const walletStoreSnapshot = useWalletStore.getState();
+
+      // If the user is disconnecting a wallet, we need to check if the current nearAccountId is still valid.
+      if(walletStoreSnapshot.nearAccountId){
+        const currentNearAccountId = walletStoreSnapshot.nearAccountId;
+
+        let accountIsValid = false;
+
+        for(const wallet of wallets){
+          const { accountExists, nearAddress } =
+            await dewFactoryUtils.checkAccountExists({
+              address: wallet.address,
+              chain: wallet.supportedChains[0],
+            });
+
+          if(nearAddress === currentNearAccountId){
+            accountIsValid = true;
+          }
+        }
+
+        if(!accountIsValid){
+          useWalletStore
+            .getState()
+            .setCurrentNearAccountId({ nearAccountId: null });
+        }
+      }
+    }
+
     for (const wallet of newWallets) {
       const supportedChain = wallet.supportedChains[0];
 
