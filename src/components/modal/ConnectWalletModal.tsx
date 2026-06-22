@@ -12,6 +12,7 @@ import { memo, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWalletStore } from "../../stores/wallet_store";
+import { useShallow } from "zustand/react/shallow";
 import { useWalletSelector } from "../../walletSelector";
 import { nearConnector } from "../../nearConnector";
 import { stringUtils } from "../../utils/stringUtils";
@@ -100,10 +101,16 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
   const bindDisabled = isBound || isBoundToOtherAccount || (nearAccountId !== null && boundWalletsQuery.isPending);
 
   const { signMessage } = useWalletSelector();
+  const connectedWallets = useWalletStore(useShallow((s) => s.connectedWallets));
 
   const addWalletMutation = useMutation({
     mutationFn: async () => {
-      const [existingBlockchainId, existingBlockchainAddress] = boundWalletsQuery.data![0];
+      const connectedAddresses = new Set(connectedWallets.map((w) => w.address.toLowerCase()));
+      const existingBoundWallet = boundWalletsQuery.data!.find(
+        ([, addr]) => connectedAddresses.has(addr.toLowerCase()),
+      );
+      if (!existingBoundWallet) throw new Error("No connected wallet is bound to this account");
+      const [existingBlockchainId, existingBlockchainAddress] = existingBoundWallet;
       const existingChain = dewFactoryUtils.getChainNameFromBlockchainId(existingBlockchainId);
       await dewAccountUtils.signAndAddWallet({
         blockchainAddress: existingBlockchainAddress,
