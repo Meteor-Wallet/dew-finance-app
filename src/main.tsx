@@ -46,10 +46,15 @@ useWalletStore.subscribe(
           useWalletStore
             .getState()
             .setCurrentNearAccountId({ nearAccountId: nearAddress });
-        } else {
           useWalletStore
             .getState()
-            .setPendingAbstractAccountCreation({ address: wallet.address, chain: supportedChain });
+            .setPendingAbstractAccountCreation(null);
+        } else {
+          if(!useWalletStore.getState().nearAccountId){
+            useWalletStore
+              .getState()
+              .setPendingAbstractAccountCreation({ address: wallet.address, chain: supportedChain });
+          }
         }
       } catch (err) {
         console.log(err);
