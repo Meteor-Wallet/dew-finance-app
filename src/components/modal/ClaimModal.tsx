@@ -120,7 +120,7 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
     ...intentsQueries.get1ClickQuotation({
       dry: true,
       swapType: "EXACT_INPUT",
-      slippageTolerance: 1,
+      slippageTolerance: 30,
       originAsset: nearToken?.assetId ?? "",
       depositType: "ORIGIN_CHAIN",
       destinationAsset: destChainToken?.assetId ?? "",
@@ -174,7 +174,7 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
     ...intentsQueries.get1ClickQuotation({
       dry: true,
       swapType: "EXACT_INPUT",
-      slippageTolerance: 1,
+      slippageTolerance: 30,
       originAsset: nearToken?.assetId ?? "",
       depositType: "ORIGIN_CHAIN",
       destinationAsset: destChainToken?.assetId ?? "",
@@ -197,7 +197,7 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
         ...intentsQueries.get1ClickQuotation({
           dry: false,
           swapType: "EXACT_INPUT",
-          slippageTolerance: 1,
+          slippageTolerance: 30,
           originAsset: nearToken!.assetId,
           depositType: "ORIGIN_CHAIN",
           destinationAsset: destChainToken!.assetId,

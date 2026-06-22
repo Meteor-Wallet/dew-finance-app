@@ -225,7 +225,7 @@ const RedeemModal = () => {
     ...intentsQueries.get1ClickQuotation({
       dry: true,
       swapType: "EXACT_INPUT",
-      slippageTolerance: Number(slippagePercent),
+      slippageTolerance: 30,
       originAsset: nearToken?.assetId ?? "",
       depositType: "ORIGIN_CHAIN",
       destinationAsset: destChainToken?.assetId ?? "",
@@ -268,7 +268,7 @@ const RedeemModal = () => {
     ...intentsQueries.get1ClickQuotation({
       dry: true,
       swapType: "EXACT_INPUT",
-      slippageTolerance: Number(slippagePercent),
+      slippageTolerance: 30,
       originAsset: nearToken?.assetId ?? "",
       depositType: "ORIGIN_CHAIN",
       destinationAsset: destChainToken?.assetId ?? "",
@@ -300,7 +300,7 @@ const RedeemModal = () => {
         ...intentsQueries.get1ClickQuotation({
           dry: false,
           swapType: "EXACT_INPUT",
-          slippageTolerance: Number(slippagePercent),
+          slippageTolerance: 30,
           originAsset: nearToken!.assetId,
           depositType: "ORIGIN_CHAIN",
           destinationAsset: destChainToken!.assetId,

@@ -445,21 +445,7 @@ const getVaultBaseAssetQueryOptions = ({
 
       return data;
     },
-  });
-};
-
-// TODO: REMOVE
-const getVaultBalanceDistributionQueryOptions = ({
-  vaultContractId,
-}: {
-  vaultContractId: string;
-}) => {
-  return queryOptions({
-    queryKey: ["vault", "vaultBalanceDistribution", vaultContractId],
-    queryFn: async () => {
-      const { data } = await DewAgentBackend.getCacheBalanceDistribution();
-      return data;
-    },
+    staleTime: Infinity,
   });
 };
 
@@ -759,7 +745,6 @@ export const vaultQueries = {
   getPolicyCountQueryOptions,
   getAllPoliciesInfiniteQueryOptions,
   getVaultBaseAssetQueryOptions,
-  getVaultBalanceDistributionQueryOptions,
   getHistoricalSharePriceQueryOptions,
   getHistoricalBalanceQueryOptions,
   getLatestBlockinfoQueryOptions,

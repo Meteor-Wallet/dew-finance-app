@@ -206,7 +206,7 @@ const DepositModal = () => {
     ...intentsQueries.get1ClickQuotation({
       dry: true,
       swapType: "EXACT_INPUT",
-      slippageTolerance: Number(slippagePercent),
+      slippageTolerance: 30,
       originAsset: sourceToken?.assetId ?? "",
       depositType: "ORIGIN_CHAIN",
       destinationAsset: destToken?.assetId ?? "",
@@ -299,7 +299,7 @@ const DepositModal = () => {
         ...intentsQueries.get1ClickQuotation({
           dry: false,
           swapType: "EXACT_INPUT",
-          slippageTolerance: Number(slippagePercent),
+          slippageTolerance: 30,
           originAsset: sourceToken!.assetId,
           depositType: "ORIGIN_CHAIN",
           destinationAsset: destToken!.assetId,
