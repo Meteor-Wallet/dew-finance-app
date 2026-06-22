@@ -75,11 +75,11 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
     return boundWalletsQuery.data.some((w) => {
       const [blockchainId, blockchainAddress] = w;
       if(blockchainId === 'solana'){
-        return blockchainAddress === address;
+        return blockchainAddress.toLowerCase() === address.toLowerCase();
       }
 
       if(blockchainId === 'evm'){
-        return blockchainAddress === address
+        return blockchainAddress.toLowerCase() === address.toLowerCase();
       }
       return false;
     });

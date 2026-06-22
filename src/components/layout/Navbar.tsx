@@ -233,7 +233,14 @@ function WalletDropdownContent({ onClose }: { onClose: () => void }) {
       {currentNearAccountId && (
         <>
           <div className="px-4 py-3">
-            <p className="text-xs text-gray truncate">{currentNearAccountId}</p>
+            <a
+              href={`http://nearblocks.io/address/${currentNearAccountId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-xs text-blue-400 underline truncate cursor-pointer hover:text-blue-300"
+            >
+              {currentNearAccountId}
+            </a>
           </div>
           <hr className="border-card-border" />
         </>

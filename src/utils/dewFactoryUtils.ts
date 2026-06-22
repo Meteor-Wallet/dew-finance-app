@@ -5,7 +5,7 @@ import { nearUtils } from "./nearUtils";
 const FACTORY_CONTRACT_ID = "aa-dew.near";
 
 const CHAIN_BLOCKCHAIN_MAP = [
-  { blockchainId: "ethereum", chain: ["eth", "arbitrum"] as ChainName[] },
+  { blockchainId: "evm", chain: ["eth", "arbitrum"] as ChainName[] },
   { blockchainId: "solana", chain: ["solana"] as ChainName[] },
 ];
 
@@ -70,6 +70,7 @@ const getMessageForCreateAccount = async ({
     {
       blockchain_id: blockchainId,
       blockchain_address: blockchainAddress,
+      brand: "dew"
     },
   )) as string;
 
@@ -96,20 +97,18 @@ const checkAccountExists = async ({
   | { accountExists: true; nearAddress: string }
   | { accountExists: false; nearAddress: null }
 > => {
-  const { nearAddress } = await getAccountDetailsFromAddressAndChain({
-    address,
-    chain,
-  });
 
-  const accountExists = await nearUtils.provider
-    .viewAccount(nearAddress)
-    .then(() => true)
-    .catch(() => false);
+  const accounts = await getAbstractAccountsByWallet({
+    blockchainAddress: address,
+    chain
+  })
+
+  const accountExists = accounts.length > 0
 
   if (accountExists) {
     return {
       accountExists: true,
-      nearAddress,
+      nearAddress: accounts[0],
     };
   }
 
@@ -167,11 +166,12 @@ const createAbstractAccount = async ({
   signMessage: (message: string) => Promise<string>;
 }) => {
   // throw if the wallet is already connected
-  const existingWallets = await getWalletsByAbstractAccount({
-    nearAccountId: `${blockchainAddress}.${FACTORY_CONTRACT_ID}`,
+  const existingAccount = await getAbstractAccountsByWallet({
+    blockchainAddress,
+    chain
   });
 
-  if (existingWallets.length > 0) {
+  if (existingAccount.length > 0) {
     throw new Error("Wallet is connected with another abstract account");
   }
 
