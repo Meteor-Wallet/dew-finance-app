@@ -20,6 +20,7 @@ import { useWalletStore } from "../../stores/wallet_store";
 import { useShallow } from "zustand/react/shallow";
 import { dewFactoryUtils } from "../../utils/dewFactoryUtils";
 import { dewAccountQueries } from "../../queries/dewAccount";
+import { intentsMutations } from "../../mutations/intents";
 
 interface ClaimModalProps {
   isOpen: boolean;
@@ -219,7 +220,7 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
       if (!depositAddress) throw new Error("No deposit address returned from bridge");
 
       setBridgeDepositAddress(depositAddress);
-      await dewAccountUtils.signAndSendTransaction({
+      const outcome = await dewAccountUtils.signAndSendTransaction({
         transaction: {
           receiverId: assetContractId!,
           actions: [
@@ -239,6 +240,13 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
         chain: destChain!,
         signMessage: (msg) => signMessage(destChain!, msg),
         bridgeOriginAddress: depositAddress,
+      });
+
+      await intentsMutations.submit1ClickDepositHash({
+        depositAddress,
+        depositHash: outcome.transaction_outcome.id
+      }).catch((e) => {
+        console.error("Failed to submit deposit hash to backend", e);
       });
 
       return quote;

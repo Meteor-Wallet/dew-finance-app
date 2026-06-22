@@ -22,6 +22,7 @@ import { oneClickUtils } from "../../utils/1clickUtils";
 import { useWalletSelector } from "../../walletSelector";
 import { dewAccountUtils } from "../../utils/dewAccountUtils";
 import { dewAccountQueries } from "../../queries/dewAccount";
+import { intentsMutations } from "../../mutations/intents";
 
 const Input = () => {
   const withdrawAmount = useVaultActionStore((s) => s.withdrawAmount);
@@ -324,7 +325,7 @@ const RedeemModal = () => {
       setBridgeDepositAddress(depositAddress);
       const ftContractId = (selectedAsset as { FungibleToken: { contract_id: string } }).FungibleToken.contract_id;
       
-      await dewAccountUtils.signAndSendTransaction({
+      const outcome = await dewAccountUtils.signAndSendTransaction({
         transaction: {
           receiverId: ftContractId,
           actions: [
@@ -348,6 +349,13 @@ const RedeemModal = () => {
         signMessage: (msg) => signMessage(destChain!, msg),
         bridgeOriginAddress: depositAddress,
       })
+
+      await intentsMutations.submit1ClickDepositHash({
+        depositAddress,
+        depositHash: outcome.transaction_outcome.id
+      }).catch((e) => {
+        console.error("Failed to submit deposit hash to backend", e);
+      });
 
       return quote;
     },

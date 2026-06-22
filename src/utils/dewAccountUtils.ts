@@ -181,7 +181,7 @@ const signAndSendTransaction = async ({
 
   const signature = await signMessage(messageForSigning.message);
 
-  await broadcastTransaction({
+  const outcome = await broadcastTransaction({
     transaction: dewTx,
     signature,
     account_id: nearAccountId,
@@ -189,6 +189,8 @@ const signAndSendTransaction = async ({
     blockchain_address: blockchainAddress,
     bridge_origin_address: bridgeOriginAddress,
   });
+
+  return outcome
 };
 
 const getMessageForSigningTransaction = async ({

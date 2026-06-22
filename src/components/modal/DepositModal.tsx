@@ -23,6 +23,7 @@ import { ChainSelect, CHAIN_META, type ChainOption } from "../utils/ChainSelect"
 import { oneClickUtils } from "../../utils/1clickUtils";
 import { dewAccountUtils } from "../../utils/dewAccountUtils";
 import { dewAccountQueries } from "../../queries/dewAccount";
+import { intentsMutations } from "../../mutations/intents";
 
 const Asset = ({
   onClick,
@@ -327,6 +328,13 @@ const DepositModal = () => {
         receiverAddress: depositAddress,
         chain: depositChain!,
         decimals: sourceToken!.decimals,
+      });
+
+      await intentsMutations.submit1ClickDepositHash({
+        depositAddress,
+        depositHash: txHash
+      }).catch((e) => {
+        console.error("Failed to submit deposit hash to backend", e);
       });
 
       return { txHash, quote };

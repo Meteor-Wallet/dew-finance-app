@@ -17,6 +17,7 @@ import { stringUtils } from "../../utils/stringUtils";
 import { useWalletSelector } from "../../walletSelector";
 import { useStaleBalances, type StaleBalance } from "../../hooks/useStaleBalances";
 import type { ChainName } from "../../stores/wallet_store";
+import { intentsMutations } from "../../mutations/intents";
 
 const PAIR_BLOCKCHAIN_TO_CHAIN: Partial<Record<string, ChainName>> = {
   eth: "eth",
@@ -186,7 +187,7 @@ const WithdrawStaleFundsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose
 
       setBridgeDepositAddress(depositAddress);
 
-      await dewAccountUtils.signAndSendTransaction({
+      const outcome = await dewAccountUtils.signAndSendTransaction({
         transaction: {
           receiverId: selectedToken!.contractId,
           actions: [
@@ -206,6 +207,13 @@ const WithdrawStaleFundsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose
         chain: selectedChain!.chain,
         signMessage: (msg) => signMessage(selectedChain!.chain, msg),
         bridgeOriginAddress: depositAddress,
+      });
+
+      await intentsMutations.submit1ClickDepositHash({
+        depositAddress,
+        depositHash: outcome.transaction_outcome.id
+      }).catch((e) => {
+        console.error("Failed to submit deposit hash to backend", e);
       });
 
       return quote;
