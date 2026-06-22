@@ -107,6 +107,9 @@ const ChainRow = ({ chain, address, nearAccountId, isGrayedOut, onConnect, onDis
         nearAddress: nearAccountId!,
         signMessage: (msg) => signMessage(existingChain, msg),
       });
+
+      // wait 1s to ensure the wallet is added on-chain before we refetch
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["walletsByAbstractAccount", nearAccountId] });
