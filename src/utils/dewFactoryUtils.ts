@@ -64,14 +64,14 @@ const getMessageForCreateAccount = async ({
   chain: ChainName;
 }) => {
   const blockchainId = getBlockchainIdFromChainName(chain);
-
+  const brand = "dew"
   const message = (await nearUtils.provider.callFunction(
     FACTORY_CONTRACT_ID,
     "message_for_create_account",
     {
       blockchain_id: blockchainId,
       blockchain_address: blockchainAddress,
-      brand: "dew"
+      brand
     },
   )) as string;
 
@@ -80,6 +80,7 @@ const getMessageForCreateAccount = async ({
     blockchain_id: string;
     blockchain_address: string;
     deadline: string;
+    brand?: string;
   };
 
   return {
@@ -188,6 +189,7 @@ const createAbstractAccount = async ({
     blockchainId: parsedMessage.blockchain_id,
     deadline: parsedMessage.deadline,
     signature,
+    brand: parsedMessage.brand
   });
 }
 

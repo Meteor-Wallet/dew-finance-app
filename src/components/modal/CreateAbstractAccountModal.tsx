@@ -69,9 +69,12 @@ const CreateAbstractAccountModal = memo(() => {
     >
       <div className="w-full md:w-[500px] p-6 bg-[linear-gradient(139deg,#000000,#0C0C0C)] border-t border-t-modal-border md:border md:border-modal-border rounded-t-2xl md:rounded-2xl">
         <h2 className="text-2xl font-semibold mt-4 mb-2">Create Abstract Account</h2>
-        <p className="text-gray text-sm mb-6">
+        <p className="text-gray text-sm">
           A NEAR abstract account is required to interact with vaults from your{" "}
           {chainMeta?.label ?? pending?.chain} wallet. Create one to continue.
+        </p>
+        <p className="text-gray text-sm mb-6">
+          If you have created an abstract account with another chain previously, connect the account and bind the account instead.
         </p>
 
         <hr className="border-t border-border-color mb-6" />

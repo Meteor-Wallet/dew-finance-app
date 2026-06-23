@@ -266,11 +266,13 @@ const sponsorCreateAccount = async ({
   blockchainId,
   deadline,
   signature,
+  brand
 }: {
   blockchainId: string;
   blockchainAddress: string;
   signature: string;
   deadline: string;
+  brand?: string;
 }) => {
   const response = await fetch(
     new URL("/api/dew_vault/create_account", backendURL),
@@ -281,6 +283,7 @@ const sponsorCreateAccount = async ({
         blockchain_address: blockchainAddress,
         signature: signature,
         deadline: deadline,
+        brand
       }),
     },
   );
