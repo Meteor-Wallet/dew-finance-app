@@ -2,12 +2,15 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { useStaleBalances } from "../hooks/useStaleBalances";
 import { useWalletStore } from "../stores/wallet_store";
+import { dewFactoryUtils } from "../utils/dewFactoryUtils";
 
 export default function StaleFundsAlert() {
+  const nearAccountId = useWalletStore((s) => s.nearAccountId);
   const { data: staleBalances } = useStaleBalances();
   const [dismissed, setDismissed] = useState(false);
 
-  if (staleBalances.length === 0 || dismissed) return null;
+  const isAbstractAccount = !!nearAccountId && dewFactoryUtils.isAbstractAccount(nearAccountId);
+  if (!isAbstractAccount || staleBalances.length === 0 || dismissed) return null;
 
   const tokenList = staleBalances.map((b) => b.symbol).join(", ");
 
