@@ -264,8 +264,8 @@ const DepositModal = () => {
       contractId: assetContractId!,
       accountId: nearAddress!,
     }),
-    enabled: step === 3 && !!assetContractId && !!nearAddress,
-    refetchInterval: 3000,
+    enabled: (step === 3 || (step === 1 && !isNearDeposit)) && !!assetContractId && !!nearAddress,
+    refetchInterval: step === 3 ? 3000 : false,
   });
 
   const abstractAccountBalanceFormatted = useMemo(() => {
@@ -278,6 +278,15 @@ const DepositModal = () => {
       return null;
     }
   }, [abstractAccountBalanceQuery.data, assetMetadataQuery.data]);
+
+  const hasAbstractAccountBalance = useMemo(() => {
+    if (!abstractAccountBalanceFormatted) return false;
+    try {
+      return Big(abstractAccountBalanceFormatted).gt(0);
+    } catch {
+      return false;
+    }
+  }, [abstractAccountBalanceFormatted]);
 
   const balance = accountQueries.useAccountBalance({ asset: selectedAsset, chain: depositChain });
 
@@ -341,6 +350,8 @@ const DepositModal = () => {
         chain: depositChain!,
         decimals: sourceToken!.decimals,
       });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       await intentsMutations.submit1ClickDepositHash({
         depositAddress,
@@ -422,6 +433,15 @@ const DepositModal = () => {
     vaultContractId &&
     selectedChain &&
     depositAmount;
+
+  const canConfirmDeposit =
+    abstractAccountBalanceFormatted !== null &&
+    abstractAccountBalanceFormatted !== "0" &&
+    exchangeRateForSelectedAsset &&
+    vaultShareMetadataQuery.data &&
+    vaultContractId &&
+    nearAddress &&
+    selectedAsset
 
   const handleClose = () => {
     if (depositToVaultMutation.isPending || bridgeMutation.isPending) return;
@@ -633,6 +653,21 @@ const DepositModal = () => {
               </div>
             )}
 
+            {!isNearDeposit && hasAbstractAccountBalance && (
+              <div className="flex items-center justify-between mt-4 px-4 py-3 rounded-sm bg-green-950/60 border border-green-600/50">
+                <div className="flex items-center gap-2 text-green-400 text-sm">
+                  <span className="shrink-0">✓</span>
+                  <span>{stringUtils.truncateDecimals(abstractAccountBalanceFormatted ?? undefined)} {assetSymbol} already in your abstract account</span>
+                </div>
+                <button
+                  onClick={() => setStep(3)}
+                  className="shrink-0 ml-3 text-xs px-3 py-1.5 rounded-md border border-green-500/40 text-green-400 hover:bg-green-500/10 transition-colors font-medium whitespace-nowrap"
+                >
+                  Deposit directly →
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => {
                 if (needsAbstractAccount) {
@@ -779,7 +814,9 @@ const DepositModal = () => {
         {step === 3 && (
           <div className="py-4">
             <p className="text-gray text-sm mb-5">
-              Your tokens are being bridged to NEAR. Once received, click below to complete the vault deposit.
+              {bridgeTxHash
+                ? "Your tokens are being bridged to NEAR. Once received, click below to complete the vault deposit."
+                : "Tokens are available in your abstract account. Click below to complete the vault deposit."}
             </p>
             <div className="bg-card-background rounded-sm p-4 px-5 space-y-3 mb-6 text-sm">
               <div className="flex justify-between items-center">
@@ -813,7 +850,7 @@ const DepositModal = () => {
             </div>
             <button
               onClick={() => {
-                if (!depositToVaultMutation.isPending && canDeposit && abstractAccountBalanceFormatted) {
+                if (!depositToVaultMutation.isPending && canConfirmDeposit && abstractAccountBalanceFormatted) {
                   const { depositSlippagePercent } = useVaultActionStore.getState();
                   depositToVaultMutation.mutate({
                     nearAddress,
@@ -830,7 +867,7 @@ const DepositModal = () => {
                   });
                 }
               }}
-              disabled={depositToVaultMutation.isPending || !canDeposit}
+              disabled={depositToVaultMutation.isPending || !canConfirmDeposit}
               className="disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center w-full bg-[linear-gradient(139deg,#3DA9EA,#47FF93)] text-black py-3 rounded-sm font-bold text-base confirm-button-shadow"
             >
               {depositToVaultMutation.isPending ? <CircularProgress size="small" /> : "Deposit into Vault"}

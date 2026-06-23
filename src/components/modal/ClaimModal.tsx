@@ -247,6 +247,8 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
         bridgeOriginAddress: depositAddress,
       });
 
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
       await intentsMutations.submit1ClickDepositHash({
         depositAddress,
         depositHash: outcome.transaction_outcome.id

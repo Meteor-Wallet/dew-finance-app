@@ -23,6 +23,7 @@ const PAIR_BLOCKCHAIN_TO_CHAIN: Partial<Record<string, ChainName>> = {
   eth: "eth",
   arb: "arbitrum",
   sol: "solana",
+  zec: "zec"
 };
 
 const WithdrawStaleFundsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
@@ -212,6 +213,8 @@ const WithdrawStaleFundsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose
         signMessage: (msg) => signMessage(selectedChain!.chain, msg),
         bridgeOriginAddress: depositAddress,
       });
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       await intentsMutations.submit1ClickDepositHash({
         depositAddress,
