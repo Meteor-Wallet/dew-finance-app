@@ -13,6 +13,7 @@ export interface WalletState {
   isEvmWalletModalOpen: boolean;
   isSwitchNetworkModalOpen: boolean;
   isOnboardModalOpen: boolean;
+  isWithdrawStaleFundsModalOpen: boolean;
   connectedWallets: { address: string; supportedChains: ChainName[] }[];
   nearAccountId: string | null;
   pendingAbstractAccountCreation: { address: string; chain: ChainName } | null;
@@ -26,6 +27,8 @@ export interface WalletState {
   closeSwitchNetworkModal: () => void;
   openOnboardModal: () => void;
   closeOnboardModal: () => void;
+  openWithdrawStaleFundsModal: () => void;
+  closeWithdrawStaleFundsModal: () => void;
   setPendingAbstractAccountCreation: (pending: { address: string; chain: ChainName } | null) => void;
   connectWallet: (event: {
     address: string;
@@ -42,6 +45,7 @@ export const useWalletStore = create<WalletState>()(
     isEvmWalletModalOpen: false,
     isSwitchNetworkModalOpen: false,
     isOnboardModalOpen: false,
+    isWithdrawStaleFundsModalOpen: false,
     connectedWallets: [],
     nearAccountId: null,
     pendingAbstractAccountCreation: null,
@@ -56,6 +60,8 @@ export const useWalletStore = create<WalletState>()(
     closeSwitchNetworkModal: () => set({ isSwitchNetworkModalOpen: false }),
     openOnboardModal: () => set({ isOnboardModalOpen: true }),
     closeOnboardModal: () => set({ isOnboardModalOpen: false }),
+    openWithdrawStaleFundsModal: () => set({ isWithdrawStaleFundsModalOpen: true }),
+    closeWithdrawStaleFundsModal: () => set({ isWithdrawStaleFundsModalOpen: false }),
 
     connectWallet: ({ address, supportedChains }) => {
       if (get().connectedWallets.find((e) => e.address === address)) return;

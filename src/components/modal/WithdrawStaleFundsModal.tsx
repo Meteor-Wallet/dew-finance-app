@@ -26,7 +26,9 @@ const PAIR_BLOCKCHAIN_TO_CHAIN: Partial<Record<string, ChainName>> = {
   zec: "zec"
 };
 
-const WithdrawStaleFundsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const WithdrawStaleFundsModal = () => {
+  const isOpen = useWalletStore((s) => s.isWithdrawStaleFundsModalOpen);
+  const onClose = () => useWalletStore.getState().closeWithdrawStaleFundsModal();
   const { data: staleBalances } = useStaleBalances();
 
   const [selectedToken, setSelectedToken] = useState<StaleBalance | null>(null);

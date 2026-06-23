@@ -21,6 +21,7 @@ import LightRays from "./components/utils/LightRays";
 import ScrollToTop from "./components/utils/ScrollToTop";
 import RpcBadge from "./components/layout/RpcBadge";
 import StaleFundsAlert from "./components/StaleFundsAlert";
+import WithdrawStaleFundsModal from "./components/modal/WithdrawStaleFundsModal";
 
 import { Toaster } from "sonner";
 import { SolanaProvider } from "./solanaProvider";
@@ -36,6 +37,7 @@ export default function App() {
       <div className="relative">
         <Navbar />
         <StaleFundsAlert />
+        <WithdrawStaleFundsModal />
         <ConnectWalletModal />
         <SolanaWalletModal />
         <EvmWalletModal />
