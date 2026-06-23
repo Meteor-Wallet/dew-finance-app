@@ -107,9 +107,13 @@ const WithdrawStaleFundsModal = ({ isOpen, onClose }: { isOpen: boolean; onClose
         ) ?? null,
       destChainToken:
         tokensQuery.data.find(
-          (t) =>
-            t.blockchain === blockchain &&
-            t.contractAddress?.toLowerCase() === destContractAddress.toLowerCase(),
+          (t) => {
+            if(destContractAddress === 'native'){
+              return t.blockchain === blockchain && !t.contractAddress
+            }
+            return t.blockchain === blockchain &&
+              t.contractAddress?.toLowerCase() === destContractAddress.toLowerCase()
+          },
         ) ?? null,
     };
   }, [tokensQuery.data, selectedToken, selectedChain]);

@@ -111,7 +111,12 @@ const ClaimModal = memo(({ isOpen, onClose, asset, rawAmount, vaultId, nearAddre
     return {
       nearToken: tokensQuery.data.find((t) => t.blockchain === "near" && t.contractAddress === assetContractId) ?? null,
       destChainToken: tokensQuery.data.find(
-        (t) => t.blockchain === blockchain && t.contractAddress?.toLowerCase() === destContractAddress.toLowerCase(),
+        (t) => {
+          if(destContractAddress === 'native'){
+            return t.blockchain === blockchain && !t.contractAddress
+          }
+          return t.blockchain === blockchain && t.contractAddress?.toLowerCase() === destContractAddress.toLowerCase()
+        },
       ) ?? null,
     };
   }, [usingAbstractAccount, tokensQuery.data, assetContractId, destChain]);

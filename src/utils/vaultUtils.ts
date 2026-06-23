@@ -114,7 +114,8 @@ const vaults: {
     base_asset_decimals: 8,
     curated_by: "Dew Finance",
     name: "ZEC Vault",
-    chains: ["near"]
+    chains: ["near", "zec"],
+    nonNearMinReadableDeposit: 0.005
   },
 ]
 

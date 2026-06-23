@@ -2,6 +2,7 @@ import nearLogo from "../../assets/near.svg";
 import solanaLogo from "../../assets/solana.svg";
 import ethLogo from "../../assets/eth.svg";
 import arbLogo from "../../assets/arb.png";
+import zecLogo from "../../assets/zec.svg";
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import type { ChainName } from "../../stores/wallet_store";
@@ -20,6 +21,7 @@ export const CHAIN_META: Partial<Record<ChainName, { logo: string; label: string
   eth:      { logo: ethLogo,    label: "Ethereum" },
   arbitrum: { logo: arbLogo,    label: "Arbitrum" },
   solana:   { logo: solanaLogo, label: "Solana" },
+  zec:      { logo: zecLogo,    label: "Zcash" },
 };
 
 export function ChainSelect({

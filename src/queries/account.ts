@@ -8,8 +8,10 @@ import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { vaultQueries, type TAsset } from "./vault";
 import { intentsQueries } from "./intents";
 import { oneClickUtils } from "../utils/1clickUtils";
-import { useConnectedWalletAddress } from "../stores/wallet_store";
+import { useConnectedWalletAddress, useWalletStore } from "../stores/wallet_store";
 import type { ChainName } from "../stores/wallet_store";
+import { useShallow } from "zustand/react/shallow";
+import { getNoirWallet } from "@noir-wallet/sdk";
 import { nearUtils } from "../utils/nearUtils";
 import Big from "big.js";
 import { wagmiConfig } from "../evmConfig";
@@ -44,11 +46,15 @@ const useAccountBalance = ({
   const isNear = !chain || chain === "near";
   const isEvm = chain === "eth" || chain === "arbitrum";
   const isSolana = chain === "solana";
+  const isZec = chain === "zec";
 
   const connectedWalletAddress = useConnectedWalletAddress();
   const { address: evmAddress } = useAccount();
   const { publicKey } = useWallet();
   const { connection } = useConnection();
+  const zecAddress = useWalletStore(
+    useShallow((s) => s.connectedWallets.find((w) => w.supportedChains.includes("zec"))?.address ?? null),
+  );
 
   const nearContractId =
     asset && "FungibleToken" in asset ? asset.FungibleToken.contract_id : null;
@@ -67,9 +73,23 @@ const useAccountBalance = ({
         ? { asset, address: connectedWalletAddress?.address }
         : isEvm
           ? { sourceContractAddress, evmAddress }
-          : { sourceContractAddress, solanaAddress: publicKey?.toBase58() },
+          : isZec
+            ? { zecAddress }
+            : { sourceContractAddress, solanaAddress: publicKey?.toBase58() },
     ],
     queryFn: async ({ client }) => {
+      if (isZec) {
+        const noirWallet = getNoirWallet();
+        if (!noirWallet) throw new Error("Noir Wallet not connected");
+        const result = await noirWallet.zcash.getBalance();
+
+        // Prefer 'available' (max transferable after fees) over total shielded balance
+        const zecAmount = result.available ?? result.shielded;
+        const ZEC_DECIMALS = 8;
+        const balance = Big(zecAmount).mul(Big(10).pow(ZEC_DECIMALS)).toFixed(0);
+        return { balance, decimals: ZEC_DECIMALS, formatted: zecAmount };
+      }
+
       if (isNear) {
         if (!asset || !("FungibleToken" in asset) || !connectedWalletAddress) return undefined;
 
@@ -143,7 +163,8 @@ const useAccountBalance = ({
     enabled:
       (isNear && connectedWalletAddress !== null && asset !== null) ||
       (isEvm && !!sourceContractAddress && !!evmAddress) ||
-      (isSolana && !!sourceContractAddress && !!publicKey),
+      (isSolana && !!sourceContractAddress && !!publicKey) ||
+      (isZec && !!zecAddress),
   });
 };
 
