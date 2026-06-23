@@ -67,8 +67,13 @@ const RedeemModal = () => {
       const connectedWallet = connectedWallets.find((w) => w.supportedChains.includes(c));
       const address = connectedWallet?.address ?? null;
       const isConnected = !!connectedWallet;
-      const isBound = !nearAddress || !boundWalletsQuery.data || !address ||
+      let isBound = !nearAddress || !boundWalletsQuery.data || !address ||
         boundAddresses.has(address.toLowerCase());
+
+      if(c === 'near' && isConnected){
+        isBound = true
+      }
+      
       return {
         chain: c,
         address,
