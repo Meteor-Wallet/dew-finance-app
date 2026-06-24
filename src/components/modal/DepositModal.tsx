@@ -455,6 +455,9 @@ const DepositModal = () => {
     setBridgeQuoteResult(null);
     setBridgeDepositAddress(null);
     useVaultActionStore.getState().closeDepositWalletModal();
+    useVaultActionStore
+      .getState()
+      .updateDepositAmount({ amount: "" })
   };
 
   return (
@@ -665,7 +668,14 @@ const DepositModal = () => {
                   <span>{stringUtils.truncateDecimals(abstractAccountBalanceFormatted ?? undefined)} {assetSymbol} already in your abstract account</span>
                 </div>
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={() => {
+                    if(abstractAccountBalanceFormatted){
+                      useVaultActionStore
+                        .getState()
+                        .updateDepositAmount({ amount: abstractAccountBalanceFormatted })
+                    }
+                    setStep(3)
+                  }}
                   className="shrink-0 ml-3 text-xs px-3 py-1.5 rounded-md border border-green-500/40 text-green-400 hover:bg-green-500/10 transition-colors font-medium whitespace-nowrap"
                 >
                   Deposit directly →
