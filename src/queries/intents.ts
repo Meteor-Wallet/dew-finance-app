@@ -176,7 +176,7 @@ const get1ClickStatus = ({depositAddress}: {
     queryKey: ["intents", "1click-status", depositAddress],
     queryFn: async () => {
       const res = await fetch(
-        "https://meteor-backend-v2-dev-276870342533.europe-southwest1.run.app/api/dew_vault/1click_status",
+        "https://backend-v2.meteorwallet.app/api/dew_vault/1click_status",
         {
           method: "POST",
           headers: {

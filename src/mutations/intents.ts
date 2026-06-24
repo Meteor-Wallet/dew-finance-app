@@ -8,7 +8,7 @@ const submit1ClickDepositHash = async ({
   depositHash: string;
 }) => {
   const res = await fetch(
-    "https://meteor-backend-v2-dev-276870342533.europe-southwest1.run.app/api/dew_vault/submit_1click_hash",
+    "https://backend-v2.meteorwallet.app/api/dew_vault/submit_1click_hash",
     {
       method: "POST",
       headers: {

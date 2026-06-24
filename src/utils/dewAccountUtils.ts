@@ -23,7 +23,7 @@ type TDewTransaction = {
 };
 
 const backendURL =
-  "https://meteor-backend-v2-dev-276870342533.europe-southwest1.run.app";
+  "https://backend-v2.meteorwallet.app";
 
 const sponsorStorageDeposit = async ({
   vaultContractId,
