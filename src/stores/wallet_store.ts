@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
-export type EvmChainName = "eth" | "arbitrum";
+export type EvmChainName =
+  | "eth"
+  | "arbitrum"
+  | "monad"
+  | "plasma"
+  | "polygon"
+  | "bsc";
 export type SolanaChainName = "solana";
 export type NearChainName = "near";
 export type ZecChainName = "zec"

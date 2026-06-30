@@ -129,7 +129,11 @@ const get1ClickTokens = () => {
 
       const json = await res.json();
 
-      return zTokens_Response.parse(json);
+      const parsedJson = zTokens_Response.parse(json)
+
+      const filtered = parsedJson.filter((e) => !e.symbol.includes("DEPRECATED"))
+
+      return filtered;
     },
     staleTime: Infinity,
   });

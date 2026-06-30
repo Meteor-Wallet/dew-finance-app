@@ -3,6 +3,10 @@ import solanaLogo from "../../assets/solana.svg";
 import ethLogo from "../../assets/eth.svg";
 import arbLogo from "../../assets/arb.png";
 import zecLogo from "../../assets/zec.svg";
+import bnbLogo from "../../assets/bnb.png";
+import polygonLogo from "../../assets/polygon.png";
+import monadLogo from "../../assets/monad.webp";
+import plasmaLogo from "../../assets/plasma.webp";
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import type { ChainName } from "../../stores/wallet_store";
@@ -22,6 +26,10 @@ export const CHAIN_META: Partial<Record<ChainName, { logo: string; label: string
   arbitrum: { logo: arbLogo,    label: "Arbitrum" },
   solana:   { logo: solanaLogo, label: "Solana" },
   zec:      { logo: zecLogo,    label: "Zcash" },
+  plasma:   { logo: plasmaLogo,  label: "Plasma" },
+  bsc:      { logo: bnbLogo,     label: "BNB Smart Chain" },
+  monad:    { logo: monadLogo,   label: "Monad" },
+  polygon:  { logo: polygonLogo, label: "Polygon" },
 };
 
 export function ChainSelect({

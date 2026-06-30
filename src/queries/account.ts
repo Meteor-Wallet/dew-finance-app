@@ -15,6 +15,7 @@ import { getNoirWallet } from "@noir-wallet/sdk";
 import { nearUtils } from "../utils/nearUtils";
 import Big from "big.js";
 import { wagmiConfig } from "../evmConfig";
+import { evmUtils } from "../utils/evmUtils";
 
 const ERC20_BALANCE_ABI = [
   {
@@ -44,7 +45,13 @@ const useAccountBalance = ({
   chain?: ChainName | null;
 }) => {
   const isNear = !chain || chain === "near";
-  const isEvm = chain === "eth" || chain === "arbitrum";
+  const isEvm =
+    chain === "eth" ||
+    chain === "arbitrum" ||
+    chain === "monad" ||
+    chain === "plasma" ||
+    chain === "bsc" ||
+    chain === "polygon";
   const isSolana = chain === "solana";
   const isZec = chain === "zec";
 
@@ -130,7 +137,7 @@ const useAccountBalance = ({
       if (!token) throw new Error(`Token not found on ${blockchain} for this asset`);
 
       if (isEvm) {
-        const chainId = chain === "eth" ? mainnet.id : arbitrum.id;
+        const chainId = evmUtils.chainToWagmiChainId(chain);
         const raw = await readContract(wagmiConfig, {
           address: token.contractAddress as `0x${string}`,
           abi: ERC20_BALANCE_ABI,

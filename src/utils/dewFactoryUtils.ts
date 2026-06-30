@@ -5,7 +5,7 @@ import { nearUtils } from "./nearUtils";
 const FACTORY_CONTRACT_ID = "aa-dew.near";
 
 const CHAIN_BLOCKCHAIN_MAP = [
-  { blockchainId: "evm", chain: ["eth", "arbitrum"] as ChainName[] },
+  { blockchainId: "evm", chain: ["eth", "arbitrum", "plasma", "bsc", "monad", "polygon"] as ChainName[] },
   { blockchainId: "solana", chain: ["solana"] as ChainName[] },
   { blockchainId: "noirzec", chain: ["zec"] as ChainName[] },
 ];

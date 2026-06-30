@@ -1,9 +1,9 @@
 import { useCallback, useEffect } from "react";
 import { useAccount, useConnect, useDisconnect, useWriteContract, useSwitchChain, useSignMessage } from "wagmi";
-import { mainnet, arbitrum } from "wagmi/chains";
-import { useWalletStore, type ChainName } from "../stores/wallet_store";
+import { useWalletStore, type ChainName, type EvmChainName } from "../stores/wallet_store";
 import type { ChainAdapter } from "./types";
 import type { Connector } from "wagmi";
+import { evmUtils } from "../utils/evmUtils";
 
 const ERC20_TRANSFER_ABI = [
   {
@@ -17,6 +17,15 @@ const ERC20_TRANSFER_ABI = [
   },
 ] as const;
 
+const supportedChains: EvmChainName[] = [
+  "eth",
+  "arbitrum",
+  "monad",
+  "plasma",
+  "polygon",
+  "bsc",
+]
+
 export function useEvmWallet(): ChainAdapter {
   const { connect: evmConnect } = useConnect();
   const { disconnect: evmDisconnect } = useDisconnect();
@@ -29,7 +38,7 @@ export function useEvmWallet(): ChainAdapter {
     if (evmConnected && evmAddress) {
       useWalletStore.getState().connectWallet({
         address: evmAddress,
-        supportedChains: ["eth", "arbitrum"],
+        supportedChains
       });
       useWalletStore.getState().closeEvmWalletModal();
     }
@@ -37,8 +46,9 @@ export function useEvmWallet(): ChainAdapter {
 
   useEffect(() => {
     if (!evmConnected) {
-      useWalletStore.getState().disconnectChainWallet("eth");
-      useWalletStore.getState().disconnectChainWallet("arbitrum");
+      supportedChains.map(v => {
+        useWalletStore.getState().disconnectChainWallet(v);
+      })
     }
   }, [evmConnected]);
 
@@ -50,15 +60,7 @@ export function useEvmWallet(): ChainAdapter {
       decimals: number;
       chain: ChainName
     }) => {
-      let chainId: number;
-
-      if(chain === 'eth'){
-        chainId = mainnet.id;
-      }else if(chain === 'arbitrum'){
-        chainId = arbitrum.id;
-      } else {
-        throw new Error(`Unsupported chain for deposit: ${chain}`);
-      }
+      const chainId = evmUtils.chainToWagmiChainId(chain)
 
       await switchChainAsync({ chainId });
       
@@ -91,7 +93,7 @@ export function useEvmWallet(): ChainAdapter {
   );
 
   return {
-    chains: ["eth", "arbitrum"],
+    chains: supportedChains,
     requestDeposit,
     signIn,
     signOut,
