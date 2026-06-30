@@ -1,69 +1,38 @@
-# React + TypeScript + Vite
+# Dew Finance
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A multi-chain DeFi application built on NEAR Protocol. Users deposit into on-chain vaults and interact with assets across multiple chains.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Vaults** — NEAR smart contract vaults that hold and manage cross-chain assets (USDT, USDC, and more)
+- **Abstract accounts** — using account on EVM chains, Solana, and Zcash to interact with NEAR
+- **Cross-chain deposits & redemptions** — 1-click flows that bridge funds from any supported chain into a vault and back out
+- **Portfolio** — Unified view of balances and positions across all connected wallets and chains
+- **Policy engine** — Per-vault restriction policies (e.g. allowlists, spend limits) enforced on-chain
 
-## Expanding the ESLint configuration
+## Supported chains
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+NEAR · Ethereum · Arbitrum · BNB Smart Chain · Polygon · Monad · Plasma · Solana · Zcash
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Getting started
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun install
+bun dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open [http://localhost:5173](http://localhost:5173).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Project structure
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+  pages/          # Homepage, Portfolio, Vaults, Policy
+  components/     # Layout, modals, shared UI
+  stores/         # Zustand wallet store
+  queries/        # TanStack Query data fetchers
+  mutations/      # Write operations (deposit, redeem, …)
+  utils/          # 1-click cross-chain helpers, vault utils
+  walletSelector/ # NEAR / EVM / Solana wallet connectors
+  evmConfig.ts    # Wagmi chain and transport config
 ```
