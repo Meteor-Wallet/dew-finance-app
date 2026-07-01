@@ -7,7 +7,9 @@ export type EvmChainName =
   | "monad"
   | "plasma"
   | "polygon"
-  | "bsc";
+  | "base"
+  | "bsc"
+  | "bera";
 export type SolanaChainName = "solana";
 export type NearChainName = "near";
 export type ZecChainName = "zec"

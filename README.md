@@ -12,7 +12,7 @@ A multi-chain DeFi application built on NEAR Protocol. Users deposit into on-cha
 
 ## Supported chains
 
-NEAR · Ethereum · Arbitrum · BNB Smart Chain · Polygon · Monad · Plasma · Solana · Zcash
+NEAR · Ethereum · Arbitrum · BNB Smart Chain · Polygon · Monad · Plasma · Bera · Base · Solana · Zcash
 
 ## Getting started
 

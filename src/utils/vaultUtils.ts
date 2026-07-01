@@ -92,7 +92,7 @@ const vaults: {
     base_asset_decimals: 6,
     curated_by: "Dew Finance",
     name: "USDT Vault",
-    chains: ["near", "solana", "eth", "arbitrum", "monad", "plasma", "polygon", "bsc"],
+    chains: ["near", "solana", "eth", "arbitrum", "monad", "plasma", "polygon", "bsc", "bera"],
     nonNearMinReadableDeposit: 2
   },
   {
@@ -103,7 +103,7 @@ const vaults: {
     base_asset_decimals: 6,
     curated_by: "Dew Finance",
     name: "USDC Vault",
-    chains: ["near", "solana", "eth", "arbitrum", "monad", "polygon", "bsc"],
+    chains: ["near", "solana", "eth", "arbitrum", "monad", "polygon", "bsc", "base"],
     nonNearMinReadableDeposit: 2
   },
   {

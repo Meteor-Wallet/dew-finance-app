@@ -11,7 +11,7 @@ import solanaLogo from "../../assets/solana.svg";
 import ethLogo from "../../assets/eth.svg";
 import zecLogo from "../../assets/zec.svg";
 import arbLogo from "../../assets/arb.png";
-import baseLogo from "../../assets/base.png";
+import baseLogo from "../../assets/base.webp";
 import bnbLogo from "../../assets/bnb.png";
 import type { ChainName } from "../../stores/wallet_store";
 

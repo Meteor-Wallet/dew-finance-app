@@ -24,6 +24,8 @@ const supportedChains: EvmChainName[] = [
   "plasma",
   "polygon",
   "bsc",
+  "base",
+  "bera"
 ]
 
 export function useEvmWallet(): ChainAdapter {

@@ -51,7 +51,9 @@ const useAccountBalance = ({
     chain === "monad" ||
     chain === "plasma" ||
     chain === "bsc" ||
-    chain === "polygon";
+    chain === "polygon" ||
+    chain === "base" ||
+    chain === 'bera'
   const isSolana = chain === "solana";
   const isZec = chain === "zec";
 

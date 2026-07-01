@@ -6,6 +6,8 @@ import zecLogo from "../../assets/zec.svg";
 import bnbLogo from "../../assets/bnb.png";
 import polygonLogo from "../../assets/polygon.png";
 import monadLogo from "../../assets/monad.webp";
+import baseLogo from "../../assets/base.webp";
+import beraLogo from "../../assets/berachain.png";
 import plasmaLogo from "../../assets/plasma.webp";
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
@@ -30,6 +32,8 @@ export const CHAIN_META: Partial<Record<ChainName, { logo: string; label: string
   bsc:      { logo: bnbLogo,     label: "BNB Smart Chain" },
   monad:    { logo: monadLogo,   label: "Monad" },
   polygon:  { logo: polygonLogo, label: "Polygon" },
+  base:  { logo: baseLogo, label: "Base" },
+  bera:  { logo: beraLogo, label: "Bera" },
 };
 
 export function ChainSelect({
