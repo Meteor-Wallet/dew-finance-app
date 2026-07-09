@@ -1,6 +1,7 @@
 import { NearConnector } from "@hot-labs/near-connect";
 import { useWalletStore } from "./stores/wallet_store";
 import type { Account } from "@hot-labs/near-connect/build/types";
+import { manifest } from "./nearManifest";
 
 export const nearConnector = new NearConnector({
   network: "mainnet",
@@ -21,6 +22,7 @@ export const nearConnector = new NearConnector({
       localStorage.removeItem(`near-connector:${key}`);
     },
   },
+  manifest: manifest
 });
 
 const onConnected = (accounts: Account[]) => {
